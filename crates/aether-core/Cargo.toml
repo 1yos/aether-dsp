@@ -1,16 +1,19 @@
 [package]
-name = "aether-core"
+name = "aetherdsp-core"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
 homepage.workspace = true
-documentation = "https://docs.rs/aether-core"
+documentation = "https://docs.rs/aetherdsp-core"
 readme = "README.md"
 description = "Hard real-time modular DSP engine — lock-free graph scheduler, generational arena, and buffer pool"
 keywords = ["audio", "dsp", "real-time", "modular", "synthesis"]
 categories = ["multimedia::audio", "no-std"]
+
+[lib]
+name = "aether_core"
 
 [[bench]]
 name = "rt_bench"

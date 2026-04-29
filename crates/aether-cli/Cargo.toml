@@ -14,10 +14,10 @@ name = "aether"
 path = "src/main.rs"
 
 [dependencies]
-aether-core     = { version = "0.1", path = "../aether-core" }
-aether-ndk      = { version = "0.1", path = "../aether-ndk" }
-aether-manifest = { version = "0.1", path = "../aether-manifest" }
-aether-registry = { version = "0.1", path = "../aether-registry" }
+aetherdsp-core     = { version = "0.1", path = "../aether-core" }
+aetherdsp-ndk      = { version = "0.1", path = "../aether-ndk" }
+aetherdsp-manifest = { version = "0.1", path = "../aether-manifest" }
+aetherdsp-registry = { version = "0.1", path = "../aether-registry" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

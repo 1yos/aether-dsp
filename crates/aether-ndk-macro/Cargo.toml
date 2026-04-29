@@ -1,5 +1,5 @@
 [package]
-name = "aether-ndk-macro"
+name = "aetherdsp-ndk-macro"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -14,6 +14,7 @@ categories = ["multimedia::audio", "development-tools::procedural-macro-helpers"
 
 [lib]
 proc-macro = true
+name = "aether_ndk_macro"
 
 [dependencies]
 proc-macro2 = { workspace = true }

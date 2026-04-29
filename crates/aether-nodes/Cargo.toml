@@ -1,21 +1,24 @@
 [package]
-name = "aether-nodes"
+name = "aetherdsp-nodes"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
 homepage.workspace = true
-documentation = "https://docs.rs/aether-nodes"
+documentation = "https://docs.rs/aetherdsp-nodes"
 readme = "README.md"
 description = "Built-in DSP nodes for AetherDSP — oscillator, SVF filter, ADSR envelope, delay, gain, and mixer"
 keywords = ["audio", "dsp", "oscillator", "filter", "synthesis"]
 categories = ["multimedia::audio"]
 
+[lib]
+name = "aether_nodes"
+
 [dev-dependencies]
 proptest = "1"
 
 [dependencies]
-aether-core = { version = "0.1", path = "../aether-core" }
+aetherdsp-core = { version = "0.1", path = "../aether-core" }
 serde = { workspace = true }
 ringbuf = { workspace = true }

@@ -18,11 +18,11 @@ name = "aether-host"
 path = "src/main.rs"
 
 [dependencies]
-aether-core    = { version = "0.1", path = "../aether-core" }
-aether-nodes   = { version = "0.1", path = "../aether-nodes" }
-aether-midi    = { version = "0.1", path = "../aether-midi" }
-aether-sampler = { version = "0.1", path = "../aether-sampler" }
-aether-timbre  = { version = "0.1", path = "../aether-timbre" }
+aetherdsp-core    = { version = "0.1", path = "../aether-core" }
+aetherdsp-nodes   = { version = "0.1", path = "../aether-nodes" }
+aetherdsp-midi    = { version = "0.1", path = "../aether-midi" }
+aetherdsp-sampler = { version = "0.1", path = "../aether-sampler" }
+aetherdsp-timbre  = { version = "0.1", path = "../aether-timbre" }
 cpal = { workspace = true }
 ringbuf = { workspace = true }
 hound = { workspace = true }

@@ -1,19 +1,22 @@
 [package]
-name = "aether-registry"
+name = "aetherdsp-registry"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
 homepage.workspace = true
-documentation = "https://docs.rs/aether-registry"
+documentation = "https://docs.rs/aetherdsp-registry"
 readme = "README.md"
 description = "Node registry for AetherDSP — runtime registration and lookup of DSP node types"
 keywords = ["audio", "dsp", "plugin", "registry", "modular"]
 categories = ["multimedia::audio"]
 
+[lib]
+name = "aether_registry"
+
 [dependencies]
-aether-ndk = { version = "0.1", path = "../aether-ndk" }
+aetherdsp-ndk = { version = "0.1", path = "../aether-ndk" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
