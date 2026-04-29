@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" font-family="monospace" font-size="13">
+  <rect width="900" height="620" fill="#0a0a14"/>
+
+  <!-- Title -->
+  <text x="450" y="36" text-anchor="middle" fill="#4fc3f7" font-size="18" font-weight="bold">AetherDSP — System Architecture</text>
+
+  <!-- ── UI Thread ── -->
+  <rect x="30" y="60" width="200" height="160" rx="8" fill="#1a1a2e" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="130" y="82" text-anchor="middle" fill="#4fc3f7" font-weight="bold">UI Thread</text>
+  <text x="130" y="104" text-anchor="middle" fill="#aaa">React + React Flow</text>
+  <rect x="50" y="114" width="160" height="28" rx="4" fill="#0d2137" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="130" y="133" text-anchor="middle" fill="#e0e0e0">Node Editor Canvas</text>
+  <rect x="50" y="150" width="160" height="28" rx="4" fill="#0d2137" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="130" y="169" text-anchor="middle" fill="#e0e0e0">Param Sliders</text>
+  <rect x="50" y="186" width="160" height="28" rx="4" fill="#0d2137" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="130" y="205" text-anchor="middle" fill="#e0e0e0">Zustand Store</text>
+
+  <!-- ── WebSocket Bridge ── -->
+  <rect x="270" y="100" width="160" height="80" rx="8" fill="#1a1a2e" stroke="#ff7043" stroke-width="1.5"/>
+  <text x="350" y="122" text-anchor="middle" fill="#ff7043" font-weight="bold">WebSocket</text>
+  <text x="350" y="142" text-anchor="middle" fill="#aaa">ws://127.0.0.1:9001</text>
+  <text x="350" y="162" text-anchor="middle" fill="#aaa">JSON protocol</text>
+
+  <!-- UI → WS arrow -->
+  <line x1="230" y1="140" x2="270" y2="140" stroke="#4fc3f7" stroke-width="1.5" marker-end="url(#arr)"/>
+  <!-- WS → Control arrow -->
+  <line x1="430" y1="140" x2="470" y2="140" stroke="#ff7043" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+  <!-- ── Control Thread ── -->
+  <rect x="470" y="60" width="200" height="160" rx="8" fill="#1a1a2e" stroke="#ff7043" stroke-width="1.5"/>
+  <text x="570" y="82" text-anchor="middle" fill="#ff7043" font-weight="bold">Control Thread</text>
+  <text x="570" y="104" text-anchor="middle" fill="#aaa">tokio async runtime</text>
+  <rect x="490" y="114" width="160" height="28" rx="4" fill="#1a0d00" stroke="#ff7043" stroke-width="1"/>
+  <text x="570" y="133" text-anchor="middle" fill="#e0e0e0">Graph Builder</text>
+  <rect x="490" y="150" width="160" height="28" rx="4" fill="#1a0d00" stroke="#ff7043" stroke-width="1"/>
+  <text x="570" y="169" text-anchor="middle" fill="#e0e0e0">Diff Generator</text>
+  <rect x="490" y="186" width="160" height="28" rx="4" fill="#1a0d00" stroke="#ff7043" stroke-width="1"/>
+  <text x="570" y="205" text-anchor="middle" fill="#e0e0e0">Snapshot Refresh</text>
+
+  <!-- ── SPSC Ring ── -->
+  <rect x="340" y="270" width="220" height="60" rx="8" fill="#1a1a2e" stroke="#ffd54f" stroke-width="1.5"/>
+  <text x="450" y="294" text-anchor="middle" fill="#ffd54f" font-weight="bold">SPSC Ring Buffer</text>
+  <text x="450" y="316" text-anchor="middle" fill="#aaa">Lock-free · Bounded · 1024 slots</text>
+
+  <!-- Control → Ring arrow -->
+  <line x1="570" y1="220" x2="570" y2="270" stroke="#ff7043" stroke-width="1.5" marker-end="url(#arr2)"/>
+  <line x1="570" y1="270" x2="560" y2="270" stroke="#ff7043" stroke-width="1.5"/>
+
+  <!-- ── Audio Thread ── -->
+  <rect x="200" y="380" width="500" height="180" rx="8" fill="#0d1a0d" stroke="#66bb6a" stroke-width="2"/>
+  <text x="450" y="404" text-anchor="middle" fill="#66bb6a" font-weight="bold">AUDIO THREAD  (CPAL callback · 64 samples · ≤1.33ms)</text>
+
+  <rect x="220" y="414" width="140" height="36" rx="4" fill="#0a2a0a" stroke="#66bb6a" stroke-width="1"/>
+  <text x="290" y="437" text-anchor="middle" fill="#e0e0e0">Apply Commands</text>
+
+  <rect x="380" y="414" width="140" height="36" rx="4" fill="#0a2a0a" stroke="#66bb6a" stroke-width="1"/>
+  <text x="450" y="437" text-anchor="middle" fill="#e0e0e0">Execute DAG</text>
+
+  <rect x="540" y="414" width="140" height="36" rx="4" fill="#0a2a0a" stroke="#66bb6a" stroke-width="1"/>
+  <text x="610" y="437" text-anchor="middle" fill="#e0e0e0">Output to DAC</text>
+
+  <!-- sub-boxes -->
+  <rect x="220" y="462" width="460" height="80" rx="4" fill="#071407" stroke="#66bb6a" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="450" y="482" text-anchor="middle" fill="#66bb6a" font-size="11">DSP Graph (Topological Order)</text>
+  <rect x="230" y="490" width="80" height="24" rx="3" fill="#0a2a0a" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="270" y="507" text-anchor="middle" fill="#4fc3f7" font-size="11">Oscillator</text>
+  <rect x="320" y="490" width="80" height="24" rx="3" fill="#0a2a0a" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="360" y="507" text-anchor="middle" fill="#4fc3f7" font-size="11">SVF Filter</text>
+  <rect x="410" y="490" width="80" height="24" rx="3" fill="#0a2a0a" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="450" y="507" text-anchor="middle" fill="#4fc3f7" font-size="11">Envelope</text>
+  <rect x="500" y="490" width="60" height="24" rx="3" fill="#0a2a0a" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="530" y="507" text-anchor="middle" fill="#4fc3f7" font-size="11">Gain</text>
+  <rect x="570" y="490" width="60" height="24" rx="3" fill="#0a2a0a" stroke="#4fc3f7" stroke-width="1"/>
+  <text x="600" y="507" text-anchor="middle" fill="#4fc3f7" font-size="11">Mixer</text>
+  <!-- arrows between nodes -->
+  <line x1="310" y1="502" x2="320" y2="502" stroke="#4fc3f7" stroke-width="1" marker-end="url(#arrs)"/>
+  <line x1="400" y1="502" x2="410" y2="502" stroke="#4fc3f7" stroke-width="1" marker-end="url(#arrs)"/>
+  <line x1="490" y1="502" x2="500" y2="502" stroke="#4fc3f7" stroke-width="1" marker-end="url(#arrs)"/>
+  <line x1="560" y1="502" x2="570" y2="502" stroke="#4fc3f7" stroke-width="1" marker-end="url(#arrs)"/>
+
+  <!-- Ring → Audio Thread arrow -->
+  <line x1="450" y1="330" x2="450" y2="380" stroke="#ffd54f" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+  <!-- ── Memory Layer ── -->
+  <rect x="30" y="380" width="155" height="180" rx="8" fill="#1a1a2e" stroke="#ce93d8" stroke-width="1.5"/>
+  <text x="107" y="402" text-anchor="middle" fill="#ce93d8" font-weight="bold">Memory</text>
+  <rect x="44" y="412" width="127" height="26" rx="3" fill="#1a0d2e" stroke="#ce93d8" stroke-width="1"/>
+  <text x="107" y="430" text-anchor="middle" fill="#e0e0e0" font-size="11">Generational Arena</text>
+  <rect x="44" y="446" width="127" height="26" rx="3" fill="#1a0d2e" stroke="#ce93d8" stroke-width="1"/>
+  <text x="107" y="464" text-anchor="middle" fill="#e0e0e0" font-size="11">Buffer Pool (SoA)</text>
+  <rect x="44" y="480" width="127" height="26" rx="3" fill="#1a0d2e" stroke="#ce93d8" stroke-width="1"/>
+  <text x="107" y="498" text-anchor="middle" fill="#e0e0e0" font-size="11">Param Blocks</text>
+  <rect x="44" y="514" width="127" height="26" rx="3" fill="#1a0d2e" stroke="#ce93d8" stroke-width="1"/>
+  <text x="107" y="532" text-anchor="middle" fill="#e0e0e0" font-size="11">State Blobs</text>
+
+  <!-- ── Cleanup Thread ── -->
+  <rect x="715" y="380" width="155" height="80" rx="8" fill="#1a1a2e" stroke="#ef9a9a" stroke-width="1.5"/>
+  <text x="792" y="402" text-anchor="middle" fill="#ef9a9a" font-weight="bold">Cleanup</text>
+  <text x="792" y="424" text-anchor="middle" fill="#aaa" font-size="11">Deferred drops</text>
+  <text x="792" y="444" text-anchor="middle" fill="#aaa" font-size="11">Buffer recycle</text>
+
+  <!-- Audio → Cleanup arrow -->
+  <line x1="700" y1="450" x2="715" y2="430" stroke="#ef9a9a" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+  <!-- ── Legend ── -->
+  <rect x="30" y="580" width="840" height="30" rx="4" fill="#0d0d1a" stroke="#334" stroke-width="1"/>
+  <circle cx="55" cy="595" r="5" fill="#4fc3f7"/>
+  <text x="65" y="599" fill="#aaa" font-size="11">UI / Control</text>
+  <circle cx="155" cy="595" r="5" fill="#ff7043"/>
+  <text x="165" y="599" fill="#aaa" font-size="11">Command flow</text>
+  <circle cx="270" cy="595" r="5" fill="#ffd54f"/>
+  <text x="280" y="599" fill="#aaa" font-size="11">SPSC ring</text>
+  <circle cx="365" cy="595" r="5" fill="#66bb6a"/>
+  <text x="375" y="599" fill="#aaa" font-size="11">RT audio thread</text>
+  <circle cx="480" cy="595" r="5" fill="#ce93d8"/>
+  <text x="490" y="599" fill="#aaa" font-size="11">Pre-allocated memory</text>
+  <circle cx="620" cy="595" r="5" fill="#ef9a9a"/>
+  <text x="630" y="599" fill="#aaa" font-size="11">Deferred cleanup</text>
+
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#4fc3f7"/>
+    </marker>
+    <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#ff7043"/>
+    </marker>
+    <marker id="arr3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#ffd54f"/>
+    </marker>
+    <marker id="arr4" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#ef9a9a"/>
+    </marker>
+    <marker id="arrs" markerWidth="6" markerHeight="6" refX="5" refY="2" orient="auto">
+      <path d="M0,0 L0,4 L6,2 z" fill="#4fc3f7"/>
+    </marker>
+  </defs>
+</svg>

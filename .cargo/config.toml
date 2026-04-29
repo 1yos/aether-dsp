@@ -1,0 +1,8 @@
+[target.x86_64-pc-windows-gnu]
+# Use MSYS2 MinGW-w64 toolchain — has libgcc_eh and a working dlltool
+linker = "C:\\msys64\\mingw64\\bin\\gcc.exe"
+ar = "C:\\msys64\\mingw64\\bin\\ar.exe"
+
+[env]
+# Ensure MSYS2 tools take precedence over TDM-GCC for dlltool
+PATH = { value = "C:\\msys64\\mingw64\\bin", force = false }

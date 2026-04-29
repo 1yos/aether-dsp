@@ -1,0 +1,21 @@
+[package]
+name = "aether-ndk-macro"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/aether-ndk-macro"
+readme = "README.md"
+description = "Procedural macro for the Aether Node Development Kit — derive DSP node boilerplate with #[aether_node]"
+keywords = ["audio", "dsp", "proc-macro", "synthesis", "real-time"]
+categories = ["multimedia::audio", "development-tools::procedural-macro-helpers"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+syn = { workspace = true }

@@ -1,0 +1,11 @@
+{
+  "version": "2.1-catalog",
+  "build_date": "2026-04-24",
+  "features": [
+    "60 world instruments",
+    "Timbre transfer",
+    "Synthetic audio preview",
+    "Custom instrument creation"
+  ],
+  "catalog_button_location": "Top bar, after 'Instrument Maker'"
+}

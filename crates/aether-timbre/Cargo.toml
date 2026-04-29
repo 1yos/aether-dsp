@@ -1,0 +1,20 @@
+[package]
+name = "aether-timbre"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/aether-timbre"
+readme = "README.md"
+description = "Spectral timbre analysis and transfer for AetherDSP — FFT-based instrument resynthesis"
+keywords = ["audio", "dsp", "timbre", "spectral", "synthesis"]
+categories = ["multimedia::audio", "science"]
+
+[dependencies]
+aether-core    = { version = "0.1", path = "../aether-core" }
+aether-sampler = { version = "0.1", path = "../aether-sampler" }
+rustfft = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }

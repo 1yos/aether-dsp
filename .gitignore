@@ -1,0 +1,31 @@
+# Rust build artifacts
+target/
+Cargo.lock
+
+# Node / UI
+ui/node_modules/
+ui/dist/
+ui/.vite/
+
+# IDE
+.vscode/settings.json
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Kiro internal
+.kiro/
+
+# Compiled JS (generated from TS)
+ui/src/**/*.js
+ui/src/**/*.js.map
+
+# Env / secrets
+.env
+.env.local
+
+# Logs
+*.log

@@ -1,0 +1,42 @@
+[workspace]
+members = [
+    "crates/aether-core",
+    "crates/aether-nodes",
+    "crates/aether-host",
+    "crates/aether-ndk-macro",
+    "crates/aether-ndk",
+    "crates/aether-manifest",
+    "crates/aether-registry",
+    "crates/aether-cli",
+    "crates/aether-midi",
+    "crates/aether-sampler",
+    "crates/aether-timbre",
+    # "crates/aether-plugin",  # Build separately
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["AetherDSP Project"]
+license = "MIT"
+repository = "https://github.com/1yos/aether-dsp"
+homepage = "https://github.com/1yos/aether-dsp"
+documentation = "https://docs.rs/aether-core"
+readme = "README.md"
+
+[workspace.dependencies]
+crossbeam = "0.8"
+ringbuf = "0.4"
+arc-swap = "1.7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rayon = "1.10"
+cpal = "0.15"
+thiserror = "1"
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full"] }
+midir = "0.9"
+hound = "3"
+rustfft = "6"

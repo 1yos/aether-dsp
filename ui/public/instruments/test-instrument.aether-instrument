@@ -1,0 +1,19 @@
+{
+  "name": "Test Instrument",
+  "origin": "Test",
+  "description": "A minimal test instrument with no audio files — used to verify the loading pipeline works.",
+  "author": "AetherDSP",
+  "tuning": {
+    "name": "12-TET",
+    "reference_note": 69,
+    "reference_freq": 440.0,
+    "cents_map": []
+  },
+  "zones": [],
+  "zone_groups": [],
+  "attack": 0.005,
+  "decay": 0.1,
+  "sustain": 0.8,
+  "release": 0.3,
+  "max_voices": 16
+}

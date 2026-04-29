@@ -1,0 +1,30 @@
+[package]
+name = "aether-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/aether-core"
+readme = "README.md"
+description = "Hard real-time modular DSP engine — lock-free graph scheduler, generational arena, and buffer pool"
+keywords = ["audio", "dsp", "real-time", "modular", "synthesis"]
+categories = ["multimedia::audio", "no-std"]
+
+[[bench]]
+name = "rt_bench"
+harness = false
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1"
+
+[dependencies]
+crossbeam = { workspace = true }
+ringbuf = { workspace = true }
+arc-swap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rayon = { workspace = true }
+thiserror = { workspace = true }

@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aether Studio v2.0 — Mockup Gallery</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(135deg, #050a12 0%, #0a1520 100%);
+        color: #e2e8f0;
+        min-height: 100vh;
+        padding: 40px 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 60px;
+      }
+
+      h1 {
+        font-size: 48px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #38bdf8, #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 16px;
+      }
+
+      .subtitle {
+        font-size: 18px;
+        color: #94a3b8;
+        margin-bottom: 32px;
+      }
+
+      .status {
+        display: inline-block;
+        padding: 8px 16px;
+        background: rgba(0, 229, 160, 0.15);
+        border: 1px solid rgba(0, 229, 160, 0.3);
+        border-radius: 20px;
+        color: #00e5a0;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 24px;
+        margin-bottom: 60px;
+      }
+
+      .card {
+        background: rgba(10, 21, 32, 0.7);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 24px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+      }
+
+      .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.6);
+        border-color: rgba(56, 189, 248, 0.3);
+      }
+
+      .card-number {
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(
+          135deg,
+          rgba(56, 189, 248, 0.15),
+          rgba(129, 140, 248, 0.12)
+        );
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 700;
+        color: #38bdf8;
+        margin-bottom: 16px;
+      }
+
+      .card h2 {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #e2e8f0;
+      }
+
+      .card p {
+        font-size: 14px;
+        color: #94a3b8;
+        line-height: 1.6;
+        margin-bottom: 16px;
+      }
+
+      .card-features {
+        list-style: none;
+        margin-bottom: 20px;
+      }
+
+      .card-features li {
+        font-size: 13px;
+        color: #64748b;
+        padding: 6px 0;
+        padding-left: 20px;
+        position: relative;
+      }
+
+      .card-features li:before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #00e5a0;
+        font-weight: 700;
+      }
+
+      .btn {
+        display: inline-block;
+        padding: 10px 20px;
+        background: linear-gradient(
+          135deg,
+          rgba(56, 189, 248, 0.15),
+          rgba(129, 140, 248, 0.12)
+        );
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        border-radius: 6px;
+        color: #38bdf8;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.2s;
+      }
+
+      .btn:hover {
+        background: linear-gradient(
+          135deg,
+          rgba(56, 189, 248, 0.25),
+          rgba(129, 140, 248, 0.18)
+        );
+        box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+      }
+
+      .info-box {
+        background: rgba(129, 140, 248, 0.1);
+        border: 1px solid rgba(129, 140, 248, 0.3);
+        border-radius: 12px;
+        padding: 24px;
+        margin-top: 40px;
+      }
+
+      .info-box h3 {
+        color: #818cf8;
+        font-size: 18px;
+        margin-bottom: 12px;
+      }
+
+      .info-box p {
+        color: #94a3b8;
+        line-height: 1.6;
+        margin-bottom: 12px;
+      }
+
+      .info-box ul {
+        list-style: none;
+        padding-left: 0;
+      }
+
+      .info-box li {
+        color: #64748b;
+        padding: 4px 0;
+        padding-left: 20px;
+        position: relative;
+      }
+
+      .info-box li:before {
+        content: "→";
+        position: absolute;
+        left: 0;
+        color: #818cf8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Aether Studio v2.0</h1>
+        <p class="subtitle">Interactive Design Mockups</p>
+        <span class="status">✨ 5 Mockups Ready</span>
+      </header>
+
+      <div class="grid">
+        <div class="card" onclick="window.location.href = 'explore-mode.html'">
+          <div class="card-number">1</div>
+          <h2>Explore Mode (Catalog)</h2>
+          <p>
+            Browse 60 world instruments with hero cards, photos, and cultural
+            context.
+          </p>
+          <ul class="card-features">
+            <li>Hero card with large instrument photo</li>
+            <li>Region filter tabs (8 regions)</li>
+            <li>Fuzzy search</li>
+            <li>Waveform visualization</li>
+            <li>One-click play & add</li>
+          </ul>
+          <a href="explore-mode.html" class="btn">View Mockup →</a>
+        </div>
+
+        <div
+          class="card"
+          onclick="window.location.href = 'keyboard-player.html'"
+        >
+          <div class="card-number">2</div>
+          <h2>Keyboard Player</h2>
+          <p>
+            Immersive full-screen experience for trying instruments before
+            adding them.
+          </p>
+          <ul class="card-features">
+            <li>Visual piano keyboard (2 octaves)</li>
+            <li>PC keyboard mapping (A-L keys)</li>
+            <li>Real-time waveform & spectrum</li>
+            <li>Octave controls (Z/X keys)</li>
+            <li>Velocity slider</li>
+          </ul>
+          <a href="keyboard-player.html" class="btn">View Mockup →</a>
+        </div>
+
+        <div class="card" onclick="window.location.href = 'create-mode.html'">
+          <div class="card-number">3</div>
+          <h2>Create Mode (Node Graph)</h2>
+          <p>
+            Animated node graph with particle flow and live audio visualization.
+          </p>
+          <ul class="card-features">
+            <li>Animated particle flow through edges</li>
+            <li>Node glow when audio is active</li>
+            <li>Mini waveform preview inside nodes</li>
+            <li>Smart routing suggestions</li>
+            <li>Collapsible sidebar</li>
+          </ul>
+          <a href="create-mode.html" class="btn">View Mockup →</a>
+        </div>
+
+        <div class="card" onclick="window.location.href = 'piano-roll.html'">
+          <div class="card-number">4</div>
+          <h2>Piano Roll</h2>
+          <p>Precision MIDI editor with scale highlighting and ghost notes.</p>
+          <ul class="card-features">
+            <li>Grid-based note editor</li>
+            <li>Scale highlighting (Ethiopian Tizita)</li>
+            <li>Ghost notes (see other tracks)</li>
+            <li>Velocity editor</li>
+            <li>Chord tools</li>
+          </ul>
+          <a href="piano-roll.html" class="btn">View Mockup →</a>
+        </div>
+
+        <div
+          class="card"
+          onclick="window.location.href = 'complete-interface.html'"
+        >
+          <div class="card-number">5</div>
+          <h2>Complete Interface</h2>
+          <p>All modes in one place with full navigation and mode switching.</p>
+          <ul class="card-features">
+            <li>4 modes: Explore, Create, Arrange, Perform</li>
+            <li>Mode switcher in top bar</li>
+            <li>Adaptive layout</li>
+            <li>Full navigation</li>
+            <li>Integrated experience</li>
+          </ul>
+          <a href="complete-interface.html" class="btn">View Mockup →</a>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <h3>📝 How to Review</h3>
+        <p>As you explore each mockup, consider:</p>
+        <ul>
+          <li>Do the colors feel right? (Too bright? Too dark?)</li>
+          <li>Is the spacing comfortable? (Too tight? Too loose?)</li>
+          <li>Are the animations smooth? (Too fast? Too slow?)</li>
+          <li>Is the information hierarchy clear?</li>
+          <li>Does it feel premium/professional?</li>
+          <li>What excites you most?</li>
+          <li>What needs improvement?</li>
+        </ul>
+        <p style="margin-top: 16px">
+          <strong>Note:</strong> These are interactive HTML mockups with
+          simulated behavior. The real implementation will have full
+          functionality, real audio, and backend integration.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>AetherDSP — Investor Pitch Deck</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: #0a0a14;
+        color: #e0e0e0;
+        overflow: hidden;
+      }
+      .deck {
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+      }
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 60px;
+        opacity: 0;
+        transition: opacity 0.4s;
+      }
+      .slide.active {
+        display: flex;
+        opacity: 1;
+      }
+      .slide-num {
+        position: fixed;
+        bottom: 24px;
+        right: 32px;
+        color: #444;
+        font-size: 13px;
+        font-family: monospace;
+      }
+      nav {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 12px;
+        z-index: 10;
+      }
+      nav button {
+        background: #1a1a2e;
+        border: 1px solid #334;
+        color: #aaa;
+        padding: 8px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.2s;
+      }
+      nav button:hover {
+        border-color: #4fc3f7;
+        color: #4fc3f7;
+      }
+      h1 {
+        font-size: 52px;
+        font-weight: 800;
+        letter-spacing: -1px;
+        line-height: 1.1;
+        text-align: center;
+      }
+      h2 {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 28px;
+        color: #4fc3f7;
+      }
+      h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #4fc3f7;
+        margin-bottom: 8px;
+      }
+      p {
+        font-size: 17px;
+        line-height: 1.7;
+        color: #bbb;
+        max-width: 720px;
+        text-align: center;
+      }
+      .accent {
+        color: #4fc3f7;
+      }
+      .orange {
+        color: #ff7043;
+      }
+      .green {
+        color: #66bb6a;
+      }
+      .yellow {
+        color: #ffd54f;
+      }
+      .purple {
+        color: #ce93d8;
+      }
+      .tag {
+        display: inline-block;
+        background: #1a1a2e;
+        border: 1px solid #334;
+        border-radius: 4px;
+        padding: 4px 12px;
+        font-size: 13px;
+        font-family: monospace;
+        margin: 4px;
+      }
+      .grid {
+        display: grid;
+        gap: 20px;
+        width: 100%;
+        max-width: 900px;
+      }
+      .grid-2 {
+        grid-template-columns: 1fr 1fr;
+      }
+      .grid-3 {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+      .card {
+        background: #111827;
+        border: 1px solid #1e3a5f;
+        border-radius: 10px;
+        padding: 24px;
+      }
+      .card.orange-border {
+        border-color: #ff7043;
+      }
+      .card.green-border {
+        border-color: #66bb6a;
+      }
+      .card.purple-border {
+        border-color: #ce93d8;
+      }
+      .stat {
+        font-size: 42px;
+        font-weight: 800;
+        line-height: 1;
+      }
+      .stat-label {
+        font-size: 13px;
+        color: #888;
+        margin-top: 4px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+      }
+      th {
+        text-align: left;
+        padding: 10px 14px;
+        color: #4fc3f7;
+        border-bottom: 1px solid #1e3a5f;
+        font-weight: 600;
+      }
+      td {
+        padding: 10px 14px;
+        border-bottom: 1px solid #111827;
+        color: #ccc;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      .check {
+        color: #66bb6a;
+      }
+      .cross {
+        color: #ef5350;
+      }
+      .bar-wrap {
+        background: #111827;
+        border-radius: 4px;
+        height: 10px;
+        margin-top: 6px;
+        overflow: hidden;
+      }
+      .bar {
+        height: 100%;
+        border-radius: 4px;
+        background: linear-gradient(90deg, #4fc3f7, #66bb6a);
+      }
+      ul {
+        list-style: none;
+        max-width: 700px;
+        width: 100%;
+      }
+      ul li {
+        padding: 8px 0;
+        border-bottom: 1px solid #1a1a2e;
+        font-size: 16px;
+        color: #ccc;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      ul li::before {
+        content: "→";
+        color: #4fc3f7;
+        font-weight: bold;
+      }
+      .logo {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -1px;
+        margin-bottom: 8px;
+      }
+      .logo span {
+        color: #4fc3f7;
+      }
+      .subtitle {
+        font-size: 15px;
+        color: #666;
+        font-family: monospace;
+        margin-top: 8px;
+      }
+      .timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+        max-width: 800px;
+      }
+      .tl-item {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+      }
+      .tl-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #4fc3f7;
+        margin-top: 5px;
+        flex-shrink: 0;
+      }
+      .tl-dot.done {
+        background: #66bb6a;
+      }
+      .tl-dot.next {
+        background: #ff7043;
+      }
+      .tl-content h4 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #e0e0e0;
+      }
+      .tl-content p {
+        font-size: 13px;
+        color: #888;
+        margin-top: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="deck">
+      <!-- Slide 1: Title -->
+      <div class="slide active" id="s1">
+        <div class="logo">Aether<span>DSP</span></div>
+        <h1>The <span class="accent">Hard Real-Time</span><br />DSP Runtime</h1>
+        <p style="margin-top: 24px">
+          Built in Rust. Deterministic. Lock-free. Production-ready.
+        </p>
+        <div
+          style="
+            margin-top: 32px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+          "
+        >
+          <span class="tag accent">v0.1 Released</span>
+          <span class="tag green">cargo check ✓</span>
+          <span class="tag green">cargo build --release ✓</span>
+          <span class="tag green">npm run build ✓</span>
+          <span class="tag yellow">51.7 ns param latency</span>
+        </div>
+        <div class="subtitle">AetherDSP Project · 2026</div>
+      </div>
+
+      <!-- Slide 2: Problem -->
+      <div class="slide" id="s2">
+        <h2>The Problem</h2>
+        <div class="grid grid-2" style="max-width: 860px">
+          <div class="card orange-border">
+            <h3 class="orange">Existing Frameworks</h3>
+            <ul style="margin-top: 8px">
+              <li>JUCE — C++, partial RT safety, no lock-free guarantee</li>
+              <li>SuperCollider — RT but no visual editor</li>
+              <li>VCV Rack — visual but not lock-free</li>
+              <li>Pure Data — 30-year-old C codebase</li>
+            </ul>
+          </div>
+          <div class="card orange-border">
+            <h3 class="orange">Real-Time Violations</h3>
+            <ul style="margin-top: 8px">
+              <li>Heap allocation in audio callbacks</li>
+              <li>Mutex locks causing priority inversion</li>
+              <li>Unbounded loops and recursion</li>
+              <li>No compile-time RT safety enforcement</li>
+            </ul>
+          </div>
+        </div>
+        <p style="margin-top: 28px">
+          A single missed 1.33 ms deadline produces an audible glitch.<br />Current
+          tools rely on programmer discipline — not compiler guarantees.
+        </p>
+      </div>
+
+      <!-- Slide 3: Solution -->
+      <div class="slide" id="s3">
+        <h2>The Solution</h2>
+        <div class="grid grid-3" style="max-width: 900px">
+          <div class="card">
+            <h3>🦀 Rust Ownership</h3>
+            <p style="font-size: 14px; text-align: left; margin-top: 8px">
+              Compiler enforces RT safety. No allocation, no locks, no data
+              races — at compile time, not runtime.
+            </p>
+          </div>
+          <div class="card">
+            <h3>⚡ Lock-Free Core</h3>
+            <p style="font-size: 14px; text-align: left; margin-top: 8px">
+              SPSC ring buffer for control→audio communication. Generational
+              arena for O(1) node allocation.
+            </p>
+          </div>
+          <div class="card">
+            <h3>🎛️ Visual Editor</h3>
+            <p style="font-size: 14px; text-align: left; margin-top: 8px">
+              React Flow node editor with real-time WebSocket bridge. Drag,
+              connect, and automate — live.
+            </p>
+          </div>
+        </div>
+        <div class="grid grid-3" style="max-width: 900px; margin-top: 16px">
+          <div class="card green-border">
+            <h3 class="green">Zero XRuns</h3>
+            <p style="font-size: 14px; text-align: left; margin-top: 8px">
+              Deterministic execution order. Bounded mutation cost. No surprises
+              in the audio thread.
+            </p>
+          </div>
+          <div class="card green-border">
+            <h3 class="green">State Continuity</h3>
+            <p style="font-size: 14px; text-align: left; margin-top: 8px">
+              Node replacement transfers oscillator phase, filter state,
+              envelope stage — no clicks.
+            </p>
+          </div>
+          <div class="card green-border">
+            <h3 class="green">Plugin Ready</h3>
+            <p style="font-size: 14px; text-align: left; margin-top: 8px">
+              CLAP plugin template included. NIH-plug wrapper. Ships as a DAW
+              instrument.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 4: Performance -->
+      <div class="slide" id="s4">
+        <h2>Performance</h2>
+        <div class="grid grid-2" style="max-width: 860px">
+          <div class="card">
+            <h3>Benchmark Results</h3>
+            <table style="margin-top: 12px">
+              <tr>
+                <th>Test</th>
+                <th>Result</th>
+              </tr>
+              <tr>
+                <td>param_fill_buffer_64</td>
+                <td class="green">51.7 ns</td>
+              </tr>
+              <tr>
+                <td>Arena ×1000 alloc/free</td>
+                <td class="green">&lt; 5 µs</td>
+              </tr>
+              <tr>
+                <td>Scheduler / 1 node</td>
+                <td class="green">&lt; 1 µs</td>
+              </tr>
+              <tr>
+                <td>Scheduler / 100 nodes</td>
+                <td class="green">&lt; 10 µs</td>
+              </tr>
+              <tr>
+                <td>Scheduler / 1000 nodes</td>
+                <td class="green">&lt; 100 µs</td>
+              </tr>
+            </table>
+          </div>
+          <div class="card">
+            <h3>RT Budget (64 samples @ 48 kHz)</h3>
+            <div style="margin-top: 16px">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-size: 13px;
+                "
+              >
+                <span>Deadline</span><span class="accent">1,330,000 ns</span>
+              </div>
+              <div class="bar-wrap">
+                <div class="bar" style="width: 100%"></div>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-size: 13px;
+                  margin-top: 12px;
+                "
+              >
+                <span>param_fill (64 samples)</span
+                ><span class="green">51.7 ns</span>
+              </div>
+              <div class="bar-wrap">
+                <div class="bar" style="width: 0.004%"></div>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-size: 13px;
+                  margin-top: 12px;
+                "
+              >
+                <span>1000-node graph</span><span class="green">~100 µs</span>
+              </div>
+              <div class="bar-wrap">
+                <div class="bar" style="width: 7.5%"></div>
+              </div>
+              <p style="font-size: 13px; color: #888; margin-top: 16px">
+                13× headroom at 1000 nodes.<br />Budget utilization: &lt; 0.004%
+                for param processing.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 5: Comparison -->
+      <div class="slide" id="s5">
+        <h2>Competitive Landscape</h2>
+        <table style="max-width: 860px; width: 100%">
+          <tr>
+            <th>System</th>
+            <th>Language</th>
+            <th>RT-Safe</th>
+            <th>Lock-Free</th>
+            <th>Visual UI</th>
+            <th>Plugin</th>
+            <th>Open Source</th>
+          </tr>
+          <tr>
+            <td>JUCE</td>
+            <td>C++</td>
+            <td class="yellow">Partial</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+            <td class="check">✓</td>
+            <td class="cross">✗</td>
+          </tr>
+          <tr>
+            <td>SuperCollider</td>
+            <td>C++</td>
+            <td class="check">✓</td>
+            <td class="yellow">Partial</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+            <td class="check">✓</td>
+          </tr>
+          <tr>
+            <td>VCV Rack</td>
+            <td>C++</td>
+            <td class="check">✓</td>
+            <td class="cross">✗</td>
+            <td class="check">✓</td>
+            <td class="check">✓</td>
+            <td class="check">✓</td>
+          </tr>
+          <tr>
+            <td>Pure Data</td>
+            <td>C</td>
+            <td class="yellow">Partial</td>
+            <td class="cross">✗</td>
+            <td class="check">✓</td>
+            <td class="cross">✗</td>
+            <td class="check">✓</td>
+          </tr>
+          <tr style="background: #0d2137">
+            <td><strong class="accent">AetherDSP</strong></td>
+            <td><strong class="accent">Rust</strong></td>
+            <td class="check"><strong>✓</strong></td>
+            <td class="check"><strong>✓</strong></td>
+            <td class="check"><strong>✓</strong></td>
+            <td class="check"><strong>✓</strong></td>
+            <td class="check"><strong>✓</strong></td>
+          </tr>
+        </table>
+        <p style="margin-top: 24px">
+          AetherDSP is the only system that satisfies all five properties
+          simultaneously.<br />Rust's type system enforces RT safety that C++
+          frameworks cannot guarantee.
+        </p>
+      </div>
+
+      <!-- Slide 6: Architecture -->
+      <div class="slide" id="s6">
+        <h2>Architecture</h2>
+        <div
+          style="
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            max-width: 900px;
+            width: 100%;
+          "
+        >
+          <div
+            style="display: flex; flex-direction: column; gap: 10px; flex: 1"
+          >
+            <div class="card" style="border-color: #4fc3f7; padding: 14px">
+              <div style="font-size: 13px; color: #4fc3f7; font-weight: 600">
+                UI THREAD
+              </div>
+              <div style="font-size: 12px; color: #888; margin-top: 4px">
+                React + React Flow + Zustand → WebSocket
+              </div>
+            </div>
+            <div style="text-align: center; color: #ff7043; font-size: 20px">
+              ↓ JSON commands
+            </div>
+            <div class="card" style="border-color: #ff7043; padding: 14px">
+              <div style="font-size: 13px; color: #ff7043; font-weight: 600">
+                CONTROL THREAD
+              </div>
+              <div style="font-size: 12px; color: #888; margin-top: 4px">
+                tokio async · Graph builder · Snapshot refresh
+              </div>
+            </div>
+            <div style="text-align: center; color: #ffd54f; font-size: 20px">
+              ↓ SPSC ring (lock-free)
+            </div>
+            <div class="card" style="border-color: #66bb6a; padding: 14px">
+              <div style="font-size: 13px; color: #66bb6a; font-weight: 600">
+                AUDIO THREAD (CPAL)
+              </div>
+              <div style="font-size: 12px; color: #888; margin-top: 4px">
+                Apply commands → Execute DAG → Output DAC
+              </div>
+            </div>
+          </div>
+          <div
+            style="display: flex; flex-direction: column; gap: 10px; flex: 1"
+          >
+            <div class="card" style="border-color: #ce93d8; padding: 14px">
+              <div style="font-size: 13px; color: #ce93d8; font-weight: 600">
+                MEMORY (pre-allocated)
+              </div>
+              <div style="font-size: 12px; color: #888; margin-top: 4px">
+                Generational Arena · Buffer Pool · Param Blocks · State Blobs
+              </div>
+            </div>
+            <div class="card" style="padding: 14px">
+              <div style="font-size: 13px; color: #4fc3f7; font-weight: 600">
+                DSP NODES
+              </div>
+              <div style="font-size: 12px; color: #888; margin-top: 4px">
+                Oscillator · SVF Filter · ADSR · Delay · Gain · Mixer
+              </div>
+            </div>
+            <div class="card" style="border-color: #ef9a9a; padding: 14px">
+              <div style="font-size: 13px; color: #ef9a9a; font-weight: 600">
+                CLEANUP THREAD
+              </div>
+              <div style="font-size: 12px; color: #888; margin-top: 4px">
+                Deferred drops · Buffer recycle
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 7: Market -->
+      <div class="slide" id="s7">
+        <h2>Market Opportunity</h2>
+        <div class="grid grid-3" style="max-width: 900px">
+          <div class="card">
+            <div class="stat accent">$7.5B</div>
+            <div class="stat-label">Global DAW market (2025)</div>
+            <div style="font-size: 13px; color: #888; margin-top: 12px">
+              Growing at 8.2% CAGR through 2030. AetherDSP targets the plugin
+              SDK and embedded audio segments.
+            </div>
+          </div>
+          <div class="card">
+            <div class="stat green">500K+</div>
+            <div class="stat-label">Active plugin developers</div>
+            <div style="font-size: 13px; color: #888; margin-top: 12px">
+              JUCE licenses $800–$5,000/year. AetherDSP offers a free, safer,
+              faster alternative.
+            </div>
+          </div>
+          <div class="card">
+            <div class="stat orange">$2.1B</div>
+            <div class="stat-label">Embedded audio (automotive, IoT)</div>
+            <div style="font-size: 13px; color: #888; margin-top: 12px">
+              Hard RT requirements identical to studio audio. Rust's safety
+              profile is ideal for safety-critical embedded systems.
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-2" style="max-width: 860px; margin-top: 16px">
+          <div class="card">
+            <h3>Primary Targets</h3>
+            <ul style="margin-top: 8px">
+              <li>Audio plugin developers (CLAP/VST3)</li>
+              <li>DAW companies seeking modern SDK</li>
+              <li>Academic DSP research groups</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Secondary Targets</h3>
+            <ul style="margin-top: 8px">
+              <li>Embedded audio (automotive, robotics)</li>
+              <li>Live performance software</li>
+              <li>Neural audio / ML inference</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 8: Roadmap -->
+      <div class="slide" id="s8">
+        <h2>Product Roadmap</h2>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-dot done"></div>
+            <div class="tl-content">
+              <h4>
+                v0.1 — Core Runtime
+                <span style="color: #66bb6a; font-size: 12px">✓ RELEASED</span>
+              </h4>
+              <p>
+                RT engine · Lock-free graph · WebSocket bridge · React UI ·
+                Benchmarks · CLAP template
+              </p>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot next"></div>
+            <div class="tl-content">
+              <h4>
+                v0.2 — Sync + Modulation + SIMD
+                <span style="color: #ff7043; font-size: 12px">Q3 2026</span>
+              </h4>
+              <p>
+                Full WS graph control · LFO/ModMatrix nodes · SIMD vectorization
+                (4× speedup) · Parallel layers
+              </p>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-content">
+              <h4>
+                v0.3 — CLAP/VST3 Plugin
+                <span style="color: #888; font-size: 12px">Q4 2026</span>
+              </h4>
+              <p>
+                Polyphonic instrument · DAW automation · CI binary artifacts ·
+                Plugin marketplace listing
+              </p>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-content">
+              <h4>
+                v0.5 — GPU Acceleration
+                <span style="color: #888; font-size: 12px">Q1 2027</span>
+              </h4>
+              <p>
+                WGPU convolution reverb · Neural audio inference · 1000+ node
+                graphs in real time
+              </p>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-content">
+              <h4>
+                v1.0 — Production Release
+                <span style="color: #888; font-size: 12px">Q2 2027</span>
+              </h4>
+              <p>
+                Stable API · Commercial SDK license · Enterprise support ·
+                Academic partnership program
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 9: Business Model -->
+      <div class="slide" id="s9">
+        <h2>Business Model</h2>
+        <div class="grid grid-3" style="max-width: 900px">
+          <div class="card green-border">
+            <h3 class="green">Open Core</h3>
+            <p style="font-size: 14px; text-align: left; margin-top: 8px">
+              Core runtime MIT licensed. Drives adoption, community, and
+              academic citations.
+            </p>
+            <div style="margin-top: 12px; font-size: 13px; color: #888">
+              Revenue: $0 (growth driver)
+            </div>
+          </div>
+          <div class="card" style="border-color: #4fc3f7">
+            <h3>Commercial SDK</h3>
+            <p style="font-size: 14px; text-align: left; margin-top: 8px">
+              Pro license for commercial plugin developers. Priority support,
+              private modules, SIMD packs.
+            </p>
+            <div style="margin-top: 12px; font-size: 13px; color: #888">
+              $299/year per developer
+            </div>
+          </div>
+          <div class="card orange-border">
+            <h3 class="orange">Enterprise</h3>
+            <p style="font-size: 14px; text-align: left; margin-top: 8px">
+              Custom integration for DAW companies and embedded audio OEMs. SLA,
+              source escrow, training.
+            </p>
+            <div style="margin-top: 12px; font-size: 13px; color: #888">
+              $50K–$200K/year
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-2" style="max-width: 860px; margin-top: 16px">
+          <div class="card">
+            <h3>Year 1 Targets</h3>
+            <ul style="margin-top: 8px">
+              <li>500 GitHub stars</li>
+              <li>50 commercial SDK licenses ($15K ARR)</li>
+              <li>1 enterprise pilot ($50K)</li>
+              <li>2 conference paper acceptances</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Year 3 Targets</h3>
+            <ul style="margin-top: 8px">
+              <li>5,000 GitHub stars</li>
+              <li>500 SDK licenses ($150K ARR)</li>
+              <li>3 enterprise contracts ($300K)</li>
+              <li>Plugin marketplace presence</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 10: Ask -->
+      <div class="slide" id="s10">
+        <h2>The Ask</h2>
+        <div class="grid grid-2" style="max-width: 860px">
+          <div class="card" style="border-color: #4fc3f7">
+            <h3>Seed Round: $500K</h3>
+            <table style="margin-top: 12px; font-size: 14px">
+              <tr>
+                <td style="color: #888">Engineering (2 FTE, 18mo)</td>
+                <td class="accent">$300K</td>
+              </tr>
+              <tr>
+                <td style="color: #888">Infrastructure & CI</td>
+                <td class="accent">$40K</td>
+              </tr>
+              <tr>
+                <td style="color: #888">Conference submissions</td>
+                <td class="accent">$20K</td>
+              </tr>
+              <tr>
+                <td style="color: #888">Legal & IP</td>
+                <td class="accent">$30K</td>
+              </tr>
+              <tr>
+                <td style="color: #888">Marketing & community</td>
+                <td class="accent">$60K</td>
+              </tr>
+              <tr>
+                <td style="color: #888">Reserve</td>
+                <td class="accent">$50K</td>
+              </tr>
+            </table>
+          </div>
+          <div class="card">
+            <h3>What We Deliver</h3>
+            <ul style="margin-top: 8px">
+              <li>v0.2 with SIMD + CLAP plugin</li>
+              <li>Commercial SDK launch</li>
+              <li>First enterprise customer</li>
+              <li>AES/DAFx paper publication</li>
+              <li>1,000+ GitHub stars</li>
+              <li>Plugin marketplace listing</li>
+            </ul>
+          </div>
+        </div>
+        <p style="margin-top: 28px; font-size: 18px">
+          AetherDSP is the <span class="accent">Rust moment</span> for
+          professional audio.<br />The foundation is built. The market is ready.
+        </p>
+        <div
+          style="
+            margin-top: 20px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+          "
+        >
+          <span class="tag green">v0.1 shipped</span>
+          <span class="tag accent">cargo check ✓</span>
+          <span class="tag yellow">51.7 ns benchmarked</span>
+          <span class="tag orange">CLAP template ready</span>
+        </div>
+      </div>
+    </div>
+    <!-- /deck -->
+
+    <div class="slide-num" id="slideNum">1 / 10</div>
+    <nav>
+      <button onclick="prev()">← Prev</button>
+      <button onclick="next()">Next →</button>
+    </nav>
+
+    <script>
+      let cur = 1;
+      const total = 10;
+      function show(n) {
+        document
+          .querySelectorAll(".slide")
+          .forEach((s) => s.classList.remove("active"));
+        document.getElementById("s" + n).classList.add("active");
+        document.getElementById("slideNum").textContent = n + " / " + total;
+        cur = n;
+      }
+      function next() {
+        if (cur < total) show(cur + 1);
+      }
+      function prev() {
+        if (cur > 1) show(cur - 1);
+      }
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") next();
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") prev();
+      });
+    </script>
+  </body>
+</html>

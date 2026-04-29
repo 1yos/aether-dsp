@@ -1,0 +1,37 @@
+[package]
+name = "aether-host"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Audio host binary for AetherDSP — CPAL audio driver, WebSocket bridge, and graph runtime"
+# Not published to crates.io — application binary
+publish = false
+
+[lib]
+name = "aether_host"
+path = "src/lib.rs"
+
+[[bin]]
+name = "aether-host"
+path = "src/main.rs"
+
+[dependencies]
+aether-core    = { version = "0.1", path = "../aether-core" }
+aether-nodes   = { version = "0.1", path = "../aether-nodes" }
+aether-midi    = { version = "0.1", path = "../aether-midi" }
+aether-sampler = { version = "0.1", path = "../aether-sampler" }
+aether-timbre  = { version = "0.1", path = "../aether-timbre" }
+cpal = { workspace = true }
+ringbuf = { workspace = true }
+hound = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = "1"
+tokio = { version = "1", features = ["full"] }
+tokio-tungstenite = "0.21"
+futures-util = "0.3"
+
+[dev-dependencies]
+proptest = "1"

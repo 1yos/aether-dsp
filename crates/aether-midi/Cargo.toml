@@ -1,0 +1,20 @@
+[package]
+name = "aether-midi"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/aether-midi"
+readme = "README.md"
+description = "MIDI engine for AetherDSP — device routing, clock sync, and microtonal tuning table support"
+keywords = ["audio", "midi", "tuning", "microtonal", "real-time"]
+categories = ["multimedia::audio"]
+
+[dependencies]
+aether-core = { version = "0.1", path = "../aether-core" }
+midir = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

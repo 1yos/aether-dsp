@@ -1,0 +1,41 @@
+{
+  "name": "acid-bass",
+  "version": "0.1.0",
+  "engine": "aether-dsp",
+  "sample_rate": 48000,
+  "block_size": 64,
+  "nodes": [
+    {
+      "id": "osc",
+      "type": "Oscillator",
+      "params": { "Frequency": 110.0, "Amplitude": 0.9, "Waveform": 1.0 }
+    },
+    {
+      "id": "filt",
+      "type": "StateVariableFilter",
+      "params": { "Cutoff": 600.0, "Q": 8.0, "Mode": 0.0 }
+    },
+    {
+      "id": "env",
+      "type": "AdsrEnvelope",
+      "params": {
+        "Attack": 0.005,
+        "Decay": 0.18,
+        "Sustain": 0.2,
+        "Release": 0.08,
+        "Gate": 1.0
+      }
+    },
+    {
+      "id": "out",
+      "type": "Gain",
+      "params": { "Gain": 0.85 }
+    }
+  ],
+  "connections": [
+    { "from": "osc", "to": "filt", "slot": 0 },
+    { "from": "filt", "to": "env", "slot": 0 },
+    { "from": "env", "to": "out", "slot": 0 }
+  ],
+  "output_node": "out"
+}

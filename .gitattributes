@@ -1,0 +1,30 @@
+# Normalize line endings to LF in the repo, checkout as-is on all platforms
+* text=auto eol=lf
+
+# Rust source
+*.rs text eol=lf
+
+# Web source
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+
+# Config
+*.toml text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+
+# Scripts — keep CRLF on Windows for PowerShell
+*.ps1 text eol=crlf
+
+# Binaries — no line ending conversion
+*.png binary
+*.jpg binary
+*.svg binary
+*.wav binary
+*.wasm binary

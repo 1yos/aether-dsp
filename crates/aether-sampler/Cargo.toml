@@ -1,0 +1,24 @@
+[package]
+name = "aether-sampler"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/aether-sampler"
+readme = "README.md"
+description = "Polyphonic sampler engine for AetherDSP — multi-sample instruments, voice management, and WAV loading"
+keywords = ["audio", "sampler", "synthesis", "dsp", "real-time"]
+categories = ["multimedia::audio"]
+
+[dev-dependencies]
+proptest = "1"
+
+[dependencies]
+aether-core = { version = "0.1", path = "../aether-core" }
+aether-midi = { version = "0.1", path = "../aether-midi" }
+hound = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aether Studio — Main Interface Mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        /* Colors */
+        --bg-canvas: #050a12;
+        --bg-surface: #0a1520;
+        --bg-elevated: #0f1e2e;
+        --bg-overlay: #1a2a3a;
+
+        --border-subtle: #0f1e2e;
+        --border-normal: #1a2a3a;
+        --border-strong: #2a3a4a;
+
+        --text-primary: #e2e8f0;
+        --text-secondary: #94a3b8;
+        --text-tertiary: #64748b;
+        --text-disabled: #334155;
+
+        --accent-primary: #38bdf8;
+        --accent-success: #00e5a0;
+        --accent-warning: #fbbf24;
+        --accent-error: #ef5350;
+        --accent-info: #818cf8;
+
+        /* Spacing */
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-6: 24px;
+        --space-8: 32px;
+
+        /* Radius */
+        --radius-sm: 4px;
+        --radius-md: 6px;
+        --radius-lg: 8px;
+        --radius-xl: 12px;
+
+        /* Shadows */
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+        --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+        --shadow-xl: 0 16px 32px rgba(0, 0, 0, 0.6);
+        --shadow-glow: 0 0 20px rgba(56, 189, 248, 0.3);
+      }
+
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: #000;
+        color: var(--text-primary);
+        overflow: hidden;
+        height: 100vh;
+      }
+
+      .mockup-container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        background: var(--bg-canvas);
+      }
+
+      /* ═══ TOP BAR ═══ */
+      .top-bar {
+        height: 56px;
+        background: linear-gradient(
+          180deg,
+          var(--bg-elevated) 0%,
+          var(--bg-surface) 100%
+        );
+        border-bottom: 1px solid var(--border-normal);
+        display: flex;
+        align-items: center;
+        padding: 0 var(--space-6);
+        gap: var(--space-4);
+        flex-shrink: 0;
+        box-shadow: var(--shadow-md);
+        z-index: 100;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: var(--space-1);
+        margin-right: var(--space-4);
+      }
+
+      .logo-icon {
+        width: 24px;
+        height: 24px;
+        background: linear-gradient(
+          135deg,
+          var(--accent-primary),
+          var(--accent-info)
+        );
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+      }
+
+      .logo-text {
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        background: linear-gradient(
+          135deg,
+          var(--accent-primary),
+          var(--accent-info)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .logo-version {
+        font-size: 8px;
+        color: var(--text-disabled);
+        font-family: monospace;
+        margin-left: var(--space-1);
+      }
+
+      .divider {
+        width: 1px;
+        height: 24px;
+        background: var(--border-normal);
+      }
+
+      .btn {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: 6px 14px;
+        border-radius: var(--radius-md);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid transparent;
+        white-space: nowrap;
+      }
+
+      .btn-primary {
+        background: linear-gradient(
+          135deg,
+          rgba(56, 189, 248, 0.15),
+          rgba(129, 140, 248, 0.12)
+        );
+        border-color: rgba(56, 189, 248, 0.4);
+        color: var(--accent-primary);
+        box-shadow: var(--shadow-glow);
+      }
+
+      .btn-primary:hover {
+        background: linear-gradient(
+          135deg,
+          rgba(56, 189, 248, 0.25),
+          rgba(129, 140, 248, 0.18)
+        );
+        transform: translateY(-1px);
+        box-shadow: 0 0 24px rgba(56, 189, 248, 0.4);
+      }
+
+      .btn-secondary {
+        background: transparent;
+        border-color: var(--border-normal);
+        color: var(--text-secondary);
+      }
+
+      .btn-secondary:hover {
+        background: var(--bg-elevated);
+        color: var(--text-primary);
+      }
+
+      .btn-success {
+        background: rgba(0, 229, 160, 0.12);
+        border-color: rgba(0, 229, 160, 0.3);
+        color: var(--accent-success);
+      }
+
+      .btn-danger {
+        background: rgba(239, 83, 80, 0.12);
+        border-color: rgba(239, 83, 80, 0.3);
+        color: var(--accent-error);
+      }
+
+      .btn-icon {
+        font-size: 14px;
+      }
+
+      .btn-badge {
+        font-size: 9px;
+        background: rgba(56, 189, 248, 0.2);
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-weight: 700;
+        margin-left: 2px;
+      }
+
+      .spacer {
+        flex: 1;
+      }
+
+      .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: 4px 10px;
+        border-radius: var(--radius-md);
+        background: var(--bg-surface);
+        border: 1px solid var(--border-normal);
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent-success);
+        box-shadow: 0 0 8px var(--accent-success);
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
+      }
+
+      .status-label {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--accent-success);
+      }
+
+      .vu-meter {
+        display: flex;
+        gap: 2px;
+        align-items: flex-end;
+        height: 16px;
+      }
+
+      .vu-bar {
+        width: 3px;
+        background: var(--accent-success);
+        border-radius: 1px;
+        transition: height 0.08s;
+      }
+
+      /* ═══ MODULE BAR ═══ */
+      .module-bar {
+        height: 40px;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-subtle);
+        display: flex;
+        align-items: center;
+        padding: 0 var(--space-4);
+        gap: var(--space-2);
+        flex-shrink: 0;
+        overflow-x: auto;
+      }
+
+      .module-bar-label {
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--text-disabled);
+        margin-right: var(--space-3);
+      }
+
+      .module-btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        border-radius: var(--radius-sm);
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.12s;
+        border: 1px solid transparent;
+        color: var(--text-tertiary);
+      }
+
+      .module-btn:hover {
+        background: rgba(56, 189, 248, 0.1);
+        border-color: rgba(56, 189, 248, 0.3);
+        color: var(--accent-primary);
+      }
+
+      /* ═══ MAIN CONTENT ═══ */
+      .main-content {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      /* ═══ SIDEBAR (Node Palette) ═══ */
+      .sidebar {
+        width: 240px;
+        background: var(--bg-surface);
+        border-right: 1px solid var(--border-normal);
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+      }
+
+      .sidebar-header {
+        padding: var(--space-4);
+        border-bottom: 1px solid var(--border-subtle);
+      }
+
+      .sidebar-title {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-disabled);
+        margin-bottom: var(--space-3);
+      }
+
+      .search-box {
+        width: 100%;
+        padding: 8px 12px;
+        background: var(--bg-canvas);
+        border: 1px solid var(--border-normal);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-size: 12px;
+        font-family: inherit;
+      }
+
+      .search-box:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+      }
+
+      .node-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: var(--space-2);
+      }
+
+      .node-item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: 10px 12px;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all 0.12s;
+        margin-bottom: var(--space-1);
+        border: 1px solid transparent;
+      }
+
+      .node-item:hover {
+        background: var(--bg-elevated);
+        border-color: var(--border-normal);
+        transform: translateX(2px);
+      }
+
+      .node-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+
+      .node-icon.strings {
+        background: rgba(255, 183, 77, 0.15);
+        border: 1px solid rgba(255, 183, 77, 0.3);
+      }
+      .node-icon.winds {
+        background: rgba(79, 195, 247, 0.15);
+        border: 1px solid rgba(79, 195, 247, 0.3);
+      }
+      .node-icon.percussion {
+        background: rgba(239, 83, 80, 0.15);
+        border: 1px solid rgba(239, 83, 80, 0.3);
+      }
+      .node-icon.electronic {
+        background: rgba(179, 157, 219, 0.15);
+        border: 1px solid rgba(179, 157, 219, 0.3);
+      }
+
+      .node-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .node-name {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 2px;
+      }
+
+      .node-desc {
+        font-size: 10px;
+        color: var(--text-tertiary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* ═══ CANVAS ═══ */
+      .canvas {
+        flex: 1;
+        position: relative;
+        background:
+          radial-gradient(
+            circle at 20% 30%,
+            rgba(56, 189, 248, 0.03) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 80% 70%,
+            rgba(129, 140, 248, 0.03) 0%,
+            transparent 50%
+          ),
+          var(--bg-canvas);
+        background-size: 100% 100%;
+      }
+
+      .canvas-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(var(--border-subtle) 1px, transparent 1px),
+          linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+        background-size: 32px 32px;
+        opacity: 0.5;
+      }
+
+      .canvas-content {
+        position: relative;
+        z-index: 1;
+        padding: var(--space-8);
+      }
+
+      /* ═══ FLOATING MODULE (Example) ═══ */
+      .floating-module {
+        position: absolute;
+        top: 80px;
+        right: 40px;
+        width: 420px;
+        background: rgba(10, 21, 32, 0.85);
+        backdrop-filter: blur(16px) saturate(150%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: var(--radius-xl);
+        box-shadow:
+          var(--shadow-xl),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        overflow: hidden;
+      }
+
+      .module-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--space-4);
+        background: rgba(15, 30, 46, 0.6);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        cursor: move;
+      }
+
+      .module-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--accent-primary);
+        letter-spacing: 0.04em;
+      }
+
+      .module-close {
+        width: 24px;
+        height: 24px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--text-tertiary);
+        transition: all 0.12s;
+      }
+
+      .module-close:hover {
+        background: rgba(239, 83, 80, 0.15);
+        color: var(--accent-error);
+      }
+
+      .module-body {
+        padding: var(--space-6);
+        max-height: 500px;
+        overflow-y: auto;
+      }
+
+      /* ═══ WELCOME STATE ═══ */
+      .welcome-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        text-align: center;
+        padding: var(--space-8);
+      }
+
+      .welcome-icon {
+        font-size: 64px;
+        margin-bottom: var(--space-6);
+        opacity: 0.3;
+      }
+
+      .welcome-title {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: var(--space-3);
+        background: linear-gradient(
+          135deg,
+          var(--accent-primary),
+          var(--accent-info)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .welcome-subtitle {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: var(--space-8);
+        max-width: 400px;
+      }
+
+      .welcome-actions {
+        display: flex;
+        gap: var(--space-3);
+      }
+
+      /* ═══ SCROLLBAR ═══ */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: var(--bg-surface);
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: var(--border-strong);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-disabled);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mockup-container">
+      <!-- TOP BAR -->
+      <div class="top-bar">
+        <div class="logo">
+          <div class="logo-icon">◉</div>
+          <div class="logo-text">Aether</div>
+          <div class="logo-version">v2.0</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <button class="btn btn-primary">
+          <span class="btn-icon">🌍</span>
+          Catalog
+          <span class="btn-badge">60</span>
+        </button>
+
+        <button class="btn btn-secondary">
+          <span class="btn-icon">🎹</span>
+          Instrument Maker
+        </button>
+
+        <div class="divider"></div>
+
+        <button class="btn btn-success">
+          <span class="btn-icon">▶</span>
+          Playing
+        </button>
+
+        <button class="btn btn-secondary">
+          <span class="btn-icon">📂</span>
+          Load
+        </button>
+
+        <button class="btn btn-secondary">
+          <span class="btn-icon">↩</span>
+          Undo
+        </button>
+
+        <button class="btn btn-secondary">
+          <span class="btn-icon">↪</span>
+          Redo
+        </button>
+
+        <div class="divider"></div>
+
+        <button class="btn btn-danger">
+          <span class="btn-icon">●</span>
+          REC
+        </button>
+
+        <div class="spacer"></div>
+
+        <div class="status-indicator">
+          <div class="vu-meter">
+            <div class="vu-bar" style="height: 6px"></div>
+            <div class="vu-bar" style="height: 11px"></div>
+            <div class="vu-bar" style="height: 16px"></div>
+            <div class="vu-bar" style="height: 10px"></div>
+            <div class="vu-bar" style="height: 5px"></div>
+          </div>
+          <span
+            style="
+              font-size: 10px;
+              color: var(--text-tertiary);
+              font-family: monospace;
+            "
+            >AUDIO</span
+          >
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="status-indicator">
+          <div class="status-dot"></div>
+          <span class="status-label">Live</span>
+        </div>
+      </div>
+
+      <!-- MODULE BAR -->
+      <div class="module-bar">
+        <span class="module-bar-label">Modules</span>
+        <button class="module-btn"><span>⏱</span> Timeline</button>
+        <button class="module-btn"><span>🎚</span> Mixer</button>
+        <button class="module-btn"><span>🎹</span> Piano Roll</button>
+        <button class="module-btn"><span>⬛</span> Step Seq</button>
+        <button class="module-btn"><span>⟳</span> Looper</button>
+        <button class="module-btn"><span>◈</span> Rack</button>
+      </div>
+
+      <!-- MAIN CONTENT -->
+      <div class="main-content">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+          <div class="sidebar-header">
+            <div class="sidebar-title">Node Library</div>
+            <input
+              type="text"
+              class="search-box"
+              placeholder="Search nodes..."
+            />
+          </div>
+          <div class="node-list">
+            <div class="node-item">
+              <div class="node-icon electronic">🎛</div>
+              <div class="node-info">
+                <div class="node-name">Oscillator</div>
+                <div class="node-desc">Sine, saw, square, triangle</div>
+              </div>
+            </div>
+            <div class="node-item">
+              <div class="node-icon electronic">🎚</div>
+              <div class="node-info">
+                <div class="node-name">State Variable Filter</div>
+                <div class="node-desc">LP, HP, BP, Notch</div>
+              </div>
+            </div>
+            <div class="node-item">
+              <div class="node-icon electronic">📈</div>
+              <div class="node-info">
+                <div class="node-name">ADSR Envelope</div>
+                <div class="node-desc">Attack, decay, sustain, release</div>
+              </div>
+            </div>
+            <div class="node-item">
+              <div class="node-icon electronic">⏱</div>
+              <div class="node-info">
+                <div class="node-name">Delay Line</div>
+                <div class="node-desc">Echo, feedback, time</div>
+              </div>
+            </div>
+            <div class="node-item">
+              <div class="node-icon electronic">🔊</div>
+              <div class="node-info">
+                <div class="node-name">Gain</div>
+                <div class="node-desc">Volume control</div>
+              </div>
+            </div>
+            <div class="node-item">
+              <div class="node-icon electronic">🎚</div>
+              <div class="node-info">
+                <div class="node-name">Mixer</div>
+                <div class="node-desc">Combine multiple signals</div>
+              </div>
+            </div>
+            <div class="node-item">
+              <div class="node-icon strings">🎻</div>
+              <div class="node-info">
+                <div class="node-name">Sampler Node</div>
+                <div class="node-desc">Multi-sample instrument</div>
+              </div>
+            </div>
+            <div class="node-item">
+              <div class="node-icon winds">🎺</div>
+              <div class="node-info">
+                <div class="node-name">Timbre Transfer</div>
+                <div class="node-desc">Apply instrument character</div>
+              </div>
+            </div>
+            <div class="node-item">
+              <div class="node-icon percussion">📊</div>
+              <div class="node-info">
+                <div class="node-name">Scope Node</div>
+                <div class="node-desc">Waveform visualization</div>
+              </div>
+            </div>
+            <div class="node-item">
+              <div class="node-icon electronic">⏺</div>
+              <div class="node-info">
+                <div class="node-name">Record Node</div>
+                <div class="node-desc">Capture to WAV file</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CANVAS -->
+        <div class="canvas">
+          <div class="canvas-grid"></div>
+          <div class="canvas-content">
+            <div class="welcome-state">
+              <div class="welcome-icon">◉</div>
+              <div class="welcome-title">Welcome to Aether Studio</div>
+              <div class="welcome-subtitle">
+                Drag nodes from the library to build your audio graph, or open
+                the Catalog to explore 60 world instruments.
+              </div>
+              <div class="welcome-actions">
+                <button class="btn btn-primary">
+                  <span class="btn-icon">🌍</span>
+                  Open Catalog
+                </button>
+                <button class="btn btn-secondary">
+                  <span class="btn-icon">📂</span>
+                  Load Patch
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- FLOATING MODULE EXAMPLE -->
+          <div class="floating-module" style="display: none">
+            <div class="module-header">
+              <div class="module-title">MIXER</div>
+              <div class="module-close">✕</div>
+            </div>
+            <div class="module-body">
+              <p style="color: var(--text-secondary); font-size: 12px">
+                Module content goes here...
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Add interactivity
+      document
+        .querySelectorAll(".btn, .module-btn, .node-item")
+        .forEach((el) => {
+          el.addEventListener("click", () => {
+            console.log("Clicked:", el.textContent.trim());
+          });
+        });
+
+      // Animate VU meter
+      setInterval(() => {
+        document.querySelectorAll(".vu-bar").forEach((bar) => {
+          const height = Math.random() * 16;
+          bar.style.height = `${height}px`;
+        });
+      }, 100);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "name": "simple-synth",
+  "version": "0.1.0",
+  "engine": "aether-dsp",
+  "sample_rate": 48000,
+  "block_size": 64,
+  "nodes": [
+    {
+      "id": "osc",
+      "type": "Oscillator",
+      "params": { "Frequency": 440.0, "Amplitude": 0.6, "Waveform": 0.0 }
+    },
+    {
+      "id": "filt",
+      "type": "StateVariableFilter",
+      "params": { "Cutoff": 2000.0, "Q": 1.5, "Mode": 0.0 }
+    },
+    {
+      "id": "delay",
+      "type": "DelayLine",
+      "params": { "Time": 0.3, "Feedback": 0.45, "Wet": 0.35 }
+    },
+    {
+      "id": "out",
+      "type": "Gain",
+      "params": { "Gain": 0.8 }
+    }
+  ],
+  "connections": [
+    { "from": "osc", "to": "filt", "slot": 0 },
+    { "from": "filt", "to": "delay", "slot": 0 },
+    { "from": "delay", "to": "out", "slot": 0 }
+  ],
+  "output_node": "out"
+}

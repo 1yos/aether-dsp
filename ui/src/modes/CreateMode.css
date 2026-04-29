@@ -1,0 +1,10 @@
+/**
+ * Aether Studio v2.0 - Create Mode Styles
+ */
+
+.create-mode {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  background: var(--bg-canvas);
+}

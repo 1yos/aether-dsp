@@ -1,0 +1,21 @@
+[package]
+name = "aether-ndk"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/aether-ndk"
+readme = "README.md"
+description = "Node Development Kit for AetherDSP — build custom real-time DSP nodes with a single #[aether_node] macro"
+keywords = ["audio", "dsp", "plugin", "synthesis", "real-time"]
+categories = ["multimedia::audio", "development-tools"]
+
+[dependencies]
+aether-core    = { version = "0.1", path = "../aether-core" }
+aether-nodes   = { version = "0.1", path = "../aether-nodes" }
+aether-ndk-macro = { version = "0.1", path = "../aether-ndk-macro" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

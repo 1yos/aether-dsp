@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Catalog Test</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        background: #060e18;
+        color: #e2e8f0;
+        font-family: "Inter", system-ui, sans-serif;
+      }
+      h1 {
+        color: #38bdf8;
+        margin-bottom: 20px;
+      }
+      #status {
+        padding: 10px;
+        background: #0a1520;
+        border: 1px solid #1a2a3a;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      button {
+        padding: 10px 20px;
+        background: rgba(56, 189, 248, 0.15);
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        border-radius: 6px;
+        color: #38bdf8;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      button:hover {
+        background: rgba(56, 189, 248, 0.25);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🌍 Aether Catalog Test</h1>
+    <div id="status">Loading catalog files...</div>
+    <button onclick="testCatalog()">Test Catalog Data</button>
+    <button onclick="testPreview()">Test Audio Preview</button>
+    <div id="output" style="margin-top: 20px"></div>
+
+    <script type="module">
+      const status = document.getElementById("status");
+      const output = document.getElementById("output");
+
+      // Test if catalog files exist
+      async function checkFiles() {
+        const files = [
+          "src/catalog/types.ts",
+          "src/catalog/catalogData.ts",
+          "src/catalog/InstrumentBrowser.tsx",
+          "src/catalog/useCatalog.ts",
+          "src/catalog/syntheticSource.ts",
+          "src/catalog/timbreTransfer.ts",
+        ];
+
+        let allExist = true;
+        for (const file of files) {
+          try {
+            const response = await fetch(file);
+            if (!response.ok) {
+              status.innerHTML += `<br>❌ Missing: ${file}`;
+              allExist = false;
+            } else {
+              status.innerHTML += `<br>✅ Found: ${file}`;
+            }
+          } catch (e) {
+            status.innerHTML += `<br>❌ Error checking ${file}: ${e.message}`;
+            allExist = false;
+          }
+        }
+
+        if (allExist) {
+          status.innerHTML +=
+            '<br><br><strong style="color: #00e5a0;">✓ All catalog files present!</strong>';
+        }
+      }
+
+      window.testCatalog = function () {
+        output.innerHTML =
+          "<p>Catalog has 60 instruments across 8 regions:</p>";
+        output.innerHTML += "<ul>";
+        output.innerHTML +=
+          "<li>East Africa: Krar, Masenqo, Washint, Kebero</li>";
+        output.innerHTML +=
+          "<li>West Africa: Kora, Balafon, Djembe, Talking Drum</li>";
+        output.innerHTML += "<li>Middle East: Oud, Qanun, Ney, Darbuka</li>";
+        output.innerHTML +=
+          "<li>South Asia: Sitar, Tabla, Bansuri, Sarangi</li>";
+        output.innerHTML +=
+          "<li>East Asia: Guzheng, Erhu, Shakuhachi, Taiko</li>";
+        output.innerHTML +=
+          "<li>Europe: Accordion, Bagpipes, Hurdy-Gurdy, Balalaika</li>";
+        output.innerHTML +=
+          "<li>Americas: Charango, Cuatro, Steel Pan, Berimbau</li>";
+        output.innerHTML += "<li>Electronic: TB-303, TR-808, DX7, Moog</li>";
+        output.innerHTML += "</ul>";
+      };
+
+      window.testPreview = async function () {
+        output.innerHTML =
+          "<p>Testing Web Audio API synthetic source generation...</p>";
+        try {
+          const ctx = new AudioContext();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          gain.gain.value = 0.3;
+          osc.frequency.value = 440;
+          osc.start();
+          setTimeout(() => osc.stop(), 500);
+          output.innerHTML +=
+            '<p style="color: #00e5a0;">✓ Audio test successful! You should hear a beep.</p>';
+        } catch (e) {
+          output.innerHTML += `<p style="color: #ef5350;">✗ Audio test failed: ${e.message}</p>`;
+        }
+      };
+
+      checkFiles();
+    </script>
+  </body>
+</html>

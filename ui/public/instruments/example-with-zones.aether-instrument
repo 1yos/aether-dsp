@@ -1,0 +1,58 @@
+{
+  "name": "Example Piano",
+  "origin": "Western",
+  "description": "Example instrument showing the zone format. Replace file_path values with real WAV file paths.",
+  "author": "AetherDSP",
+  "tuning": {
+    "name": "12-TET",
+    "reference_note": 69,
+    "reference_freq": 440.0,
+    "cents_map": []
+  },
+  "zones": [
+    {
+      "id": "zone-c3",
+      "file_path": "C:/path/to/your/piano_C3.wav",
+      "root_note": 48,
+      "note_low": 36,
+      "note_high": 53,
+      "velocity_low": 0,
+      "velocity_high": 127,
+      "articulation": { "type": "OneShot" },
+      "volume_db": 0.0,
+      "tune_cents": 0.0,
+      "release_file": null
+    },
+    {
+      "id": "zone-c4",
+      "file_path": "C:/path/to/your/piano_C4.wav",
+      "root_note": 60,
+      "note_low": 54,
+      "note_high": 65,
+      "velocity_low": 0,
+      "velocity_high": 127,
+      "articulation": { "type": "OneShot" },
+      "volume_db": 0.0,
+      "tune_cents": 0.0,
+      "release_file": null
+    },
+    {
+      "id": "zone-c5",
+      "file_path": "C:/path/to/your/piano_C5.wav",
+      "root_note": 72,
+      "note_low": 66,
+      "note_high": 84,
+      "velocity_low": 0,
+      "velocity_high": 127,
+      "articulation": { "type": "OneShot" },
+      "volume_db": 0.0,
+      "tune_cents": 0.0,
+      "release_file": null
+    }
+  ],
+  "attack": 0.005,
+  "decay": 0.1,
+  "sustain": 0.8,
+  "release": 0.3,
+  "max_voices": 16
+}

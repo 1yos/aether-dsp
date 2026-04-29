@@ -1,0 +1,20 @@
+[package]
+name = "aether-manifest"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/aether-manifest"
+readme = "README.md"
+description = "Manifest format for AetherDSP node packages — serialization, validation, and schema definitions"
+keywords = ["audio", "dsp", "plugin", "manifest", "schema"]
+categories = ["multimedia::audio", "encoding"]
+
+[dependencies]
+aether-core = { version = "0.1", path = "../aether-core" }
+aether-ndk  = { version = "0.1", path = "../aether-ndk" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
