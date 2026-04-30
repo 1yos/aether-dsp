@@ -10,16 +10,21 @@ import { ExploreMode } from "./modes/ExploreMode";
 import { CreateMode } from "./modes/CreateMode";
 import { ArrangeMode } from "./modes/ArrangeMode";
 import { PerformMode } from "./modes/PerformMode";
+import { useProjectSave } from "./hooks/useProjectSave";
 import "./styles/tokens.css";
 import "./App.css";
 
 export default function App() {
   const { currentMode, setMode } = useModeStore();
 
+  // Project save/load (Ctrl+S, Ctrl+O, autosave every 2 min)
+  useProjectSave();
+
   // Keyboard shortcuts for mode switching
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only trigger if no input is focused
+      // Skip if modifier keys are held (Ctrl+S etc handled by useProjectSave)
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement

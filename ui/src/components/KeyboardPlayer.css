@@ -417,3 +417,29 @@
     transform: scale(1);
   }
 }
+
+/* Engine status indicator */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.engine-status {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+}
+
+.engine-status.connected {
+  background: rgba(0, 229, 160, 0.15);
+  color: var(--accent-success);
+  border: 1px solid rgba(0, 229, 160, 0.3);
+}
+
+.engine-status.fallback {
+  background: rgba(251, 191, 36, 0.15);
+  color: var(--accent-warning);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}

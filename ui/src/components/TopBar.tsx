@@ -5,10 +5,12 @@
 
 import { useModeStore } from "../store/useModeStore";
 import { STUDIO_MODES } from "../types/modes";
+import { useProjectSave } from "../hooks/useProjectSave";
 import "./TopBar.css";
 
 export function TopBar() {
   const { currentMode, setMode } = useModeStore();
+  const { saveProject, loadProject } = useProjectSave();
 
   return (
     <div className="top-bar">
@@ -40,6 +42,20 @@ export function TopBar() {
 
       {/* Right: Transport Controls */}
       <div className="top-bar-right">
+        <button
+          className="transport-btn"
+          title="Save Project (Ctrl+S)"
+          onClick={() => saveProject()}
+        >
+          <span>💾</span>
+        </button>
+        <button
+          className="transport-btn"
+          title="Load Project (Ctrl+O)"
+          onClick={loadProject}
+        >
+          <span>📂</span>
+        </button>
         <button className="transport-btn play-btn" title="Play/Pause (Space)">
           <span>▶</span>
         </button>
