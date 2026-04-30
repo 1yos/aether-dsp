@@ -90,11 +90,11 @@ impl SpectralEnvelope {
 fn smooth_envelope(mags: &[f32], window: usize) -> Vec<f32> {
     let n = mags.len();
     let mut out = vec![0.0f32; n];
-    for i in 0..n {
+    for (i, val) in out.iter_mut().enumerate() {
         let start = i.saturating_sub(window / 2);
         let end = (i + window / 2 + 1).min(n);
         let sum: f32 = mags[start..end].iter().sum();
-        out[i] = sum / (end - start) as f32;
+        *val = sum / (end - start) as f32;
     }
     out
 }

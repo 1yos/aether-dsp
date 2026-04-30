@@ -114,13 +114,16 @@ struct RecordingState {
 
 // ── GraphManager ──────────────────────────────────────────────────────────────
 
+/// Type alias to reduce complexity of the MIDI queue map.
+pub type MidiQueueMap = Arc<Mutex<HashMap<NodeId, Arc<Mutex<Vec<MidiEvent>>>>>>;
+
 pub struct GraphManager {
     pub id_map: HashMap<String, NodeId>,
     pub node_labels: HashMap<u32, String>,
     pub output_node: Option<NodeId>,
     pub muted: bool,
     pub sample_rate: f32,
-    pub midi_queues: Arc<Mutex<HashMap<NodeId, Arc<Mutex<Vec<MidiEvent>>>>>>,
+    pub midi_queues: MidiQueueMap,
     pub undo_stack: UndoStack,
     pub redo_stack: Vec<UndoEntry>,
     recording_state: Option<RecordingState>,

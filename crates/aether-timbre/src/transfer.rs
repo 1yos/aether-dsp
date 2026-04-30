@@ -91,9 +91,9 @@ impl TimbreTransfer {
                 let tgt_mag = target.magnitudes.get(i).copied().unwrap_or(1.0).max(1e-10);
                 let ratio = (tgt_mag / src_mag).powf(self.amount);
                 // Apply ratio to both positive and negative frequency bins
-                buf[i] = buf[i] * ratio;
+                buf[i] *= ratio;
                 if i > 0 && i < self.fft_size - i {
-                    buf[self.fft_size - i] = buf[self.fft_size - i] * ratio;
+                    buf[self.fft_size - i] *= ratio;
                 }
             }
 
@@ -114,8 +114,8 @@ impl TimbreTransfer {
         }
 
         // Copy remaining samples unchanged
-        for i in pos..input.len() {
-            output[i] = input[i];
+        if pos < input.len() {
+            output[pos..].copy_from_slice(&input[pos..]);
         }
 
         output
@@ -125,10 +125,10 @@ impl TimbreTransfer {
 fn smooth(v: &[f32], w: usize) -> Vec<f32> {
     let n = v.len();
     let mut out = vec![0.0f32; n];
-    for i in 0..n {
+    for (i, val) in out.iter_mut().enumerate() {
         let s = i.saturating_sub(w / 2);
         let e = (i + w / 2 + 1).min(n);
-        out[i] = v[s..e].iter().sum::<f32>() / (e - s) as f32;
+        *val = v[s..e].iter().sum::<f32>() / (e - s) as f32;
     }
     out
 }

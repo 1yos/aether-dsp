@@ -47,8 +47,15 @@ impl UndoStack {
             max_depth: 100,
         }
     }
+}
 
-    /// Push an entry to the back. If at capacity, the oldest entry (front) is
+impl Default for UndoStack {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl UndoStack {    /// Push an entry to the back. If at capacity, the oldest entry (front) is
     /// dropped to keep the stack bounded.
     pub fn push(&mut self, entry: UndoEntry) {
         if self.entries.len() >= self.max_depth {

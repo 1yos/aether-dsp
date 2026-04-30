@@ -50,8 +50,15 @@ impl RoundRobinState {
     pub fn new() -> Self {
         Self::with_seed(DEFAULT_RR_SEED)
     }
+}
 
-    /// Create a new round-robin state with a custom seed.
+impl Default for RoundRobinState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl RoundRobinState {
     pub fn with_seed(seed: u64) -> Self {
         Self {
             sequential_index: HashMap::new(),

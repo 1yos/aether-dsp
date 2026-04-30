@@ -29,7 +29,15 @@ impl EnvelopeState {
     pub fn new() -> Self {
         Self { level: 0.0, phase: EnvPhase::Attack }
     }
+}
 
+impl Default for EnvelopeState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl EnvelopeState {
     pub fn tick(&mut self, attack_rate: f32, decay_rate: f32, sustain: f32, release_rate: f32) {
         match self.phase {
             EnvPhase::Attack => {

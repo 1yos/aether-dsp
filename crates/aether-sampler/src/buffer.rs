@@ -71,7 +71,7 @@ impl SampleBuffer {
     #[inline]
     pub fn sample_at(&self, frame: f64) -> f32 {
         let frame_floor = frame as usize;
-        let frac = (frame - frame as f64) as f32;
+        let frac = (frame - frame.floor()) as f32;
 
         if frame_floor + 1 >= self.frames {
             return self.frame_mono(self.frames.saturating_sub(1));
