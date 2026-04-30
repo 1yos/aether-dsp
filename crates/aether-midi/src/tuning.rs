@@ -24,8 +24,8 @@ impl TuningTable {
     /// A4 (MIDI note 69) = concert_a Hz (typically 440.0).
     pub fn equal_temperament(concert_a: f32) -> Self {
         let mut frequencies = vec![0.0f32; 128];
-        for note in 0..128u8 {
-            frequencies[note as usize] = concert_a * 2.0f32.powf((note as f32 - 69.0) / 12.0);
+        for (note, freq) in frequencies.iter_mut().enumerate() {
+            *freq = concert_a * 2.0f32.powf((note as f32 - 69.0) / 12.0);
         }
         Self {
             frequencies,
@@ -40,10 +40,10 @@ impl TuningTable {
     pub fn from_cents_offsets(concert_a: f32, offsets: &[f32; 12]) -> Self {
         let base = Self::equal_temperament(concert_a);
         let mut frequencies = base.frequencies;
-        for note in 0..128usize {
+        for (note, freq) in frequencies.iter_mut().enumerate().take(128) {
             let pitch_class = note % 12;
             let cents_offset = offsets[pitch_class];
-            frequencies[note] *= 2.0f32.powf(cents_offset / 1200.0);
+            *freq *= 2.0f32.powf(cents_offset / 1200.0);
         }
         Self {
             frequencies,
