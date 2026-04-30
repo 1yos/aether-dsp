@@ -45,13 +45,17 @@ impl DspNode for ScopeNode {
 mod tests {
     use super::*;
     use proptest::prelude::*;
-    use ringbuf::HeapRb;
+    use ringbuf::{traits::Split, HeapRb};
+
+    /// Generate a [f32; BUFFER_SIZE] array via proptest (BUFFER_SIZE = 64).
+    fn audio_buffer() -> impl Strategy<Value = [f32; BUFFER_SIZE]> {
+        prop::collection::vec(-1.0f32..=1.0f32, BUFFER_SIZE)
+            .prop_map(|v| v.try_into().unwrap())
+    }
 
     // Property 9
     proptest! {
         /// **Validates: Requirements 4.4**
-        ///
-        /// Feature: aether-engine-upgrades, Property 9: ScopeNode pass-through
         ///
         /// Property 9: ScopeNode pass-through.
         ///
@@ -59,31 +63,20 @@ mod tests {
         /// SHALL be identical to the input buffer (unity gain pass-through).
         #[test]
         fn prop_scope_node_pass_through(
-            input_samples in prop::array::uniform64(-1.0f32..=1.0f32),
+            input_samples in audio_buffer(),
         ) {
-            // Create a ring buffer with sufficient capacity
             let ring = HeapRb::<f32>::new(BUFFER_SIZE * 2);
             let (producer, _consumer) = ring.split();
-
-            // Create ScopeNode
             let mut node = ScopeNode::new(producer);
-
-            // Prepare input and output buffers
             let input_buffer: [f32; BUFFER_SIZE] = input_samples;
             let mut output_buffer = [0.0f32; BUFFER_SIZE];
             let mut params = ParamBlock::default();
-
-            // Create inputs array with our test input
             let inputs: [Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS] = {
                 let mut arr: [Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS] = [None; MAX_INPUTS];
                 arr[0] = Some(&input_buffer);
                 arr
             };
-
-            // Process
             node.process(&inputs, &mut output_buffer, &mut params, 48000.0);
-
-            // Assert: output buffer equals input buffer exactly
             prop_assert_eq!(output_buffer, input_buffer);
         }
     }
@@ -92,8 +85,6 @@ mod tests {
     proptest! {
         /// **Validates: Requirements 4.7**
         ///
-        /// Feature: aether-engine-upgrades, Property 10: Scope frame serialization
-        ///
         /// Property 10: Scope frame serialization.
         ///
         /// For any array of 64 f32 samples serialized as a binary scope frame,
@@ -101,25 +92,18 @@ mod tests {
         /// as [f32; 64] little-endian SHALL recover the original values exactly.
         #[test]
         fn prop_scope_frame_serialization(
-            samples in prop::array::uniform64(-1.0f32..=1.0f32),
+            samples in audio_buffer(),
         ) {
-            // Serialize: 64 f32 values to 256 bytes (64 × 4 bytes each)
             let mut serialized = Vec::with_capacity(256);
             for &sample in &samples {
                 serialized.extend_from_slice(&sample.to_le_bytes());
             }
-
-            // Assert: byte length is exactly 256
             prop_assert_eq!(serialized.len(), 256);
-
-            // Deserialize: 256 bytes back to [f32; 64]
             let mut deserialized = [0.0f32; 64];
             for (i, chunk) in serialized.chunks_exact(4).enumerate() {
                 let bytes: [u8; 4] = chunk.try_into().unwrap();
                 deserialized[i] = f32::from_le_bytes(bytes);
             }
-
-            // Assert: round-trip equality
             prop_assert_eq!(deserialized, samples);
         }
     }
