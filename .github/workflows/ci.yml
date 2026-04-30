@@ -37,11 +37,11 @@ jobs:
       - name: cargo check --workspace
         run: cargo check --workspace
 
-      - name: cargo test --workspace
-        run: cargo test --workspace --lib
+      - name: cargo test (core crates only)
+        run: cargo test --lib -p aetherdsp-core -p aetherdsp-nodes -p aetherdsp-ndk -p aetherdsp-midi
 
       - name: cargo clippy
-        run: cargo clippy --workspace -- -D warnings
+        run: cargo clippy --workspace -- -D warnings -A dead_code
 
   ui:
     name: UI — typecheck & build

@@ -12,8 +12,10 @@ pub struct TimbreTransfer {
     /// Transfer amount: 0.0 = no transfer, 1.0 = full transfer.
     pub amount: f32,
     /// Input overlap buffer.
+    #[allow(dead_code)]
     input_buffer: Vec<f32>,
     /// Output overlap-add buffer.
+    #[allow(dead_code)]
     output_buffer: Vec<f32>,
     /// Analysis window.
     window: Vec<f32>,

@@ -62,6 +62,7 @@ impl UndoStack {
         self.entries.pop_back()
     }
 
+    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.entries.len()
     }

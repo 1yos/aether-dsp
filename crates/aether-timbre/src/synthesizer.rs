@@ -25,14 +25,14 @@ impl InstrumentSynthesizer {
     ///
     /// `source_audio` — audio from any instrument (guitar, piano, voice, etc.)
     /// `note` — the MIDI note to generate
-    /// `duration_secs` — how long the sample should be
+    /// `sample_rate` — sample rate in Hz (unused currently, reserved for future pitch shifting)
     ///
     /// Returns a SampleBuffer with the synthesized audio.
     pub fn synthesize_note(
         &mut self,
         source_audio: &[f32],
         note: u8,
-        sample_rate: f32,
+        _sample_rate: f32,
     ) -> Vec<f32> {
         // Get the target envelope for this note
         if let Some(envelope) = self.profile.envelope_for_note(note) {
@@ -51,11 +51,11 @@ impl InstrumentSynthesizer {
         source_audio: &[f32],
         note_low: u8,
         note_high: u8,
-        sample_rate: f32,
+        _sample_rate: f32,
     ) -> Vec<(u8, Vec<f32>)> {
         let mut results = Vec::new();
         for note in note_low..=note_high {
-            let audio = self.synthesize_note(source_audio, note, sample_rate);
+            let audio = self.synthesize_note(source_audio, note, _sample_rate);
             results.push((note, audio));
         }
         results
