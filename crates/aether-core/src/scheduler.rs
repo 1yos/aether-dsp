@@ -43,6 +43,7 @@ struct NodeTask {
 /// SAFETY: Within a BFS level each task accesses disjoint memory:
 /// - distinct output buffer (different BufferId → different Vec index range)
 /// - distinct processor and params (each belongs to exactly one NodeRecord)
+///
 /// No two tasks in the same level share any pointed-to memory.
 unsafe impl Send for NodeTask {}
 unsafe impl Sync for NodeTask {}
