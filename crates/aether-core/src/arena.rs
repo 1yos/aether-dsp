@@ -153,7 +153,7 @@ mod tests {
     fn capacity_exhaustion() {
         let mut arena: Arena<i32> = Arena::with_capacity(2);
         let a = arena.insert(1).unwrap();
-        let b = arena.insert(2).unwrap();
+        let _b = arena.insert(2).unwrap();
         assert!(arena.insert(3).is_none()); // full
         arena.remove(a).unwrap();
         assert!(arena.insert(3).is_some()); // slot recycled

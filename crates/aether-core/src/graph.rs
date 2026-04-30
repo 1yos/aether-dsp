@@ -163,7 +163,7 @@ impl Default for DspGraph {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{node::DspNode, param::ParamBlock, state::StateBlob, BUFFER_SIZE, MAX_INPUTS};
+    use crate::{node::DspNode, param::ParamBlock, BUFFER_SIZE, MAX_INPUTS};
     use proptest::prelude::*;
 
     /// Minimal test node for graph topology testing.
@@ -210,7 +210,7 @@ mod tests {
             }
 
             // Add edges, filtering to maintain DAG invariant (src < dst to prevent cycles)
-            for (src_idx, dst_idx, slot) in edges {
+            for &(src_idx, dst_idx, slot) in &edges {
                 if src_idx < num_nodes && dst_idx < num_nodes && src_idx < dst_idx {
                     let src = node_ids[src_idx];
                     let dst = node_ids[dst_idx];
@@ -227,7 +227,7 @@ mod tests {
             }
 
             // Verify the invariant: for every edge (src → dst), level[src] < level[dst]
-            for (src_idx, dst_idx, slot) in edges {
+            for &(src_idx, dst_idx, slot) in &edges {
                 if src_idx < num_nodes && dst_idx < num_nodes && src_idx < dst_idx {
                     let src = node_ids[src_idx];
                     let dst = node_ids[dst_idx];

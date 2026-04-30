@@ -254,8 +254,11 @@ impl Scheduler {
     fn process_graph_sequential(&mut self, output: &mut [f32]) {
         let sr = self.sample_rate;
 
-        // Process nodes in flat execution order (sequential)
-        for &node_id in &self.graph.execution_order {
+        // Collect execution order into a local Vec to avoid borrow conflict
+        // between the immutable borrow of execution_order and the mutable
+        // borrow inside process_node.
+        let order: Vec<NodeId> = self.graph.execution_order.clone();
+        for &node_id in &order {
             self.process_node(node_id, sr);
         }
 
