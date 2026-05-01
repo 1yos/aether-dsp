@@ -9,6 +9,10 @@ default-run = "aether-tauri"
 edition = "2021"
 rust-version = "1.60"
 
+# Explicitly exclude from the root workspace to avoid dependency conflicts
+# between Tauri v1 and the aether-dsp crates.
+[workspace]
+
 [build-dependencies]
 tauri-build = { version = "1", features = [] }
 
