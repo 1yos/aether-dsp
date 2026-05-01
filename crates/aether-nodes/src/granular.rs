@@ -79,7 +79,7 @@ impl Granular {
         self.rng ^= self.rng << 13;
         self.rng ^= self.rng >> 17;
         self.rng ^= self.rng << 5;
-        (self.rng as f32 / u32::MAX as f32)
+        self.rng as f32 / u32::MAX as f32
     }
 
     fn spawn_grain(&mut self, grain_size_ms: f32, pitch_scatter: f32, position: f32, pos_scatter: f32, sr: f32) {
