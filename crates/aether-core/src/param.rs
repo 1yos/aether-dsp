@@ -52,12 +52,19 @@ impl Param {
     }
 
     /// Advance by a full buffer, returning per-sample values into `out`.
-    /// Avoids branching inside the hot loop.
+    /// Uses a fast path when the parameter is not ramping (step == 0).
     #[inline]
     pub fn fill_buffer(&mut self, out: &mut [f32]) {
-        for sample in out.iter_mut() {
-            *sample = self.current;
-            self.tick();
+        if self.step == 0.0 {
+            // Fast path: parameter is stable — fill with a single value.
+            // This is the common case and avoids all branching in the loop.
+            out.fill(self.current);
+        } else {
+            // Ramping path: advance sample by sample.
+            for sample in out.iter_mut() {
+                *sample = self.current;
+                self.tick();
+            }
         }
     }
 }

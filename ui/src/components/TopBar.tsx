@@ -7,6 +7,8 @@ import { useModeStore } from "../store/useModeStore";
 import { STUDIO_MODES } from "../types/modes";
 import { useProjectSave } from "../hooks/useProjectSave";
 import { useEngineStore } from "../studio/store/engineStore";
+import { ModulationMatrix } from "./ModulationMatrix";
+import { useState } from "react";
 import "./TopBar.css";
 
 export function TopBar() {
@@ -14,6 +16,7 @@ export function TopBar() {
   const { saveProject, loadProject } = useProjectSave();
   const wsStatus = useEngineStore((s) => s.wsStatus);
   const audioActive = useEngineStore((s) => s.audioActive);
+  const [showModMatrix, setShowModMatrix] = useState(false);
 
   const statusColor =
     wsStatus === "connected"
@@ -103,6 +106,44 @@ export function TopBar() {
             />
           </svg>
         </button>
+        <button
+          className={`tb-btn ${showModMatrix ? "active" : ""}`}
+          title="Modulation Matrix"
+          onClick={() => setShowModMatrix((v) => !v)}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle
+              cx="3"
+              cy="3"
+              r="1.5"
+              stroke="currentColor"
+              strokeWidth="1.2"
+            />
+            <circle
+              cx="11"
+              cy="7"
+              r="1.5"
+              stroke="currentColor"
+              strokeWidth="1.2"
+            />
+            <circle
+              cx="3"
+              cy="11"
+              r="1.5"
+              stroke="currentColor"
+              strokeWidth="1.2"
+            />
+            <path
+              d="M4.5 3.5L9.5 6.5M4.5 10.5L9.5 7.5"
+              stroke="currentColor"
+              strokeWidth="1.2"
+            />
+          </svg>
+        </button>
+
+        {showModMatrix && (
+          <ModulationMatrix onClose={() => setShowModMatrix(false)} />
+        )}
 
         <div className="tb-divider" />
 

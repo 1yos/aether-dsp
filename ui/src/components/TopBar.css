@@ -148,6 +148,13 @@
   color: var(--text-primary);
 }
 
+.tb-btn.active {
+  background: var(--bg-elevated);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  box-shadow: 0 0 8px var(--accent-primary-glow);
+}
+
 .tb-divider {
   width: 1px;
   height: 20px;

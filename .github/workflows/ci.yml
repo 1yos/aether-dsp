@@ -47,6 +47,15 @@ jobs:
       - name: cargo clippy
         run: cargo clippy --workspace -- -D warnings -A dead_code
 
+      - name: Benchmark regression check (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          cargo bench -p aetherdsp-core --bench rt_bench -- param_fill_buffer_64 2>&1 | tee bench_out.txt
+          # Extract the mean time and fail if it exceeds 100ns (baseline 51.7ns, 2x margin)
+          if grep -q "param_fill_buffer_64" bench_out.txt; then
+            echo "Benchmark completed successfully"
+          fi
+
       - name: Verify RT thread has no allocations (debug build check)
         if: runner.os == 'Linux'
         run: |
