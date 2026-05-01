@@ -1,6 +1,6 @@
 /**
- * Aether Studio v2.0 - Arrange Mode
- * Timeline and piano roll for composition
+ * Aether Studio — Arrange Mode
+ * Timeline + Piano Roll. Professional DAW layout.
  */
 
 import { useState } from "react";
@@ -8,13 +8,12 @@ import "./ArrangeMode.css";
 
 interface Note {
   id: string;
-  pitch: number; // MIDI note number
-  start: number; // In beats
-  duration: number; // In beats
-  velocity: number; // 0-127
+  pitch: number;
+  start: number;
+  duration: number;
+  velocity: number;
 }
 
-const SCALE_NOTES = [0, 2, 3, 5, 7, 8, 10]; // Tizita scale (Ethiopian)
 const NOTE_NAMES = [
   "C",
   "C#",
@@ -29,123 +28,140 @@ const NOTE_NAMES = [
   "A#",
   "B",
 ];
+const SCALE_NOTES = [0, 2, 3, 5, 7, 8, 10]; // Tizita
 
 export function ArrangeMode() {
   const [notes] = useState<Note[]>([
-    { id: "1", pitch: 60, start: 0, duration: 1, velocity: 80 },
-    { id: "2", pitch: 62, start: 1, duration: 1, velocity: 90 },
+    { id: "1", pitch: 60, start: 0, duration: 1, velocity: 90 },
+    { id: "2", pitch: 62, start: 1, duration: 1, velocity: 80 },
     { id: "3", pitch: 64, start: 2, duration: 2, velocity: 100 },
     { id: "4", pitch: 67, start: 4, duration: 1, velocity: 85 },
+    { id: "5", pitch: 60, start: 6, duration: 1, velocity: 75 },
+    { id: "6", pitch: 64, start: 7, duration: 2, velocity: 95 },
   ]);
+  const [scale, setScale] = useState("Tizita (Ethiopian)");
   const [showPianoRoll, setShowPianoRoll] = useState(true);
 
-  const renderPianoRoll = () => {
-    const octaves = 3;
-    const startOctave = 3;
-    const rows = [];
-
-    for (
-      let octave = startOctave + octaves - 1;
-      octave >= startOctave;
-      octave--
-    ) {
-      for (let note = 11; note >= 0; note--) {
-        const midiNote = octave * 12 + note;
-        const noteName = NOTE_NAMES[note];
-        const isWhiteKey = ![1, 3, 6, 8, 10].includes(note);
-        const isInScale = SCALE_NOTES.includes(note);
-
-        rows.push(
-          <div
-            key={midiNote}
-            className={`piano-roll-row ${isWhiteKey ? "white-key" : "black-key"} ${isInScale ? "in-scale" : ""}`}
-          >
-            <div className="piano-key-label">
-              <span className="note-name">{noteName}</span>
-              {note === 0 && <span className="octave-number">{octave}</span>}
-            </div>
-            <div className="note-grid">
-              {/* Grid lines */}
-              {Array.from({ length: 16 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="grid-line"
-                  style={{ left: `${i * 6.25}%` }}
-                />
-              ))}
-              {/* Notes */}
-              {notes
-                .filter((n) => n.pitch === midiNote)
-                .map((note) => (
-                  <div
-                    key={note.id}
-                    className="note-block"
-                    style={{
-                      left: `${(note.start / 16) * 100}%`,
-                      width: `${(note.duration / 16) * 100}%`,
-                    }}
-                  >
-                    <div className="note-resize-handle left" />
-                    <div className="note-resize-handle right" />
-                  </div>
-                ))}
-            </div>
-          </div>,
-        );
-      }
-    }
-
-    return rows;
-  };
+  const octaves = 3;
+  const startOctave = 3;
+  const totalNotes = octaves * 12;
+  const totalBeats = 16;
 
   return (
     <div className="arrange-mode">
       {/* Piano Roll */}
       {showPianoRoll && (
-        <div className="piano-roll-section">
-          <div className="piano-roll-header">
-            <h2>Piano Roll • Krar Melody</h2>
-            <div className="piano-roll-controls">
-              <select className="scale-selector">
+        <div className="piano-roll">
+          <div className="pr-header">
+            <div className="pr-title">Piano Roll</div>
+            <div className="pr-controls">
+              <select
+                className="pr-scale-select"
+                value={scale}
+                onChange={(e) => setScale(e.target.value)}
+              >
                 <option>Tizita (Ethiopian)</option>
                 <option>Bati (Ethiopian)</option>
                 <option>Anchihoye (Ethiopian)</option>
+                <option>Arabic Maqam Rast</option>
+                <option>Just Intonation</option>
                 <option>Chromatic</option>
               </select>
-              <label className="checkbox-label">
-                <input type="checkbox" defaultChecked />
-                <span>Ghost Notes</span>
-              </label>
-              <button className="tool-btn" title="Quantize">
+              <button className="pr-tool-btn" title="Quantize">
                 ⊞
               </button>
-              <button className="tool-btn" title="Humanize">
+              <button className="pr-tool-btn" title="Humanize">
                 ≈
               </button>
               <button
-                className="close-btn"
+                className="pr-close-btn"
                 onClick={() => setShowPianoRoll(false)}
-                title="Close Piano Roll"
               >
                 ✕
               </button>
             </div>
           </div>
 
-          <div className="piano-roll-content">
-            <div className="piano-roll-grid">{renderPianoRoll()}</div>
+          <div className="pr-content">
+            {/* Piano keys column */}
+            <div className="pr-keys">
+              {Array.from({ length: totalNotes }).map((_, i) => {
+                const noteIdx = totalNotes - 1 - i;
+                const pitchClass = noteIdx % 12;
+                const octave = Math.floor(noteIdx / 12) + startOctave;
+                const isBlack = [1, 3, 6, 8, 10].includes(pitchClass);
+                const isInScale = SCALE_NOTES.includes(pitchClass);
+                const noteName = NOTE_NAMES[pitchClass];
+                return (
+                  <div
+                    key={i}
+                    className={`pr-key ${isBlack ? "black" : "white"} ${isInScale ? "in-scale" : ""}`}
+                  >
+                    {!isBlack && (
+                      <span className="pr-key-label">
+                        {noteName}
+                        {pitchClass === 0 ? octave : ""}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Note grid */}
+            <div className="pr-grid">
+              {Array.from({ length: totalNotes }).map((_, rowIdx) => {
+                const noteIdx = totalNotes - 1 - rowIdx;
+                const pitchClass = noteIdx % 12;
+                const midiNote = noteIdx + startOctave * 12;
+                const isBlack = [1, 3, 6, 8, 10].includes(pitchClass);
+                const isInScale = SCALE_NOTES.includes(pitchClass);
+                return (
+                  <div
+                    key={rowIdx}
+                    className={`pr-row ${isBlack ? "black" : "white"} ${isInScale ? "in-scale" : ""}`}
+                  >
+                    {/* Beat lines */}
+                    {Array.from({ length: totalBeats }).map((_, beat) => (
+                      <div
+                        key={beat}
+                        className={`pr-cell ${beat % 4 === 0 ? "bar-start" : ""}`}
+                        style={{
+                          left: `${(beat / totalBeats) * 100}%`,
+                          width: `${100 / totalBeats}%`,
+                        }}
+                      />
+                    ))}
+                    {/* Notes */}
+                    {notes
+                      .filter((n) => n.pitch === midiNote)
+                      .map((note) => (
+                        <div
+                          key={note.id}
+                          className="pr-note"
+                          style={{
+                            left: `${(note.start / totalBeats) * 100}%`,
+                            width: `${(note.duration / totalBeats) * 100}%`,
+                          }}
+                        />
+                      ))}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="velocity-editor">
-            <div className="velocity-label">Velocity</div>
-            <div className="velocity-bars">
+          {/* Velocity editor */}
+          <div className="pr-velocity">
+            <div className="pr-velocity-label">Velocity</div>
+            <div className="pr-velocity-bars">
               {notes.map((note) => (
                 <div
                   key={note.id}
-                  className="velocity-bar"
+                  className="pr-vel-bar"
                   style={{
-                    left: `${(note.start / 16) * 100}%`,
-                    width: `${(note.duration / 16) * 100}%`,
+                    left: `${(note.start / totalBeats) * 100}%`,
+                    width: `${(note.duration / totalBeats) * 100}%`,
                     height: `${(note.velocity / 127) * 100}%`,
                   }}
                 />
@@ -156,89 +172,90 @@ export function ArrangeMode() {
       )}
 
       {/* Timeline */}
-      <div className="timeline-section">
-        <div className="timeline-header">
-          <h2>Timeline</h2>
-          <div className="timeline-controls">
-            <button className="tool-btn">+ Track</button>
-            <button className="tool-btn">+ Marker</button>
+      <div className="timeline">
+        <div className="tl-header">
+          <div className="tl-title">Timeline</div>
+          <div className="tl-controls">
+            <button className="pr-tool-btn">+ Track</button>
             {!showPianoRoll && (
               <button
-                className="tool-btn"
+                className="pr-tool-btn"
                 onClick={() => setShowPianoRoll(true)}
               >
-                Open Piano Roll
+                Piano Roll
               </button>
             )}
           </div>
         </div>
 
-        <div className="timeline-content">
-          <div className="timeline-tracks">
-            {/* Track 1 */}
-            <div className="timeline-track">
-              <div className="track-header">
-                <span className="track-name">Krar</span>
-                <div className="track-controls">
-                  <button className="track-btn solo">S</button>
-                  <button className="track-btn mute">M</button>
-                </div>
-              </div>
-              <div className="track-lane">
-                <div className="clip" style={{ left: "0%", width: "25%" }}>
-                  <span className="clip-name">Melody 1</span>
-                </div>
-                <div className="clip" style={{ left: "50%", width: "25%" }}>
-                  <span className="clip-name">Melody 2</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Track 2 */}
-            <div className="timeline-track">
-              <div className="track-header">
-                <span className="track-name">Kebero</span>
-                <div className="track-controls">
-                  <button className="track-btn solo">S</button>
-                  <button className="track-btn mute">M</button>
-                </div>
-              </div>
-              <div className="track-lane">
-                <div className="clip" style={{ left: "0%", width: "100%" }}>
-                  <span className="clip-name">Drums</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Track 3 */}
-            <div className="timeline-track">
-              <div className="track-header">
-                <span className="track-name">Masenqo</span>
-                <div className="track-controls">
-                  <button className="track-btn solo">S</button>
-                  <button className="track-btn mute">M</button>
-                </div>
-              </div>
-              <div className="track-lane">
-                <div className="clip" style={{ left: "25%", width: "50%" }}>
-                  <span className="clip-name">Bass Line</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
+        <div className="tl-content">
           {/* Ruler */}
-          <div className="timeline-ruler">
+          <div className="tl-ruler">
+            <div className="tl-ruler-offset" />
             {Array.from({ length: 17 }).map((_, i) => (
               <div
                 key={i}
-                className="ruler-mark"
+                className="tl-ruler-mark"
                 style={{ left: `${(i / 16) * 100}%` }}
               >
-                <span className="ruler-label">{i + 1}</span>
+                {i + 1}
               </div>
             ))}
           </div>
+
+          {/* Tracks */}
+          {[
+            {
+              name: "Krar",
+              color: "var(--region-east-africa)",
+              clips: [
+                { start: 0, width: 25 },
+                { start: 50, width: 25 },
+              ],
+            },
+            {
+              name: "Kebero",
+              color: "var(--accent-error)",
+              clips: [{ start: 0, width: 100 }],
+            },
+            {
+              name: "Masenqo",
+              color: "var(--region-middle-east)",
+              clips: [{ start: 25, width: 50 }],
+            },
+          ].map((track, i) => (
+            <div key={i} className="tl-track">
+              <div className="tl-track-header">
+                <div
+                  className="tl-track-color"
+                  style={{ background: track.color }}
+                />
+                <span className="tl-track-name">{track.name}</span>
+                <div className="tl-track-btns">
+                  <button className="tl-track-btn">S</button>
+                  <button className="tl-track-btn">M</button>
+                </div>
+              </div>
+              <div className="tl-track-lane">
+                {track.clips.map((clip, j) => (
+                  <div
+                    key={j}
+                    className="tl-clip"
+                    style={{
+                      left: `${clip.start}%`,
+                      width: `${clip.width}%`,
+                      borderColor: track.color,
+                    }}
+                  >
+                    <div
+                      className="tl-clip-wave"
+                      style={{ background: track.color }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

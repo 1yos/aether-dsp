@@ -1,6 +1,6 @@
 /**
- * Aether Studio v2.0 - Create Mode
- * Build audio patches with node graph
+ * Aether Studio — Create Mode
+ * The node graph. Hardware-inspired, alive with signal.
  */
 
 import { StudioCanvas } from "../studio/components/StudioCanvas";

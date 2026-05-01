@@ -25,18 +25,25 @@ impl Oscillator {
     #[inline(always)]
     fn generate_sample(&mut self, freq: f32, amp: f32, waveform: f32, sr: f32) -> f32 {
         let phase_inc = freq / sr;
+
+        // BLEP anti-aliasing for discontinuous waveforms
         let sample = match waveform as u32 {
             0 => (self.phase * TAU).sin(),
-            1 => 2.0 * self.phase - 1.0, // sawtooth
+            1 => {
+                // Band-limited sawtooth using BLEP
+                let mut saw = 2.0 * self.phase - 1.0;
+                saw -= blep(self.phase, phase_inc);
+                saw
+            }
             2 => {
-                if self.phase < 0.5 {
-                    1.0
-                } else {
-                    -1.0
-                }
-            } // square
+                // Band-limited square using BLEP
+                let mut sq = if self.phase < 0.5 { 1.0f32 } else { -1.0f32 };
+                sq += blep(self.phase, phase_inc);
+                sq -= blep((self.phase + 0.5).fract(), phase_inc);
+                sq
+            }
             _ => {
-                // triangle
+                // Triangle (integrated square — already band-limited)
                 if self.phase < 0.5 {
                     4.0 * self.phase - 1.0
                 } else {
@@ -46,6 +53,22 @@ impl Oscillator {
         };
         self.phase = (self.phase + phase_inc).fract();
         sample * amp
+    }
+}
+
+/// Polynomial Band-Limited Step (BLEP) correction.
+/// Reduces aliasing at waveform discontinuities.
+/// `t` = current phase, `dt` = phase increment per sample.
+#[inline(always)]
+fn blep(t: f32, dt: f32) -> f32 {
+    if t < dt {
+        let t = t / dt;
+        2.0 * t - t * t - 1.0
+    } else if t > 1.0 - dt {
+        let t = (t - 1.0) / dt;
+        t * t + 2.0 * t + 1.0
+    } else {
+        0.0
     }
 }
 

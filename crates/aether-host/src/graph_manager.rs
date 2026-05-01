@@ -12,7 +12,8 @@ use aether_core::{
 use aether_midi::event::MidiEvent;
 use aether_nodes::{
     delay::DelayLine, envelope::AdsrEnvelope, filter::StateVariableFilter, gain::Gain,
-    mixer::Mixer, oscillator::Oscillator, record::RecordNode, scope::ScopeNode,
+    karplus_strong::KarplusStrong, lfo::Lfo, mixer::Mixer, oscillator::Oscillator,
+    record::RecordNode, reverb::Reverb, scope::ScopeNode,
 };
 use aether_sampler::node::SamplerNode;
 use aether_sampler::instrument::{LoadedInstrument, SamplerInstrument};
@@ -666,6 +667,9 @@ fn make_node(node_type: &str, _sample_rate: f32) -> Option<(Box<dyn aether_core:
         "DelayLine" => Some((Box::new(DelayLine::new()), NodeExtra::None)),
         "Gain" => Some((Box::new(Gain), NodeExtra::None)),
         "Mixer" => Some((Box::new(Mixer), NodeExtra::None)),
+        "Lfo" => Some((Box::new(Lfo::new()), NodeExtra::None)),
+        "Reverb" => Some((Box::new(Reverb::new(_sample_rate)), NodeExtra::None)),
+        "KarplusStrong" => Some((Box::new(KarplusStrong::new()), NodeExtra::None)),
         "SamplerNode" => {
             let node = SamplerNode::new(_sample_rate);
             let queue = node.midi_queue();
@@ -692,6 +696,9 @@ fn init_default_params(scheduler: &mut Scheduler, id: NodeId, node_type: &str) {
         "AdsrEnvelope" => &[0.01, 0.1, 0.7, 0.3, 1.0],
         "DelayLine" => &[0.25, 0.4, 0.5],
         "Gain" => &[0.8],
+        "Lfo" => &[1.0, 0.5, 0.0, 0.0],
+        "Reverb" => &[0.5, 0.5, 0.3, 1.0],
+        "KarplusStrong" => &[440.0, 0.995, 0.7, 0.0],
         "Mixer" | "SamplerNode" | "RecordNode" | "ScopeNode" => &[],
         "TimbreTransferNode" => &[1.0],
         _ => &[],

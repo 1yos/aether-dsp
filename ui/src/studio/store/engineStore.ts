@@ -109,6 +109,39 @@ export const NODE_DEFS: Record<string, NodeDef> = {
     color: "#f87171",
     params: [],
   },
+  Lfo: {
+    type: "Lfo",
+    inputs: 0,
+    color: "#a78bfa",
+    params: [
+      { name: "Rate", min: 0.01, max: 20, default: 1.0 },
+      { name: "Depth", min: 0, max: 1, default: 0.5 },
+      { name: "Waveform", min: 0, max: 4, default: 0 },
+      { name: "Phase", min: 0, max: 1, default: 0 },
+    ],
+  },
+  Reverb: {
+    type: "Reverb",
+    inputs: 1,
+    color: "#818cf8",
+    params: [
+      { name: "Room Size", min: 0, max: 1, default: 0.5 },
+      { name: "Damping", min: 0, max: 1, default: 0.5 },
+      { name: "Wet", min: 0, max: 1, default: 0.3 },
+      { name: "Width", min: 0, max: 1, default: 1.0 },
+    ],
+  },
+  KarplusStrong: {
+    type: "KarplusStrong",
+    inputs: 0,
+    color: "#d4a017",
+    params: [
+      { name: "Frequency", min: 20, max: 4000, default: 440 },
+      { name: "Decay", min: 0.9, max: 0.9999, default: 0.995 },
+      { name: "Brightness", min: 0, max: 1, default: 0.7 },
+      { name: "Trigger", min: 0, max: 1, default: 0 },
+    ],
+  },
 };
 
 interface EngineStore {
