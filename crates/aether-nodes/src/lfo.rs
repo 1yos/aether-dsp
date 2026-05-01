@@ -80,7 +80,7 @@ impl Lfo {
 /// Simple deterministic pseudo-random from phase value.
 #[inline(always)]
 fn pseudo_random(seed: f32) -> f32 {
-    let x = (seed * 127.1 + 311.7).sin() * 43758.5453;
+    let x = (seed * 127.1 + 311.7).sin() * 43_758.547;
     x - x.floor()
 }
 
