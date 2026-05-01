@@ -1,0 +1,34 @@
+﻿[
+    {
+        "id":  "violin",
+        "name":  "Violin",
+        "file":  "instruments/violin.aether-instrument",
+        "family":  "bowed-string",
+        "region":  "Europe",
+        "country":  "Italy"
+    },
+    {
+        "id":  "flute",
+        "name":  "Flute",
+        "file":  "instruments/flute.aether-instrument",
+        "family":  "wind",
+        "region":  "Europe",
+        "country":  "Germany"
+    },
+    {
+        "id":  "trumpet",
+        "name":  "Trumpet",
+        "file":  "instruments/trumpet.aether-instrument",
+        "family":  "wind",
+        "region":  "Europe",
+        "country":  "Germany"
+    },
+    {
+        "id":  "clarinet",
+        "name":  "Clarinet",
+        "file":  "instruments/clarinet.aether-instrument",
+        "family":  "wind",
+        "region":  "Europe",
+        "country":  "Germany"
+    }
+]

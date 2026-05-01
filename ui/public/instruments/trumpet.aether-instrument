@@ -1,0 +1,48 @@
+﻿{
+    "name":  "Trumpet",
+    "family":  "wind",
+    "region":  "Europe",
+    "country":  "Germany",
+    "tuning":  {
+                   "name":  "12-tet",
+                   "frequencies":  null
+               },
+    "adsr":  {
+                 "attack":  0.01,
+                 "decay":  0.1,
+                 "sustain":  0.7,
+                 "release":  0.3
+             },
+    "zones":  [
+                  {
+                      "id":  "trumpet-45",
+                      "file_path":  "../../../../../samples/VSCO-2-CE/trumpet/trumpet_A2.wav",
+                      "root_note":  45,
+                      "note_low":  43,
+                      "note_high":  47,
+                      "velocity_low":  0,
+                      "velocity_high":  127,
+                      "articulation":  "SustainLoop",
+                      "volume_db":  0,
+                      "tune_cents":  0,
+                      "loop_start":  null,
+                      "loop_end":  null,
+                      "release_file":  null
+                  },
+                  {
+                      "id":  "trumpet-69",
+                      "file_path":  "../../../../../samples/VSCO-2-CE/trumpet/trumpet_A4.wav",
+                      "root_note":  69,
+                      "note_low":  67,
+                      "note_high":  71,
+                      "velocity_low":  0,
+                      "velocity_high":  127,
+                      "articulation":  "SustainLoop",
+                      "volume_db":  0,
+                      "tune_cents":  0,
+                      "loop_start":  null,
+                      "loop_end":  null,
+                      "release_file":  null
+                  }
+              ]
+}

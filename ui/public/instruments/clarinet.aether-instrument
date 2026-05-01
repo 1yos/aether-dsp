@@ -1,0 +1,63 @@
+﻿{
+    "name":  "Clarinet",
+    "family":  "wind",
+    "region":  "Europe",
+    "country":  "Germany",
+    "tuning":  {
+                   "name":  "12-tet",
+                   "frequencies":  null
+               },
+    "adsr":  {
+                 "attack":  0.01,
+                 "decay":  0.1,
+                 "sustain":  0.7,
+                 "release":  0.3
+             },
+    "zones":  [
+                  {
+                      "id":  "clarinet-46",
+                      "file_path":  "../../../../../samples/VSCO-2-CE/clarinet/clarinet_As2.wav",
+                      "root_note":  46,
+                      "note_low":  44,
+                      "note_high":  48,
+                      "velocity_low":  0,
+                      "velocity_high":  127,
+                      "articulation":  "SustainLoop",
+                      "volume_db":  0,
+                      "tune_cents":  0,
+                      "loop_start":  null,
+                      "loop_end":  null,
+                      "release_file":  null
+                  },
+                  {
+                      "id":  "clarinet-58",
+                      "file_path":  "../../../../../samples/VSCO-2-CE/clarinet/clarinet_As3.wav",
+                      "root_note":  58,
+                      "note_low":  56,
+                      "note_high":  60,
+                      "velocity_low":  0,
+                      "velocity_high":  127,
+                      "articulation":  "SustainLoop",
+                      "volume_db":  0,
+                      "tune_cents":  0,
+                      "loop_start":  null,
+                      "loop_end":  null,
+                      "release_file":  null
+                  },
+                  {
+                      "id":  "clarinet-70",
+                      "file_path":  "../../../../../samples/VSCO-2-CE/clarinet/clarinet_As4.wav",
+                      "root_note":  70,
+                      "note_low":  68,
+                      "note_high":  72,
+                      "velocity_low":  0,
+                      "velocity_high":  127,
+                      "articulation":  "SustainLoop",
+                      "volume_db":  0,
+                      "tune_cents":  0,
+                      "loop_start":  null,
+                      "loop_end":  null,
+                      "release_file":  null
+                  }
+              ]
+}
