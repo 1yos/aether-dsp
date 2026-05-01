@@ -241,7 +241,7 @@ impl TuningTable {
 
     /// Javanese Gamelan Slendro — 5-tone scale.
     /// Approximate equal division of the octave into 5 parts.
-    pub fn gamelan_slendro(concert_a: f32) -> Self {
+    pub fn gamelan_slendro(_concert_a: f32) -> Self {
         // Slendro divides the octave into 5 roughly equal parts (~240 cents each)
         // but with characteristic deviations. Using a common approximation.
         let step = 1200.0 / 5.0; // 240 cents per step
