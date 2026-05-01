@@ -3,10 +3,7 @@
     windows_subsystem = "windows"
 )]
 
-use std::sync::Mutex;
 use tauri::Manager;
-
-struct HostProcess(Mutex<Option<tauri::async_runtime::JoinHandle<()>>>);
 
 #[tauri::command]
 fn get_host_url() -> String {
@@ -15,55 +12,48 @@ fn get_host_url() -> String {
 
 fn main() {
     tauri::Builder::default()
-        .manage(HostProcess(Mutex::new(None)))
         .setup(|app| {
-            let app_handle = app.handle();
+            // Spawn aether-host as a sidecar process (Tauri v1 API).
+            // The sidecar binary must be at:
+            //   src-tauri/binaries/aether-host-{target-triple}[.exe]
+            //
+            // In development, start aether-host manually:
+            //   cargo run -p aether-host --release
+            let result = tauri::api::process::Command::new_sidecar("aether-host")
+                .map(|cmd| cmd.spawn());
 
-            // Spawn aether-host as a sidecar process.
-            // The sidecar binary is bundled at binaries/aether-host-{target}.
-            // In dev mode, start it manually: cargo run -p aether-host --release
-            match app.shell().sidecar("aether-host") {
-                Ok(cmd) => {
-                    let (mut rx, child) = cmd
-                        .spawn()
-                        .expect("Failed to spawn aether-host sidecar");
-
-                    // Forward host stdout/stderr to the Tauri log
+            match result {
+                Ok(Ok((mut rx, _child))) => {
+                    // Forward host stdout/stderr to the console
                     tauri::async_runtime::spawn(async move {
                         use tauri::api::process::CommandEvent;
                         while let Some(event) = rx.recv().await {
                             match event {
-                                CommandEvent::Stdout(line) => {
-                                    println!("[aether-host] {line}");
-                                }
-                                CommandEvent::Stderr(line) => {
-                                    eprintln!("[aether-host] {line}");
-                                }
-                                CommandEvent::Terminated(status) => {
-                                    eprintln!("[aether-host] terminated: {status:?}");
+                                CommandEvent::Stdout(line) => println!("[host] {line}"),
+                                CommandEvent::Stderr(line) => eprintln!("[host] {line}"),
+                                CommandEvent::Terminated(s) => {
+                                    eprintln!("[host] terminated: {s:?}");
                                     break;
                                 }
                                 _ => {}
                             }
                         }
                     });
-
                     println!("aether-host sidecar started.");
                 }
+                Ok(Err(e)) => {
+                    eprintln!("Note: could not start aether-host sidecar: {e}");
+                    eprintln!("Start it manually: cargo run -p aether-host --release");
+                }
                 Err(e) => {
-                    // Dev mode — host started manually
-                    eprintln!(
-                        "Note: aether-host sidecar not found ({e}).\n\
-                         In development, start it manually:\n\
-                         cargo run -p aether-host --release"
-                    );
+                    eprintln!("Note: aether-host sidecar not found: {e}");
+                    eprintln!("Start it manually: cargo run -p aether-host --release");
                 }
             }
 
             // Open devtools in debug builds
             #[cfg(debug_assertions)]
-            {
-                let window = app_handle.get_window("main").unwrap();
+            if let Some(window) = app.get_window("main") {
                 window.open_devtools();
             }
 
