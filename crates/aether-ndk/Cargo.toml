@@ -17,7 +17,7 @@ name = "aether_ndk"
 
 [dependencies]
 aetherdsp-core    = { version = "0.1", path = "../aether-core" }
-aetherdsp-nodes   = { version = "0.1", path = "../aether-nodes" }
+aetherdsp-nodes   = { version = "0.2", path = "../aether-nodes" }
 aetherdsp-ndk-macro = { version = "0.1", path = "../aether-ndk-macro" }
 serde = { workspace = true }
 serde_json = { workspace = true }
