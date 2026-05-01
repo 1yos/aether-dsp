@@ -1,34 +1,533 @@
 ﻿[
-    {
-        "id":  "violin",
-        "name":  "Violin",
-        "file":  "instruments/violin.aether-instrument",
-        "family":  "bowed-string",
-        "region":  "Europe",
-        "country":  "Italy"
-    },
-    {
-        "id":  "flute",
-        "name":  "Flute",
-        "file":  "instruments/flute.aether-instrument",
-        "family":  "wind",
-        "region":  "Europe",
-        "country":  "Germany"
-    },
-    {
-        "id":  "trumpet",
-        "name":  "Trumpet",
-        "file":  "instruments/trumpet.aether-instrument",
-        "family":  "wind",
-        "region":  "Europe",
-        "country":  "Germany"
-    },
-    {
-        "id":  "clarinet",
-        "name":  "Clarinet",
-        "file":  "instruments/clarinet.aether-instrument",
-        "family":  "wind",
-        "region":  "Europe",
-        "country":  "Germany"
-    }
+  {
+    "id": "krar",
+    "name": "Krar",
+    "file": "instruments/krar.aether-instrument",
+    "family": "plucked-string",
+    "region": "East Africa",
+    "country": "Ethiopia",
+    "hasSamples": false
+  },
+  {
+    "id": "masenqo",
+    "name": "Masenqo",
+    "file": "instruments/masenqo.aether-instrument",
+    "family": "bowed-string",
+    "region": "East Africa",
+    "country": "Ethiopia",
+    "hasSamples": false
+  },
+  {
+    "id": "begena",
+    "name": "Begena",
+    "file": "instruments/begena.aether-instrument",
+    "family": "plucked-string",
+    "region": "East Africa",
+    "country": "Ethiopia",
+    "hasSamples": false
+  },
+  {
+    "id": "washint",
+    "name": "Washint",
+    "file": "instruments/washint.aether-instrument",
+    "family": "wind",
+    "region": "East Africa",
+    "country": "Ethiopia",
+    "hasSamples": false
+  },
+  {
+    "id": "kebero",
+    "name": "Kebero",
+    "file": "instruments/kebero.aether-instrument",
+    "family": "percussion",
+    "region": "East Africa",
+    "country": "Ethiopia",
+    "hasSamples": false
+  },
+  {
+    "id": "tsinatsil",
+    "name": "Tsinatsil",
+    "file": "instruments/tsinatsil.aether-instrument",
+    "family": "percussion",
+    "region": "East Africa",
+    "country": "Ethiopia",
+    "hasSamples": false
+  },
+  {
+    "id": "masenko",
+    "name": "Masenko",
+    "file": "instruments/masenko.aether-instrument",
+    "family": "bowed-string",
+    "region": "East Africa",
+    "country": "Ethiopia",
+    "hasSamples": false
+  },
+  {
+    "id": "kirar",
+    "name": "Kirar",
+    "file": "instruments/kirar.aether-instrument",
+    "family": "plucked-string",
+    "region": "East Africa",
+    "country": "Eritrea",
+    "hasSamples": false
+  },
+  {
+    "id": "kora",
+    "name": "Kora",
+    "file": "instruments/kora.aether-instrument",
+    "family": "plucked-string",
+    "region": "West Africa",
+    "country": "Senegal",
+    "hasSamples": false
+  },
+  {
+    "id": "balafon",
+    "name": "Balafon",
+    "file": "instruments/balafon.aether-instrument",
+    "family": "percussion",
+    "region": "West Africa",
+    "country": "Mali",
+    "hasSamples": false
+  },
+  {
+    "id": "djembe",
+    "name": "Djembe",
+    "file": "instruments/djembe.aether-instrument",
+    "family": "percussion",
+    "region": "West Africa",
+    "country": "Guinea",
+    "hasSamples": false
+  },
+  {
+    "id": "talking-drum",
+    "name": "Talking Drum",
+    "file": "instruments/talking-drum.aether-instrument",
+    "family": "percussion",
+    "region": "West Africa",
+    "country": "Nigeria",
+    "hasSamples": false
+  },
+  {
+    "id": "ngoni",
+    "name": "Ngoni",
+    "file": "instruments/ngoni.aether-instrument",
+    "family": "plucked-string",
+    "region": "West Africa",
+    "country": "Mali",
+    "hasSamples": false
+  },
+  {
+    "id": "mbira",
+    "name": "Mbira",
+    "file": "instruments/mbira.aether-instrument",
+    "family": "plucked-string",
+    "region": "West Africa",
+    "country": "Zimbabwe",
+    "hasSamples": false
+  },
+  {
+    "id": "shekere",
+    "name": "Shekere",
+    "file": "instruments/shekere.aether-instrument",
+    "family": "percussion",
+    "region": "West Africa",
+    "country": "Nigeria",
+    "hasSamples": false
+  },
+  {
+    "id": "oud",
+    "name": "Oud",
+    "file": "instruments/oud.aether-instrument",
+    "family": "plucked-string",
+    "region": "North Africa / Middle East",
+    "country": "Iraq",
+    "hasSamples": false
+  },
+  {
+    "id": "qanun",
+    "name": "Qanun",
+    "file": "instruments/qanun.aether-instrument",
+    "family": "plucked-string",
+    "region": "North Africa / Middle East",
+    "country": "Turkey",
+    "hasSamples": false
+  },
+  {
+    "id": "ney",
+    "name": "Ney",
+    "file": "instruments/ney.aether-instrument",
+    "family": "wind",
+    "region": "North Africa / Middle East",
+    "country": "Iran",
+    "hasSamples": false
+  },
+  {
+    "id": "darbuka",
+    "name": "Darbuka",
+    "file": "instruments/darbuka.aether-instrument",
+    "family": "percussion",
+    "region": "North Africa / Middle East",
+    "country": "Egypt",
+    "hasSamples": false
+  },
+  {
+    "id": "riq",
+    "name": "Riq",
+    "file": "instruments/riq.aether-instrument",
+    "family": "percussion",
+    "region": "North Africa / Middle East",
+    "country": "Egypt",
+    "hasSamples": false
+  },
+  {
+    "id": "buzuq",
+    "name": "Buzuq",
+    "file": "instruments/buzuq.aether-instrument",
+    "family": "plucked-string",
+    "region": "North Africa / Middle East",
+    "country": "Lebanon",
+    "hasSamples": false
+  },
+  {
+    "id": "saz",
+    "name": "Saz",
+    "file": "instruments/saz.aether-instrument",
+    "family": "plucked-string",
+    "region": "North Africa / Middle East",
+    "country": "Turkey",
+    "hasSamples": false
+  },
+  {
+    "id": "sitar",
+    "name": "Sitar",
+    "file": "instruments/sitar.aether-instrument",
+    "family": "plucked-string",
+    "region": "South Asia",
+    "country": "India",
+    "hasSamples": false
+  },
+  {
+    "id": "tabla",
+    "name": "Tabla",
+    "file": "instruments/tabla.aether-instrument",
+    "family": "percussion",
+    "region": "South Asia",
+    "country": "India",
+    "hasSamples": false
+  },
+  {
+    "id": "bansuri",
+    "name": "Bansuri",
+    "file": "instruments/bansuri.aether-instrument",
+    "family": "wind",
+    "region": "South Asia",
+    "country": "India",
+    "hasSamples": false
+  },
+  {
+    "id": "sarangi",
+    "name": "Sarangi",
+    "file": "instruments/sarangi.aether-instrument",
+    "family": "bowed-string",
+    "region": "South Asia",
+    "country": "India",
+    "hasSamples": false
+  },
+  {
+    "id": "sarod",
+    "name": "Sarod",
+    "file": "instruments/sarod.aether-instrument",
+    "family": "plucked-string",
+    "region": "South Asia",
+    "country": "India",
+    "hasSamples": false
+  },
+  {
+    "id": "veena",
+    "name": "Veena",
+    "file": "instruments/veena.aether-instrument",
+    "family": "plucked-string",
+    "region": "South Asia",
+    "country": "India",
+    "hasSamples": false
+  },
+  {
+    "id": "mridangam",
+    "name": "Mridangam",
+    "file": "instruments/mridangam.aether-instrument",
+    "family": "percussion",
+    "region": "South Asia",
+    "country": "India",
+    "hasSamples": false
+  },
+  {
+    "id": "erhu",
+    "name": "Erhu",
+    "file": "instruments/erhu.aether-instrument",
+    "family": "bowed-string",
+    "region": "East Asia",
+    "country": "China",
+    "hasSamples": false
+  },
+  {
+    "id": "guqin",
+    "name": "Guqin",
+    "file": "instruments/guqin.aether-instrument",
+    "family": "plucked-string",
+    "region": "East Asia",
+    "country": "China",
+    "hasSamples": false
+  },
+  {
+    "id": "pipa",
+    "name": "Pipa",
+    "file": "instruments/pipa.aether-instrument",
+    "family": "plucked-string",
+    "region": "East Asia",
+    "country": "China",
+    "hasSamples": false
+  },
+  {
+    "id": "dizi",
+    "name": "Dizi",
+    "file": "instruments/dizi.aether-instrument",
+    "family": "wind",
+    "region": "East Asia",
+    "country": "China",
+    "hasSamples": false
+  },
+  {
+    "id": "koto",
+    "name": "Koto",
+    "file": "instruments/koto.aether-instrument",
+    "family": "plucked-string",
+    "region": "East Asia",
+    "country": "Japan",
+    "hasSamples": false
+  },
+  {
+    "id": "shamisen",
+    "name": "Shamisen",
+    "file": "instruments/shamisen.aether-instrument",
+    "family": "plucked-string",
+    "region": "East Asia",
+    "country": "Japan",
+    "hasSamples": false
+  },
+  {
+    "id": "taiko",
+    "name": "Taiko",
+    "file": "instruments/taiko.aether-instrument",
+    "family": "percussion",
+    "region": "East Asia",
+    "country": "Japan",
+    "hasSamples": false
+  },
+  {
+    "id": "violin",
+    "name": "Violin",
+    "file": "instruments/violin.aether-instrument",
+    "family": "bowed-string",
+    "region": "Europe",
+    "country": "Italy",
+    "hasSamples": true
+  },
+  {
+    "id": "cello",
+    "name": "Cello",
+    "file": "instruments/cello.aether-instrument",
+    "family": "bowed-string",
+    "region": "Europe",
+    "country": "Italy",
+    "hasSamples": false
+  },
+  {
+    "id": "flute",
+    "name": "Flute",
+    "file": "instruments/flute.aether-instrument",
+    "family": "wind",
+    "region": "Europe",
+    "country": "Germany",
+    "hasSamples": true
+  },
+  {
+    "id": "oboe",
+    "name": "Oboe",
+    "file": "instruments/oboe.aether-instrument",
+    "family": "wind",
+    "region": "Europe",
+    "country": "Germany",
+    "hasSamples": false
+  },
+  {
+    "id": "trumpet",
+    "name": "Trumpet",
+    "file": "instruments/trumpet.aether-instrument",
+    "family": "wind",
+    "region": "Europe",
+    "country": "Germany",
+    "hasSamples": true
+  },
+  {
+    "id": "clarinet",
+    "name": "Clarinet",
+    "file": "instruments/clarinet.aether-instrument",
+    "family": "wind",
+    "region": "Europe",
+    "country": "Germany",
+    "hasSamples": true
+  },
+  {
+    "id": "accordion",
+    "name": "Accordion",
+    "file": "instruments/accordion.aether-instrument",
+    "family": "wind",
+    "region": "Europe",
+    "country": "France",
+    "hasSamples": false
+  },
+  {
+    "id": "bagpipe",
+    "name": "Bagpipe",
+    "file": "instruments/bagpipe.aether-instrument",
+    "family": "wind",
+    "region": "Europe",
+    "country": "Scotland",
+    "hasSamples": false
+  },
+  {
+    "id": "hurdy-gurdy",
+    "name": "Hurdy-Gurdy",
+    "file": "instruments/hurdy-gurdy.aether-instrument",
+    "family": "bowed-string",
+    "region": "Europe",
+    "country": "France",
+    "hasSamples": false
+  },
+  {
+    "id": "marimba",
+    "name": "Marimba",
+    "file": "instruments/marimba.aether-instrument",
+    "family": "percussion",
+    "region": "Americas",
+    "country": "Guatemala",
+    "hasSamples": false
+  },
+  {
+    "id": "charango",
+    "name": "Charango",
+    "file": "instruments/charango.aether-instrument",
+    "family": "plucked-string",
+    "region": "Americas",
+    "country": "Bolivia",
+    "hasSamples": false
+  },
+  {
+    "id": "cuatro",
+    "name": "Cuatro",
+    "file": "instruments/cuatro.aether-instrument",
+    "family": "plucked-string",
+    "region": "Americas",
+    "country": "Venezuela",
+    "hasSamples": false
+  },
+  {
+    "id": "steel-pan",
+    "name": "Steel Pan",
+    "file": "instruments/steel-pan.aether-instrument",
+    "family": "percussion",
+    "region": "Americas",
+    "country": "Trinidad and Tobago",
+    "hasSamples": false
+  },
+  {
+    "id": "berimbau",
+    "name": "Berimbau",
+    "file": "instruments/berimbau.aether-instrument",
+    "family": "plucked-string",
+    "region": "Americas",
+    "country": "Brazil",
+    "hasSamples": false
+  },
+  {
+    "id": "banjo",
+    "name": "Banjo",
+    "file": "instruments/banjo.aether-instrument",
+    "family": "plucked-string",
+    "region": "Americas",
+    "country": "USA",
+    "hasSamples": false
+  },
+  {
+    "id": "cajon",
+    "name": "Cajon",
+    "file": "instruments/cajon.aether-instrument",
+    "family": "percussion",
+    "region": "Americas",
+    "country": "Peru",
+    "hasSamples": false
+  },
+  {
+    "id": "rhodes-piano",
+    "name": "Rhodes Piano",
+    "file": "instruments/rhodes-piano.aether-instrument",
+    "family": "keyboard",
+    "region": "Electronic",
+    "country": "USA",
+    "hasSamples": false
+  },
+  {
+    "id": "moog-synth",
+    "name": "Moog Synthesizer",
+    "file": "instruments/moog-synth.aether-instrument",
+    "family": "electronic",
+    "region": "Electronic",
+    "country": "USA",
+    "hasSamples": false
+  },
+  {
+    "id": "theremin",
+    "name": "Theremin",
+    "file": "instruments/theremin.aether-instrument",
+    "family": "electronic",
+    "region": "Electronic",
+    "country": "Russia",
+    "hasSamples": false
+  },
+  {
+    "id": "mellotron",
+    "name": "Mellotron",
+    "file": "instruments/mellotron.aether-instrument",
+    "family": "keyboard",
+    "region": "Electronic",
+    "country": "UK",
+    "hasSamples": false
+  },
+  {
+    "id": "ondes-martenot",
+    "name": "Ondes Martenot",
+    "file": "instruments/ondes-martenot.aether-instrument",
+    "family": "electronic",
+    "region": "Electronic",
+    "country": "France",
+    "hasSamples": false
+  },
+  {
+    "id": "vocoder",
+    "name": "Vocoder",
+    "file": "instruments/vocoder.aether-instrument",
+    "family": "electronic",
+    "region": "Electronic",
+    "country": "Germany",
+    "hasSamples": false
+  },
+  {
+    "id": "harp",
+    "name": "Harp",
+    "file": "instruments/harp.aether-instrument",
+    "family": "plucked-string",
+    "region": "Europe",
+    "country": "France",
+    "hasSamples": true
+  }
 ]

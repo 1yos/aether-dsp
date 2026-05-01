@@ -1,0 +1,78 @@
+﻿{
+    "name":  "Harp",
+    "family":  "plucked-string",
+    "region":  "Europe",
+    "country":  "France",
+    "tuning":  {
+                   "name":  "12-tet",
+                   "frequencies":  null
+               },
+    "adsr":  {
+                 "attack":  0.01,
+                 "decay":  0.1,
+                 "sustain":  0.7,
+                 "release":  0.3
+             },
+    "zones":  [
+                  {
+                      "id":  "harp-45",
+                      "file_path":  "../../../../../samples/VSCO-2-CE/harp/harp_A2.wav",
+                      "root_note":  45,
+                      "note_low":  43,
+                      "note_high":  47,
+                      "velocity_low":  0,
+                      "velocity_high":  127,
+                      "articulation":  "SustainLoop",
+                      "volume_db":  0,
+                      "tune_cents":  0,
+                      "loop_start":  null,
+                      "loop_end":  null,
+                      "release_file":  null
+                  },
+                  {
+                      "id":  "harp-69",
+                      "file_path":  "../../../../../samples/VSCO-2-CE/harp/harp_A4.wav",
+                      "root_note":  69,
+                      "note_low":  67,
+                      "note_high":  71,
+                      "velocity_low":  0,
+                      "velocity_high":  127,
+                      "articulation":  "SustainLoop",
+                      "volume_db":  0,
+                      "tune_cents":  0,
+                      "loop_start":  null,
+                      "loop_end":  null,
+                      "release_file":  null
+                  },
+                  {
+                      "id":  "harp-59",
+                      "file_path":  "../../../../../samples/VSCO-2-CE/harp/harp_B3.wav",
+                      "root_note":  59,
+                      "note_low":  57,
+                      "note_high":  61,
+                      "velocity_low":  0,
+                      "velocity_high":  127,
+                      "articulation":  "SustainLoop",
+                      "volume_db":  0,
+                      "tune_cents":  0,
+                      "loop_start":  null,
+                      "loop_end":  null,
+                      "release_file":  null
+                  },
+                  {
+                      "id":  "harp-83",
+                      "file_path":  "../../../../../samples/VSCO-2-CE/harp/harp_B5.wav",
+                      "root_note":  83,
+                      "note_low":  81,
+                      "note_high":  85,
+                      "velocity_low":  0,
+                      "velocity_high":  127,
+                      "articulation":  "SustainLoop",
+                      "volume_db":  0,
+                      "tune_cents":  0,
+                      "loop_start":  null,
+                      "loop_end":  null,
+                      "release_file":  null
+                  }
+              ]
+}
