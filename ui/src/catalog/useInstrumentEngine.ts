@@ -1,63 +1,119 @@
 /**
  * useInstrumentEngine — bridges the catalog to the Rust audio engine.
  *
- * Provides:
- *  - addToCanvas(instrument)  → sends AddNode + LoadInstrument to host
- *  - playNote(instrument, note, velocity) → sends InjectMidi to host
- *  - stopNote(instrument, note) → sends NoteOff to host
+ * Add to Canvas:
+ *   1. Send add_node (SamplerNode) → host responds with snapshot containing new node ID
+ *   2. Send load_instrument with the instrument JSON → host loads WAV files and swaps in
+ *   3. Automatically connect SamplerNode → output node
+ *
+ * Try It (keyboard player):
+ *   - Creates a temporary SamplerNode, loads the instrument, connects to output
+ *   - On close, removes the temporary node
+ *
+ * Play note / Stop note:
+ *   - Sends inject_midi intents to the host
+ *   - Falls back to Web Audio when host is not connected
  */
 
 import { useCallback, useRef } from "react";
 import { useEngineStore } from "../studio/store/engineStore";
 import type { CatalogInstrument } from "./types";
 
+// Pending instrument load: after add_node we need to wait for the snapshot
+// to get the new node ID, then send load_instrument.
+interface PendingLoad {
+  instrumentId: string;
+  instrumentJson: string;
+  autoConnect: boolean;
+}
+
+// Global pending load state (outside React to survive re-renders)
+let pendingLoad: PendingLoad | null = null;
+
 export function useInstrumentEngine() {
   const sendIntent = useEngineStore((s) => s.sendIntent);
   const nodes = useEngineStore((s) => s.nodes);
+  const outputNodeId = useEngineStore((s) => s.outputNodeId);
+  const addNode = useEngineStore((s) => s.addNode);
 
-  // Track which catalog instrument id maps to which node id
-  const instrumentNodeMap = useRef<Map<string, number>>(new Map());
+  // Track catalog instrument ID → node ID mapping
+  const instrumentNodeMap = useRef<Map<string, string>>(new Map());
 
   /**
    * Add an instrument to the canvas as a SamplerNode.
-   * Returns the node id assigned by the host (from the next snapshot).
+   * The host will respond with a snapshot; the snapshot handler in
+   * useWebSocket picks up pendingLoad and sends load_instrument.
    */
   const addToCanvas = useCallback(
-    (instrument: CatalogInstrument) => {
+    async (instrument: CatalogInstrument) => {
       if (!sendIntent) return;
 
-      // 1. Add a SamplerNode to the graph
-      sendIntent({ type: "add_node", node_type: "SamplerNode" });
+      // Build the instrument JSON for the host
+      const instrumentJson = JSON.stringify({
+        name: instrument.name,
+        family: instrument.family,
+        region: instrument.region,
+        country: instrument.country,
+        tuning: { name: instrument.tuning, frequencies: null },
+        zones: [],
+        attack: 0.01,
+        decay: 0.1,
+        sustain: 0.7,
+        release: 0.3,
+        max_voices: 16,
+      });
 
-      // 2. The host will respond with a snapshot containing the new node.
-      //    We store the instrument id → node mapping so LoadInstrument can
-      //    be sent once we know the node id from the snapshot.
-      //    For now, tag the pending instrument so the snapshot handler can pick it up.
-      (window as unknown as Record<string, unknown>).__pendingInstrumentLoad =
-        instrument.id;
+      // Set pending load so the snapshot handler can pick it up
+      pendingLoad = {
+        instrumentId: instrument.id,
+        instrumentJson,
+        autoConnect: true,
+      };
+
+      // Add the SamplerNode — host will respond with snapshot
+      addNode("SamplerNode");
     },
-    [sendIntent],
+    [sendIntent, addNode],
   );
 
   /**
-   * Load a .aether-instrument JSON into an existing SamplerNode.
+   * Called by useWebSocket when a snapshot arrives after add_node.
+   * Finds the newest SamplerNode and sends load_instrument for it.
    */
-  const loadInstrumentIntoNode = useCallback(
-    (nodeId: number, generation: number, instrumentJson: string) => {
-      if (!sendIntent) return;
+  const handleSnapshotAfterAdd = useCallback(
+    (newNodeId: string, generation: number) => {
+      if (!pendingLoad || !sendIntent) return;
+      const { instrumentId, instrumentJson, autoConnect } = pendingLoad;
+      pendingLoad = null;
+
+      // Load the instrument into the new node
       sendIntent({
         type: "load_instrument",
-        node_id: nodeId,
+        node_id: parseInt(newNodeId, 10),
         generation,
         instrument_json: instrumentJson,
       });
+
+      // Track the mapping
+      instrumentNodeMap.current.set(instrumentId, newNodeId);
+
+      // Auto-connect to output if requested
+      if (autoConnect && outputNodeId) {
+        sendIntent({
+          type: "connect",
+          src_id: parseInt(newNodeId, 10),
+          src_gen: generation,
+          dst_id: parseInt(outputNodeId, 10),
+          dst_gen: 0,
+          slot: 0,
+        });
+      }
     },
-    [sendIntent],
+    [sendIntent, outputNodeId],
   );
 
   /**
-   * Play a note on the instrument's SamplerNode via MIDI injection.
-   * Falls back to Web Audio if the host is not connected.
+   * Play a note through the engine via MIDI injection.
    */
   const playNote = useCallback(
     (
@@ -95,23 +151,13 @@ export function useInstrumentEngine() {
     [sendIntent],
   );
 
-  /**
-   * Find the SamplerNode id for a given instrument (if it's been added to canvas).
-   */
-  const getNodeIdForInstrument = useCallback(
-    (instrumentId: string): number | null => {
-      return instrumentNodeMap.current.get(instrumentId) ?? null;
-    },
-    [],
-  );
-
   return {
     addToCanvas,
-    loadInstrumentIntoNode,
+    handleSnapshotAfterAdd,
     playNote,
     stopNote,
-    getNodeIdForInstrument,
     isEngineConnected: !!sendIntent,
     nodeCount: nodes.length,
+    getPendingLoad: () => pendingLoad,
   };
 }

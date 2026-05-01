@@ -142,6 +142,26 @@ export const NODE_DEFS: Record<string, NodeDef> = {
       { name: "Trigger", min: 0, max: 1, default: 0 },
     ],
   },
+  FormantFilter: {
+    type: "FormantFilter",
+    inputs: 1,
+    color: "#e91e8c",
+    params: [
+      { name: "Vowel", min: 0, max: 4, default: 0 },
+      { name: "Shift", min: -12, max: 12, default: 0 },
+      { name: "Wet", min: 0, max: 1, default: 0.5 },
+    ],
+  },
+  MoogLadder: {
+    type: "MoogLadder",
+    inputs: 1,
+    color: "#ff8c42",
+    params: [
+      { name: "Cutoff", min: 20, max: 20000, default: 2000 },
+      { name: "Resonance", min: 0, max: 4, default: 0.5 },
+      { name: "Drive", min: 0, max: 1, default: 0 },
+    ],
+  },
 };
 
 interface EngineStore {

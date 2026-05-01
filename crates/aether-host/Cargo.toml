@@ -23,6 +23,7 @@ aetherdsp-nodes   = { version = "0.1", path = "../aether-nodes" }
 aetherdsp-midi    = { version = "0.1", path = "../aether-midi" }
 aetherdsp-sampler = { version = "0.1", path = "../aether-sampler" }
 aetherdsp-timbre  = { version = "0.1", path = "../aether-timbre" }
+arc-swap = { workspace = true }
 cpal = { workspace = true }
 ringbuf = { workspace = true }
 hound = { workspace = true }

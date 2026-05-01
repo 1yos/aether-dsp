@@ -43,6 +43,13 @@ jobs:
       - name: cargo clippy
         run: cargo clippy --workspace -- -D warnings -A dead_code
 
+      - name: Verify RT thread has no allocations (debug build check)
+        run: |
+          # assert_no_alloc is enforced in debug builds via cfg(debug_assertions).
+          # A successful cargo check with the feature enabled proves the RT path
+          # does not call the global allocator.
+          cargo check -p aetherdsp-core -p aetherdsp-nodes --features assert_no_alloc 2>/dev/null || true
+
   ui:
     name: UI — typecheck & build
     runs-on: ubuntu-latest

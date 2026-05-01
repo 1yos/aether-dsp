@@ -152,7 +152,7 @@ impl Default for AetherPlugin {
 impl Plugin for AetherPlugin {
     const NAME: &'static str = "AetherDSP";
     const VENDOR: &'static str = "AetherDSP Project";
-    const URL: &'static str = "https://github.com/YOUR_USERNAME/aether-dsp";
+    const URL: &'static str = "https://github.com/1yos/aether-dsp";
     const EMAIL: &'static str = "contact@aetherdsp.dev";
     const VERSION: &'static str = "0.1.0";
 

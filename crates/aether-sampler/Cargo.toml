@@ -21,6 +21,7 @@ proptest = "1"
 [dependencies]
 aetherdsp-core = { version = "0.1", path = "../aether-core" }
 aetherdsp-midi = { version = "0.1", path = "../aether-midi" }
+arc-swap = { workspace = true }
 hound = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

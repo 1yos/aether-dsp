@@ -11,12 +11,14 @@ use aether_core::{
 };
 use aether_midi::event::MidiEvent;
 use aether_nodes::{
-    delay::DelayLine, envelope::AdsrEnvelope, filter::StateVariableFilter, gain::Gain,
-    karplus_strong::KarplusStrong, lfo::Lfo, mixer::Mixer, oscillator::Oscillator,
+    delay::DelayLine, envelope::AdsrEnvelope, filter::StateVariableFilter,
+    formant::FormantFilter, gain::Gain, karplus_strong::KarplusStrong, lfo::Lfo,
+    mixer::Mixer, moog_ladder::MoogLadder, oscillator::Oscillator,
     record::RecordNode, reverb::Reverb, scope::ScopeNode,
 };
 use aether_sampler::node::SamplerNode;
 use aether_sampler::instrument::{LoadedInstrument, SamplerInstrument};
+use arc_swap::ArcSwap;
 use aether_timbre::node::TimbreTransferNode;
 use ringbuf::{traits::Split, HeapCons, HeapRb};
 use serde::{Deserialize, Serialize};
@@ -101,7 +103,7 @@ pub enum NodeExtra {
     /// Instrument slot for a SamplerNode — shared Arc for loading instruments.
     SamplerSlot {
         midi_queue: Arc<Mutex<Vec<MidiEvent>>>,
-        instrument_slot: Arc<Mutex<Option<LoadedInstrument>>>,
+        instrument_slot: Arc<ArcSwap<Option<LoadedInstrument>>>,
     },
 }
 
@@ -131,8 +133,8 @@ pub struct GraphManager {
     /// Pending scope consumers produced by AddNode for ScopeNode.
     /// ws_server drains this after each handle() call.
     pub scope_consumers: HashMap<NodeId, HeapCons<f32>>,
-    /// Instrument slots for SamplerNodes — used by LoadInstrument intent.
-    pub instrument_slots: HashMap<NodeId, Arc<Mutex<Option<LoadedInstrument>>>>,
+    /// Instrument slots for SamplerNodes — ArcSwap for lock-free RT access.
+    pub instrument_slots: HashMap<NodeId, Arc<ArcSwap<Option<LoadedInstrument>>>>,
 }
 
 impl GraphManager {
@@ -415,8 +417,9 @@ impl GraphManager {
                     release_buffers,
                 };
 
-                // Push into the SamplerNode's instrument slot
-                *slot.lock().unwrap() = Some(loaded);
+                // Atomically swap in the new instrument — RT thread sees it on next process() call.
+                // No lock held during the swap. The old instrument is dropped after the swap.
+                slot.store(Arc::new(Some(loaded)));
 
                 Response::Ack { command: "load_instrument".into() }
             }            Intent::AnalyzeTimbre { .. } => Response::Ack { command: "analyze_timbre".into() },
@@ -670,6 +673,8 @@ fn make_node(node_type: &str, _sample_rate: f32) -> Option<(Box<dyn aether_core:
         "Lfo" => Some((Box::new(Lfo::new()), NodeExtra::None)),
         "Reverb" => Some((Box::new(Reverb::new(_sample_rate)), NodeExtra::None)),
         "KarplusStrong" => Some((Box::new(KarplusStrong::new()), NodeExtra::None)),
+        "FormantFilter" => Some((Box::new(FormantFilter::new()), NodeExtra::None)),
+        "MoogLadder" => Some((Box::new(MoogLadder::new()), NodeExtra::None)),
         "SamplerNode" => {
             let node = SamplerNode::new(_sample_rate);
             let queue = node.midi_queue();
@@ -699,6 +704,8 @@ fn init_default_params(scheduler: &mut Scheduler, id: NodeId, node_type: &str) {
         "Lfo" => &[1.0, 0.5, 0.0, 0.0],
         "Reverb" => &[0.5, 0.5, 0.3, 1.0],
         "KarplusStrong" => &[440.0, 0.995, 0.7, 0.0],
+        "FormantFilter" => &[0.0, 0.0, 0.5],
+        "MoogLadder" => &[2000.0, 0.5, 0.0],
         "Mixer" | "SamplerNode" | "RecordNode" | "ScopeNode" => &[],
         "TimbreTransferNode" => &[1.0],
         _ => &[],
