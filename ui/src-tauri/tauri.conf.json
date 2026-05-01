@@ -7,14 +7,14 @@
   },
   "package": {
     "productName": "Aether Studio",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "tauri": {
     "allowlist": {
       "all": false,
       "shell": {
         "all": false,
-        "execute": true,
+        "execute": false,
         "sidecar": true,
         "open": true
       },
@@ -23,7 +23,12 @@
       },
       "fs": {
         "all": true,
-        "scope": ["$APPDATA/*", "$DOCUMENT/*", "$DOWNLOAD/*", "$DESKTOP/*"]
+        "scope": [
+          "$APPDATA/aether-studio/**",
+          "$DOCUMENT/**",
+          "$DOWNLOAD/**",
+          "$DESKTOP/**"
+        ]
       }
     },
     "bundle": {
@@ -31,18 +36,32 @@
       "targets": "all",
       "identifier": "dev.aetherdsp.studio",
       "icon": [],
-      "externalBin": ["binaries/aether-host"]
+      "externalBin": ["binaries/aether-host"],
+      "resources": [],
+      "copyright": "MIT",
+      "category": "Music",
+      "shortDescription": "World music production studio",
+      "longDescription": "Aether Studio — a modular DAW celebrating instruments from around the world. 60 instruments, 8 regions, microtonal tuning systems, and a hard real-time audio engine."
     },
     "security": {
       "csp": null
     },
+    "updater": {
+      "active": false
+    },
     "windows": [
       {
-        "fullscreen": false,
-        "resizable": true,
+        "label": "main",
         "title": "Aether Studio",
-        "width": 1400,
-        "height": 900
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false,
+        "center": true
       }
     ]
   }
