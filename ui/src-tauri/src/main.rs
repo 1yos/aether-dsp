@@ -4,7 +4,7 @@
 )]
 
 use std::sync::Mutex;
-use tauri::{Manager, State};
+use tauri::Manager;
 
 struct HostProcess(Mutex<Option<tauri::async_runtime::JoinHandle<()>>>);
 
