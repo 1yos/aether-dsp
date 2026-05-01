@@ -12,8 +12,8 @@ use aether_core::{
 use aether_midi::event::MidiEvent;
 use aether_nodes::{
     delay::DelayLine, envelope::AdsrEnvelope, filter::StateVariableFilter,
-    formant::FormantFilter, gain::Gain, karplus_strong::KarplusStrong, lfo::Lfo,
-    mixer::Mixer, moog_ladder::MoogLadder, oscillator::Oscillator,
+    formant::FormantFilter, gain::Gain, granular::Granular, karplus_strong::KarplusStrong,
+    lfo::Lfo, mixer::Mixer, moog_ladder::MoogLadder, oscillator::Oscillator,
     record::RecordNode, reverb::Reverb, scope::ScopeNode,
 };
 use aether_sampler::node::SamplerNode;
@@ -675,6 +675,7 @@ fn make_node(node_type: &str, _sample_rate: f32) -> Option<(Box<dyn aether_core:
         "KarplusStrong" => Some((Box::new(KarplusStrong::new()), NodeExtra::None)),
         "FormantFilter" => Some((Box::new(FormantFilter::new()), NodeExtra::None)),
         "MoogLadder" => Some((Box::new(MoogLadder::new()), NodeExtra::None)),
+        "Granular" => Some((Box::new(Granular::new()), NodeExtra::None)),
         "SamplerNode" => {
             let node = SamplerNode::new(_sample_rate);
             let queue = node.midi_queue();
@@ -696,7 +697,7 @@ fn make_node(node_type: &str, _sample_rate: f32) -> Option<(Box<dyn aether_core:
 
 fn init_default_params(scheduler: &mut Scheduler, id: NodeId, node_type: &str) {
     let defaults: &[f32] = match node_type {
-        "Oscillator" => &[440.0, 0.5, 0.0],
+        "Oscillator" => &[440.0, 0.5, 0.0, -1.0],
         "StateVariableFilter" => &[2000.0, 1.0, 0.0],
         "AdsrEnvelope" => &[0.01, 0.1, 0.7, 0.3, 1.0],
         "DelayLine" => &[0.25, 0.4, 0.5],
@@ -706,6 +707,7 @@ fn init_default_params(scheduler: &mut Scheduler, id: NodeId, node_type: &str) {
         "KarplusStrong" => &[440.0, 0.995, 0.7, 0.0],
         "FormantFilter" => &[0.0, 0.0, 0.5],
         "MoogLadder" => &[2000.0, 0.5, 0.0],
+        "Granular" => &[80.0, 8.0, 0.3, 0.5, 0.2, 0.8],
         "Mixer" | "SamplerNode" | "RecordNode" | "ScopeNode" => &[],
         "TimbreTransferNode" => &[1.0],
         _ => &[],

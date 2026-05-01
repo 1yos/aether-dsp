@@ -39,6 +39,7 @@ export const NODE_DEFS: Record<string, NodeDef> = {
       { name: "Frequency", min: 20, max: 20000, default: 440 },
       { name: "Amplitude", min: 0, max: 1, default: 0.5 },
       { name: "Waveform", min: 0, max: 3, default: 0 },
+      { name: "MIDI Note", min: -1, max: 127, default: -1 },
     ],
   },
   StateVariableFilter: {
@@ -160,6 +161,19 @@ export const NODE_DEFS: Record<string, NodeDef> = {
       { name: "Cutoff", min: 20, max: 20000, default: 2000 },
       { name: "Resonance", min: 0, max: 4, default: 0.5 },
       { name: "Drive", min: 0, max: 1, default: 0 },
+    ],
+  },
+  Granular: {
+    type: "Granular",
+    inputs: 1,
+    color: "#00897b",
+    params: [
+      { name: "Grain Size", min: 10, max: 500, default: 80 },
+      { name: "Density", min: 1, max: 50, default: 8 },
+      { name: "Pitch Scatter", min: 0, max: 2, default: 0.3 },
+      { name: "Position", min: 0, max: 1, default: 0.5 },
+      { name: "Pos Scatter", min: 0, max: 1, default: 0.2 },
+      { name: "Wet", min: 0, max: 1, default: 0.8 },
     ],
   },
 };

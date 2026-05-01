@@ -8,6 +8,19 @@ import { useEngineStore } from "../store/engineStore";
 const WS_URL = "ws://127.0.0.1:9001";
 const BACKOFF = [1000, 2000, 4000, 8000, 16000, 30000];
 
+// Pending instrument load — set by useInstrumentEngine.addToCanvas()
+// Picked up here when the snapshot arrives with the new node ID.
+let _pendingInstrumentLoad: {
+  instrumentJson: string;
+  autoConnect: boolean;
+} | null = null;
+
+export function setPendingInstrumentLoad(
+  data: { instrumentJson: string; autoConnect: boolean } | null,
+) {
+  _pendingInstrumentLoad = data;
+}
+
 export function useEngine() {
   const ws = useRef<WebSocket | null>(null);
   const attempt = useRef(0);
@@ -56,6 +69,53 @@ export function useEngine() {
         const msg = JSON.parse(e.data as string);
         if (msg.type === "snapshot") {
           applySnapshot(msg);
+
+          // If there's a pending instrument load (from "Add to Canvas"),
+          // find the newest SamplerNode in the snapshot and load the instrument into it.
+          if (_pendingInstrumentLoad) {
+            const pending = _pendingInstrumentLoad;
+            _pendingInstrumentLoad = null;
+
+            // Find the SamplerNode with the highest ID (most recently added)
+            const samplerNodes = (
+              msg.nodes as Array<{
+                id: number;
+                generation: number;
+                node_type: string;
+              }>
+            ).filter((n) => n.node_type === "SamplerNode");
+
+            if (samplerNodes.length > 0) {
+              const newest = samplerNodes.reduce((a, b) =>
+                a.id > b.id ? a : b,
+              );
+              const send = useEngineStore.getState().sendIntent;
+              if (send) {
+                // Load the instrument
+                send({
+                  type: "load_instrument",
+                  node_id: newest.id,
+                  generation: newest.generation,
+                  instrument_json: pending.instrumentJson,
+                });
+
+                // Auto-connect to output node if requested
+                if (pending.autoConnect) {
+                  const outputNodeId = useEngineStore.getState().outputNodeId;
+                  if (outputNodeId) {
+                    send({
+                      type: "connect",
+                      src_id: newest.id,
+                      src_gen: newest.generation,
+                      dst_id: parseInt(outputNodeId, 10),
+                      dst_gen: 0,
+                      slot: 0,
+                    });
+                  }
+                }
+              }
+            }
+          }
         } else if (msg.type === "midi_ports") {
           // Response to MidiListPorts intent — update available ports list
           setMidiPorts(msg.ports as string[]);

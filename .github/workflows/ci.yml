@@ -11,8 +11,11 @@ env:
 
 jobs:
   rust:
-    name: Rust — check & test
-    runs-on: ubuntu-latest
+    name: Rust — ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +34,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Install ALSA dev headers (required by cpal on Linux)
+      - name: Install ALSA dev headers (Linux only)
+        if: runner.os == 'Linux'
         run: sudo apt-get install -y libasound2-dev
 
       - name: cargo check --workspace
@@ -44,10 +48,8 @@ jobs:
         run: cargo clippy --workspace -- -D warnings -A dead_code
 
       - name: Verify RT thread has no allocations (debug build check)
+        if: runner.os == 'Linux'
         run: |
-          # assert_no_alloc is enforced in debug builds via cfg(debug_assertions).
-          # A successful cargo check with the feature enabled proves the RT path
-          # does not call the global allocator.
           cargo check -p aetherdsp-core -p aetherdsp-nodes --features assert_no_alloc 2>/dev/null || true
 
   ui:

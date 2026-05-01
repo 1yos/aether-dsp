@@ -3,6 +3,7 @@ pub mod envelope;
 pub mod filter;
 pub mod formant;
 pub mod gain;
+pub mod granular;
 pub mod karplus_strong;
 pub mod lfo;
 pub mod mixer;

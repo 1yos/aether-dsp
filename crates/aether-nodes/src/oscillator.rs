@@ -1,9 +1,10 @@
-//! Band-limited wavetable oscillator.
+//! Band-limited wavetable oscillator with tuning table support.
 //!
 //! Param layout:
-//!   0 = frequency (Hz)
+//!   0 = frequency (Hz) — overridden by tuning table when MIDI note is set
 //!   1 = amplitude (0..1)
 //!   2 = waveform  (0=sine, 1=saw, 2=square, 3=triangle)
+//!   3 = midi_note (0..127, -1 = use frequency param directly)
 
 use aether_core::{node::DspNode, param::ParamBlock, state::StateBlob, BUFFER_SIZE, MAX_INPUTS};
 use std::f32::consts::TAU;
@@ -15,11 +16,24 @@ struct OscState {
 
 pub struct Oscillator {
     phase: f32,
+    /// Optional tuning table — when set, MIDI note param drives frequency.
+    /// Stored as 128 f32 values (one per MIDI note).
+    tuning: Option<Box<[f32; 128]>>,
 }
 
 impl Oscillator {
     pub fn new() -> Self {
-        Self { phase: 0.0 }
+        Self { phase: 0.0, tuning: None }
+    }
+
+    /// Load a tuning table into this oscillator.
+    /// After loading, param 3 (midi_note) drives the frequency.
+    pub fn set_tuning(&mut self, frequencies: [f32; 128]) {
+        self.tuning = Some(Box::new(frequencies));
+    }
+
+    pub fn clear_tuning(&mut self) {
+        self.tuning = None;
     }
 
     #[inline(always)]
@@ -87,9 +101,22 @@ impl DspNode for Oscillator {
         sample_rate: f32,
     ) {
         for sample in output.iter_mut() {
-            let freq = params.get(0).current.max(0.01);
-            let amp = params.get(1).current.clamp(0.0, 1.0);
+            let amp  = params.get(1).current.clamp(0.0, 1.0);
             let wave = params.get(2).current;
+
+            // Frequency: use tuning table if available and midi_note param is set
+            let freq = if let Some(ref tuning) = self.tuning {
+                let midi = params.get(3).current;
+                if midi >= 0.0 {
+                    let note = (midi as usize).min(127);
+                    tuning[note].max(0.01)
+                } else {
+                    params.get(0).current.max(0.01)
+                }
+            } else {
+                params.get(0).current.max(0.01)
+            };
+
             *sample = self.generate_sample(freq, amp, wave, sample_rate);
             params.tick_all();
         }
