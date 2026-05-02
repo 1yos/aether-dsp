@@ -36,7 +36,9 @@ jobs:
 
       - name: Install ALSA dev headers (Linux only)
         if: runner.os == 'Linux'
-        run: sudo apt-get install -y libasound2-dev
+        run: |
+          sudo apt-get update || (sleep 15 && sudo apt-get update)
+          sudo apt-get install -y --fix-missing libasound2-dev
 
       - name: cargo check --workspace
         run: cargo check --workspace
@@ -98,10 +100,21 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Cache cargo registry (Tauri)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ui/src-tauri/target
+          key: tauri-cargo-${{ hashFiles('ui/src-tauri/Cargo.lock', 'ui/src-tauri/Cargo.toml') }}
+          restore-keys: |
+            tauri-cargo-
+
       - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          sudo apt-get update || (sleep 15 && sudo apt-get update)
+          sudo apt-get install -y --fix-missing \
             libasound2-dev \
             libwebkit2gtk-4.0-dev \
             libgtk-3-dev \
