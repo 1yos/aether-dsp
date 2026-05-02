@@ -2,6 +2,9 @@
 # Use MSYS2 MinGW-w64 toolchain — has libgcc_eh and a working dlltool
 linker = "C:\\msys64\\mingw64\\bin\\gcc.exe"
 ar = "C:\\msys64\\mingw64\\bin\\ar.exe"
+# Enable AVX2 + FMA on the local machine for maximum SIMD throughput.
+# The CI runner uses a generic x86_64 baseline (no native flag there).
+rustflags = ["-C", "target-cpu=native"]
 
 [env]
 # Ensure MSYS2 tools take precedence over TDM-GCC for dlltool

@@ -388,3 +388,62 @@
   border-color: var(--border-strong);
   color: var(--text-primary);
 }
+
+/* ── Microtonal visualization ─────────────────────────────────────────────── */
+
+/* Cent deviation bar on white keys — fills from the bottom */
+.kp-cent-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  pointer-events: none;
+  transition: height 0.2s ease;
+  mix-blend-mode: multiply;
+}
+
+/* Cent deviation indicator on black keys — thin strip at bottom */
+.kp-cent-bar-black {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  pointer-events: none;
+}
+
+/* Tuning legend above the keyboard */
+.kp-tuning-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 11px;
+}
+
+.kp-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-tertiary);
+}
+
+.kp-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.kp-legend-label {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-weight: var(--font-medium);
+  text-transform: capitalize;
+}

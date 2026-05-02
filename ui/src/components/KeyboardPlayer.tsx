@@ -5,12 +5,17 @@
  * Each instrument family gets a custom playing interface.
  * Plays through the Rust engine via WebSocket MIDI injection,
  * falls back to Web Audio when host is not connected.
+ *
+ * Microtonal visualization: when the instrument uses a non-12-TET tuning,
+ * each key shows a cent-deviation indicator (colored bar + tooltip).
+ * Keys that are flat show a blue tint; sharp keys show a warm amber tint.
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { Instrument } from "../catalog/types";
 import { useInstrumentEngine } from "../catalog/useInstrumentEngine";
 import { getCountryFlag } from "../catalog/countryFlags";
+import { InstrumentInterface, hasCustomInterface } from "./InstrumentInterface";
 import "./KeyboardPlayer.css";
 
 interface KeyboardPlayerProps {
@@ -25,6 +30,57 @@ const BLACK_KEYS = ["W", "E", "T", "Y", "U", "O", "P"];
 const WHITE_NOTE_OFFSETS = [0, 2, 4, 5, 7, 9, 11, 12, 14];
 const BLACK_NOTE_OFFSETS = [1, 3, 6, 8, 10, 13, 15];
 
+// ── Microtonal tuning utilities ───────────────────────────────────────────────
+
+/**
+ * Tuning systems with their cent deviations from 12-TET per pitch class.
+ * Index 0 = C, 1 = C#, ..., 11 = B.
+ */
+const TUNING_CENTS: Record<string, number[]> = {
+  "arabic-maqam-rast": [0, 0, 0, -50, 0, 0, 0, 0, 0, 0, -50, 0],
+  "arabic-maqam-bayati": [0, -50, 0, -30, 0, 0, 0, 0, 0, 0, -50, 0],
+  "ethiopian-tizita": [0, -50, 0, -30, 0, 0, -20, 0, -40, 0, -30, 0],
+  "ethiopian-bati": [0, 0, -20, 0, 0, 0, -30, 0, 0, -20, 0, 0],
+  "indian-raga-yaman": [0, 0, 3.9, 0, -13.7, 0, -9.8, 2.0, 0, -15.6, 0, -11.7],
+  "gamelan-slendro": [0, 0, -40, 0, -20, 0, 0, -30, 0, -10, 0, 0],
+  "gamelan-pelog": [0, -80, 0, -30, 0, 0, -60, 0, -20, 0, 0, -50],
+  "just-intonation": [
+    0, 11.7, 3.9, 15.6, -13.7, -2.0, -9.8, 2.0, 13.7, -15.6, -17.6, -11.7,
+  ],
+};
+
+/**
+ * Get cent deviation for a MIDI note given a tuning name.
+ * Returns 0 for 12-TET or unknown tunings.
+ */
+function getCentDeviation(
+  midiNote: number,
+  tuningName: string | undefined,
+): number {
+  if (!tuningName) return 0;
+  const key = tuningName.toLowerCase().replace(/\s+/g, "-");
+  const cents = TUNING_CENTS[key];
+  if (!cents) return 0;
+  return cents[midiNote % 12];
+}
+
+/**
+ * Color for a cent deviation indicator.
+ * Flat (negative) → blue; sharp (positive) → amber; near-zero → transparent.
+ */
+function centDeviationColor(cents: number): string {
+  const abs = Math.abs(cents);
+  if (abs < 5) return "transparent";
+  const alpha = Math.min(abs / 50, 1) * 0.85;
+  if (cents < 0) {
+    // Flat: blue
+    return `rgba(56, 189, 248, ${alpha})`;
+  } else {
+    // Sharp: amber
+    return `rgba(251, 191, 36, ${alpha})`;
+  }
+}
+
 export function KeyboardPlayer({
   instrument,
   onClose,
@@ -35,6 +91,19 @@ export function KeyboardPlayer({
   const [activeNotes, setActiveNotes] = useState<Set<number>>(new Set());
   const audioCtxRef = useRef<AudioContext | null>(null);
   const { playNote, stopNote, isEngineConnected } = useInstrumentEngine();
+
+  // Precompute cent deviations for all MIDI notes in the visible range
+  const centDeviations = useMemo(() => {
+    const map: Record<number, number> = {};
+    for (let midi = 0; midi < 128; midi++) {
+      map[midi] = getCentDeviation(midi, instrument.tuning);
+    }
+    return map;
+  }, [instrument.tuning]);
+
+  const hasMicrotonalTuning = useMemo(() => {
+    return Object.values(centDeviations).some((c) => Math.abs(c) > 5);
+  }, [centDeviations]);
 
   const keyToMidi = useCallback(
     (key: string): number | null => {
@@ -161,6 +230,8 @@ export function KeyboardPlayer({
   }, [keyToMidi, handleNoteOn, handleNoteOff, onClose]);
 
   const flag = getCountryFlag(instrument.country);
+  const showCustomInterface = hasCustomInterface(instrument);
+  const [useCustomUI, setUseCustomUI] = useState(showCustomInterface);
 
   return (
     <div className="kp-overlay">
@@ -184,65 +255,154 @@ export function KeyboardPlayer({
               <span className="kp-engine-dot" />
               {isEngineConnected ? "Engine" : "Web Audio"}
             </div>
+            {showCustomInterface && (
+              <button
+                onClick={() => setUseCustomUI((v) => !v)}
+                style={{
+                  padding: "4px 10px",
+                  background: useCustomUI
+                    ? "rgba(212,160,23,0.15)"
+                    : "rgba(255,255,255,0.05)",
+                  border: `1px solid ${useCustomUI ? "rgba(212,160,23,0.4)" : "#1e2d3d"}`,
+                  borderRadius: 6,
+                  color: useCustomUI ? "#d4a017" : "#64748b",
+                  fontSize: 11,
+                  cursor: "pointer",
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  fontWeight: 600,
+                  transition: "all 0.15s",
+                }}
+                title="Toggle between custom instrument interface and piano keyboard"
+              >
+                {useCustomUI ? "🎸 Custom" : "🎹 Piano"}
+              </button>
+            )}
             <button className="kp-close" onClick={onClose} title="Close (ESC)">
               ✕
             </button>
           </div>
         </div>
 
-        {/* Piano keyboard */}
-        <div className="kp-keyboard-container">
-          <div className="kp-keyboard">
-            {/* White keys */}
-            {Array.from({ length: 14 }).map((_, i) => {
-              const noteOffset =
-                WHITE_NOTE_OFFSETS[i % WHITE_NOTE_OFFSETS.length];
-              const midi = 12 * (octave + 1) + noteOffset + (i >= 9 ? 12 : 0);
-              const keyBinding = i < WHITE_KEYS.length ? WHITE_KEYS[i] : "";
-              const isActive = activeNotes.has(midi);
-              return (
-                <div
-                  key={i}
-                  className={`kp-white-key ${isActive ? "active" : ""}`}
-                  onMouseDown={() => handleNoteOn(midi)}
-                  onMouseUp={() => handleNoteOff(midi)}
-                  onMouseLeave={() =>
-                    activeNotes.has(midi) && handleNoteOff(midi)
-                  }
-                >
-                  {isActive && <div className="key-ripple" />}
-                  <span className="key-note">
-                    {["C", "D", "E", "F", "G", "A", "B"][i % 7]}
-                  </span>
-                  <span className="key-binding">{keyBinding}</span>
-                </div>
-              );
-            })}
-            {/* Black keys */}
-            {[0, 1, 3, 4, 5, 7, 8, 10, 11, 12].map((pos, idx) => {
-              const noteOffset =
-                BLACK_NOTE_OFFSETS[idx % BLACK_NOTE_OFFSETS.length];
-              const midi = 12 * (octave + 1) + noteOffset + (idx >= 7 ? 12 : 0);
-              const keyBinding = idx < BLACK_KEYS.length ? BLACK_KEYS[idx] : "";
-              const isActive = activeNotes.has(midi);
-              return (
-                <div
-                  key={`b${pos}`}
-                  className={`kp-black-key ${isActive ? "active" : ""}`}
-                  style={{ left: `${(pos + 0.7) * (100 / 14)}%` }}
-                  onMouseDown={() => handleNoteOn(midi)}
-                  onMouseUp={() => handleNoteOff(midi)}
-                  onMouseLeave={() =>
-                    activeNotes.has(midi) && handleNoteOff(midi)
-                  }
-                >
-                  {isActive && <div className="key-ripple" />}
-                  <span className="key-binding">{keyBinding}</span>
-                </div>
-              );
-            })}
+        {/* Custom instrument interface OR piano keyboard */}
+        {useCustomUI && showCustomInterface ? (
+          <InstrumentInterface
+            instrument={instrument}
+            octave={octave}
+            velocity={velocity}
+            activeNotes={activeNotes}
+            onNoteOn={handleNoteOn}
+            onNoteOff={handleNoteOff}
+          />
+        ) : (
+          <div className="kp-keyboard-container">
+            {hasMicrotonalTuning && (
+              <div className="kp-tuning-legend">
+                <span className="kp-legend-item">
+                  <span
+                    className="kp-legend-dot"
+                    style={{ background: "rgba(56,189,248,0.7)" }}
+                  />
+                  Flat (↓ cents)
+                </span>
+                <span className="kp-legend-item">
+                  <span
+                    className="kp-legend-dot"
+                    style={{ background: "rgba(251,191,36,0.7)" }}
+                  />
+                  Sharp (↑ cents)
+                </span>
+                <span className="kp-legend-label">
+                  {instrument.tuning?.replace(/-/g, " ")} tuning
+                </span>
+              </div>
+            )}
+            <div className="kp-keyboard">
+              {/* White keys */}
+              {Array.from({ length: 14 }).map((_, i) => {
+                const noteOffset =
+                  WHITE_NOTE_OFFSETS[i % WHITE_NOTE_OFFSETS.length];
+                const midi = 12 * (octave + 1) + noteOffset + (i >= 9 ? 12 : 0);
+                const keyBinding = i < WHITE_KEYS.length ? WHITE_KEYS[i] : "";
+                const isActive = activeNotes.has(midi);
+                const cents = centDeviations[midi] ?? 0;
+                const deviationColor = centDeviationColor(cents);
+                const showDeviation = Math.abs(cents) > 5;
+                return (
+                  <div
+                    key={i}
+                    className={`kp-white-key ${isActive ? "active" : ""}`}
+                    onMouseDown={() => handleNoteOn(midi)}
+                    onMouseUp={() => handleNoteOff(midi)}
+                    onMouseLeave={() =>
+                      activeNotes.has(midi) && handleNoteOff(midi)
+                    }
+                    title={
+                      showDeviation
+                        ? `${cents > 0 ? "+" : ""}${cents.toFixed(1)}¢`
+                        : undefined
+                    }
+                  >
+                    {/* Microtonal deviation indicator */}
+                    {showDeviation && (
+                      <div
+                        className="kp-cent-bar"
+                        style={{
+                          background: deviationColor,
+                          height: `${Math.min((Math.abs(cents) / 50) * 60, 60)}%`,
+                        }}
+                      />
+                    )}
+                    {isActive && <div className="key-ripple" />}
+                    <span className="key-note">
+                      {["C", "D", "E", "F", "G", "A", "B"][i % 7]}
+                    </span>
+                    <span className="key-binding">{keyBinding}</span>
+                  </div>
+                );
+              })}
+              {/* Black keys */}
+              {[0, 1, 3, 4, 5, 7, 8, 10, 11, 12].map((pos, idx) => {
+                const noteOffset =
+                  BLACK_NOTE_OFFSETS[idx % BLACK_NOTE_OFFSETS.length];
+                const midi =
+                  12 * (octave + 1) + noteOffset + (idx >= 7 ? 12 : 0);
+                const keyBinding =
+                  idx < BLACK_KEYS.length ? BLACK_KEYS[idx] : "";
+                const isActive = activeNotes.has(midi);
+                const cents = centDeviations[midi] ?? 0;
+                const deviationColor = centDeviationColor(cents);
+                const showDeviation = Math.abs(cents) > 5;
+                return (
+                  <div
+                    key={`b${pos}`}
+                    className={`kp-black-key ${isActive ? "active" : ""}`}
+                    style={{ left: `${(pos + 0.7) * (100 / 14)}%` }}
+                    onMouseDown={() => handleNoteOn(midi)}
+                    onMouseUp={() => handleNoteOff(midi)}
+                    onMouseLeave={() =>
+                      activeNotes.has(midi) && handleNoteOff(midi)
+                    }
+                    title={
+                      showDeviation
+                        ? `${cents > 0 ? "+" : ""}${cents.toFixed(1)}¢`
+                        : undefined
+                    }
+                  >
+                    {/* Microtonal deviation indicator on black key */}
+                    {showDeviation && (
+                      <div
+                        className="kp-cent-bar-black"
+                        style={{ background: deviationColor }}
+                      />
+                    )}
+                    {isActive && <div className="key-ripple" />}
+                    <span className="key-binding">{keyBinding}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Controls */}
         <div className="kp-controls">

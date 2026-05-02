@@ -20,6 +20,9 @@ struct LadderState {
 
 pub struct MoogLadder {
     state: LadderState,
+    /// Thermal voltage constant — used in the Huovilainen nonlinear model.
+    /// Kept as a field so it can be tuned per-instance if needed.
+    #[allow(dead_code)]
     thermal: f32,
 }
 

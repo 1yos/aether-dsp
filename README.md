@@ -41,27 +41,32 @@ A 4-mode music production interface built with React + Tauri:
 - **Arrange** — Timeline and piano roll with scale highlighting for world music tuning systems.
 - **Perform** — Clip launcher for live performance.
 
+**Custom instrument interfaces:** Plucked string instruments (Krar, Oud, Sitar, Kora) show an interactive fretboard. Percussion instruments (Djembe, Tabla, Kpanlogo) show a drum pad layout. Wind instruments show a breath pad. All interfaces fall back to the standard piano keyboard with a toggle button.
+
+**Microtonal keyboard visualization:** When an instrument uses a non-12-TET tuning, the piano keyboard shows cent-deviation indicators on each key — blue for flat, amber for sharp — so you can see exactly which notes are tuned differently.
+
 ---
 
 ## DSP Nodes
 
-| Node                  | Description                                                           |
-| --------------------- | --------------------------------------------------------------------- |
-| `Oscillator`          | BLEP anti-aliased sawtooth/square/triangle/sine, tuning table support |
-| `StateVariableFilter` | LP/HP/BP/Notch simultaneously (Cytomic SVF)                           |
-| `MoogLadder`          | Huovilainen model, self-oscillation, audio-rate modulation            |
-| `FormantFilter`       | Vowel shaping A/E/I/O/U morph — essential for wind instruments        |
-| `AdsrEnvelope`        | Sample-accurate ADSR with gate                                        |
-| `Lfo`                 | 5 waveforms: sine, triangle, square, S&H, random-smooth               |
-| `Reverb`              | Freeverb (8 comb + 4 allpass filters)                                 |
-| `DelayLine`           | Feedback delay with tempo sync                                        |
-| `KarplusStrong`       | Physically accurate plucked string synthesis                          |
-| `Granular`            | Grain size, density, pitch scatter, position — world music textures   |
-| `Gain`                | Smoothed gain control                                                 |
-| `Mixer`               | N-input summing mixer                                                 |
-| `SamplerNode`         | Polyphonic sampler, MIDI-driven, ArcSwap lock-free                    |
-| `TimbreTransferNode`  | FFT spectral envelope transfer                                        |
-| `ScopeNode`           | Oscilloscope output                                                   |
+| Node                  | Description                                                                                      |
+| --------------------- | ------------------------------------------------------------------------------------------------ |
+| `Oscillator`          | BLEP anti-aliased sawtooth/square/triangle/sine, tuning table support · SIMD-optimized sine path |
+| `StateVariableFilter` | LP/HP/BP/Notch simultaneously (Cytomic SVF)                                                      |
+| `MoogLadder`          | Huovilainen model, self-oscillation, audio-rate modulation                                       |
+| `FormantFilter`       | Vowel shaping A/E/I/O/U morph — essential for wind instruments                                   |
+| `AdsrEnvelope`        | Sample-accurate ADSR with gate                                                                   |
+| `Lfo`                 | 5 waveforms: sine, triangle, square, S&H, random-smooth                                          |
+| `Reverb`              | Freeverb (8 comb + 4 allpass filters)                                                            |
+| `DelayLine`           | Feedback delay with tempo sync                                                                   |
+| `KarplusStrong`       | Physically accurate plucked string synthesis                                                     |
+| `Granular`            | Grain size, density, pitch scatter, position — world music textures                              |
+| `Gain`                | Smoothed gain control                                                                            |
+| `Mixer`               | N-input summing mixer · SIMD FMA-optimized accumulation                                          |
+| `SamplerNode`         | Polyphonic sampler, MIDI-driven, ArcSwap lock-free, round-robin zones                            |
+| `TimbreTransferNode`  | FFT spectral envelope transfer                                                                   |
+| `ScopeNode`           | Oscilloscope output                                                                              |
+| `RecordNode`          | Lock-free WAV recording via SPSC ring buffer                                                     |
 
 ---
 
