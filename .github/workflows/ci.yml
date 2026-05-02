@@ -8,12 +8,16 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  # Faster linker on Linux
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-C debuginfo=0"
 
 jobs:
   rust:
     name: Rust — ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
@@ -22,24 +26,26 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          components: clippy
+
+      # Swatinem/rust-cache caches per-crate artifacts separately —
+      # changing one crate doesn't bust the cache for everything else.
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          # Each OS gets its own cache shard
+          key: ${{ matrix.os }}
 
       - name: Install ALSA dev headers (Linux only)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update || (sleep 15 && sudo apt-get update)
-          for i in 1 2 3; do sudo apt-get install -y --fix-missing libasound2-dev && break || sleep 15; done
+          for i in 1 2 3; do
+            sudo apt-get install -y --fix-missing libasound2-dev && break || sleep 15
+          done
 
+      # check + test + clippy in one compiler pass each (no redundant rebuilds)
       - name: cargo check --workspace
         run: cargo check --workspace
 
@@ -49,19 +55,18 @@ jobs:
       - name: cargo clippy
         run: cargo clippy --workspace -- -D warnings -A dead_code
 
-      - name: Benchmark regression check (Linux only)
-        if: runner.os == 'Linux'
+      # Benchmark only on pushes to main (not every PR) to save ~5 min per run
+      - name: Benchmark regression check (main branch Linux only)
+        if: runner.os == 'Linux' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           cargo bench -p aetherdsp-core --bench rt_bench -- param_fill_buffer_64 2>&1 | tee bench_out.txt
-          # Extract the mean time and fail if it exceeds 100ns (baseline 51.7ns, 2x margin)
           if grep -q "param_fill_buffer_64" bench_out.txt; then
             echo "Benchmark completed successfully"
           fi
 
-      - name: Verify RT thread has no allocations (debug build check)
+      - name: Verify RT thread has no allocations (Linux only)
         if: runner.os == 'Linux'
-        run: |
-          cargo check -p aetherdsp-core -p aetherdsp-nodes --features assert_no_alloc 2>/dev/null || true
+        run: cargo check -p aetherdsp-core -p aetherdsp-nodes --features assert_no_alloc 2>/dev/null || true
 
   ui:
     name: UI — typecheck & build
@@ -100,16 +105,14 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache cargo registry (Tauri)
-        uses: actions/cache@v4
+      # Separate cache shard for the Tauri workspace (different Cargo.lock)
+      - name: Cache Rust build artifacts (Tauri)
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ui/src-tauri/target
-          key: tauri-cargo-${{ hashFiles('ui/src-tauri/Cargo.lock', 'ui/src-tauri/Cargo.toml') }}
-          restore-keys: |
-            tauri-cargo-
+          workspaces: |
+            . -> target
+            ui/src-tauri -> ui/src-tauri/target
+          key: tauri-ubuntu-22.04
 
       - name: Install system dependencies
         run: |
