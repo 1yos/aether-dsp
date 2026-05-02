@@ -2,6 +2,9 @@
 target/
 Cargo.lock
 
+# Proptest regression files (auto-generated, not needed in VCS)
+proptest-regressions/
+
 # Node / UI
 ui/node_modules/
 ui/dist/
