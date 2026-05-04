@@ -1,0 +1,35 @@
+{
+  "name": "Krar",
+  "description": "Ethiopian 5-string lyre. Bright plucked string with characteristic buzzing resonance.",
+  "instrument_id": "krar",
+  "source": "synthesis",
+  "nodes": [
+    {
+      "id": "ks",
+      "type": "KarplusStrong",
+      "params": {
+        "Frequency": 440,
+        "Decay": 0.997,
+        "Brightness": 0.85,
+        "Trigger": 0
+      }
+    },
+    {
+      "id": "form",
+      "type": "FormantFilter",
+      "params": { "Vowel": 1, "Shift": 2, "Wet": 0.3 }
+    },
+    {
+      "id": "rev",
+      "type": "Reverb",
+      "params": { "Room Size": 0.35, "Damping": 0.6, "Wet": 0.18, "Width": 0.8 }
+    },
+    { "id": "out", "type": "Gain", "params": { "Gain": 0.85 } }
+  ],
+  "connections": [
+    { "from": "ks", "to": "form", "slot": 0 },
+    { "from": "form", "to": "rev", "slot": 0 },
+    { "from": "rev", "to": "out", "slot": 0 }
+  ],
+  "output_node": "out"
+}

@@ -1,0 +1,404 @@
+{
+  "version": "1.0.0",
+  "presets": [
+    {
+      "id": "krar",
+      "name": "Krar",
+      "region": "East Africa",
+      "family": "plucked-string",
+      "chain": "karplus-formant-reverb"
+    },
+    {
+      "id": "begena",
+      "name": "Begena",
+      "region": "East Africa",
+      "family": "plucked-string",
+      "chain": "karplus-reverb"
+    },
+    {
+      "id": "masenqo",
+      "name": "Masenqo",
+      "region": "East Africa",
+      "family": "bowed-string",
+      "chain": "saw-moog-reverb"
+    },
+    {
+      "id": "washint",
+      "name": "Washint",
+      "region": "East Africa",
+      "family": "wind",
+      "chain": "sine-formant-reverb"
+    },
+    {
+      "id": "kebero",
+      "name": "Kebero",
+      "region": "East Africa",
+      "family": "percussion",
+      "chain": "sine-envelope"
+    },
+    {
+      "id": "negarit",
+      "name": "Negarit",
+      "region": "East Africa",
+      "family": "percussion",
+      "chain": "sine-envelope"
+    },
+    {
+      "id": "atamo",
+      "name": "Atamo",
+      "region": "East Africa",
+      "family": "percussion",
+      "chain": "sine-envelope"
+    },
+    {
+      "id": "kora",
+      "name": "Kora",
+      "region": "West Africa",
+      "family": "plucked-string",
+      "chain": "karplus-reverb"
+    },
+    {
+      "id": "djembe",
+      "name": "Djembe",
+      "region": "West Africa",
+      "family": "percussion",
+      "chain": "sine-envelope-reverb"
+    },
+    {
+      "id": "balafon",
+      "name": "Balafon",
+      "region": "West Africa",
+      "family": "percussion",
+      "chain": "karplus-reverb"
+    },
+    {
+      "id": "kpanlogo",
+      "name": "Kpanlogo",
+      "region": "West Africa",
+      "family": "percussion",
+      "chain": "sine-envelope"
+    },
+    {
+      "id": "talking-drum",
+      "name": "Talking Drum",
+      "region": "West Africa",
+      "family": "percussion",
+      "chain": "sine-pitch-envelope"
+    },
+    {
+      "id": "ngoni",
+      "name": "Ngoni",
+      "region": "West Africa",
+      "family": "plucked-string",
+      "chain": "karplus-formant"
+    },
+    {
+      "id": "krin",
+      "name": "Krin",
+      "region": "West Africa",
+      "family": "percussion",
+      "chain": "karplus-short"
+    },
+    {
+      "id": "oud",
+      "name": "Oud",
+      "region": "North Africa / Middle East",
+      "family": "plucked-string",
+      "chain": "karplus-formant-reverb"
+    },
+    {
+      "id": "qanun",
+      "name": "Qanun",
+      "region": "North Africa / Middle East",
+      "family": "plucked-string",
+      "chain": "karplus-reverb"
+    },
+    {
+      "id": "ney",
+      "name": "Ney",
+      "region": "North Africa / Middle East",
+      "family": "wind",
+      "chain": "sine-formant-reverb"
+    },
+    {
+      "id": "darbuka",
+      "name": "Darbuka",
+      "region": "North Africa / Middle East",
+      "family": "percussion",
+      "chain": "sine-envelope"
+    },
+    {
+      "id": "riq",
+      "name": "Riq",
+      "region": "North Africa / Middle East",
+      "family": "percussion",
+      "chain": "sine-envelope-short"
+    },
+    {
+      "id": "rebab",
+      "name": "Rebab",
+      "region": "North Africa / Middle East",
+      "family": "bowed-string",
+      "chain": "saw-moog-reverb"
+    },
+    {
+      "id": "sitar",
+      "name": "Sitar",
+      "region": "South Asia",
+      "family": "plucked-string",
+      "chain": "karplus-formant-reverb"
+    },
+    {
+      "id": "tabla",
+      "name": "Tabla",
+      "region": "South Asia",
+      "family": "percussion",
+      "chain": "sine-envelope-reverb"
+    },
+    {
+      "id": "bansuri",
+      "name": "Bansuri",
+      "region": "South Asia",
+      "family": "wind",
+      "chain": "sine-formant-reverb"
+    },
+    {
+      "id": "sarod",
+      "name": "Sarod",
+      "region": "South Asia",
+      "family": "plucked-string",
+      "chain": "karplus-formant"
+    },
+    {
+      "id": "sarangi",
+      "name": "Sarangi",
+      "region": "South Asia",
+      "family": "bowed-string",
+      "chain": "saw-moog-reverb"
+    },
+    {
+      "id": "shehnai",
+      "name": "Shehnai",
+      "region": "South Asia",
+      "family": "wind",
+      "chain": "saw-formant-reverb"
+    },
+    {
+      "id": "mridangam",
+      "name": "Mridangam",
+      "region": "South Asia",
+      "family": "percussion",
+      "chain": "sine-envelope"
+    },
+    {
+      "id": "veena",
+      "name": "Veena",
+      "region": "South Asia",
+      "family": "plucked-string",
+      "chain": "karplus-formant-reverb"
+    },
+    {
+      "id": "erhu",
+      "name": "Erhu",
+      "region": "East Asia",
+      "family": "bowed-string",
+      "chain": "saw-moog-reverb"
+    },
+    {
+      "id": "pipa",
+      "name": "Pipa",
+      "region": "East Asia",
+      "family": "plucked-string",
+      "chain": "karplus-formant"
+    },
+    {
+      "id": "guqin",
+      "name": "Guqin",
+      "region": "East Asia",
+      "family": "plucked-string",
+      "chain": "karplus-reverb"
+    },
+    {
+      "id": "dizi",
+      "name": "Dizi",
+      "region": "East Asia",
+      "family": "wind",
+      "chain": "sine-formant-reverb"
+    },
+    {
+      "id": "shakuhachi",
+      "name": "Shakuhachi",
+      "region": "East Asia",
+      "family": "wind",
+      "chain": "sine-formant-reverb"
+    },
+    {
+      "id": "koto",
+      "name": "Koto",
+      "region": "East Asia",
+      "family": "plucked-string",
+      "chain": "karplus-reverb"
+    },
+    {
+      "id": "shamisen",
+      "name": "Shamisen",
+      "region": "East Asia",
+      "family": "plucked-string",
+      "chain": "karplus-formant"
+    },
+    {
+      "id": "biwa",
+      "name": "Biwa",
+      "region": "East Asia",
+      "family": "plucked-string",
+      "chain": "karplus-formant"
+    },
+    {
+      "id": "gayageum",
+      "name": "Gayageum",
+      "region": "East Asia",
+      "family": "plucked-string",
+      "chain": "karplus-reverb"
+    },
+    {
+      "id": "gamelan-saron",
+      "name": "Gamelan Saron",
+      "region": "East Asia",
+      "family": "percussion",
+      "chain": "karplus-bright-reverb"
+    },
+    {
+      "id": "gamelan-bonang",
+      "name": "Gamelan Bonang",
+      "region": "East Asia",
+      "family": "percussion",
+      "chain": "karplus-bright-reverb"
+    },
+    {
+      "id": "gamelan-gender",
+      "name": "Gamelan Gender",
+      "region": "East Asia",
+      "family": "percussion",
+      "chain": "karplus-bright-reverb"
+    },
+    {
+      "id": "mbira",
+      "name": "Mbira",
+      "region": "East Africa",
+      "family": "plucked-string",
+      "chain": "karplus-bright-reverb"
+    },
+    {
+      "id": "kalimba",
+      "name": "Kalimba",
+      "region": "East Africa",
+      "family": "plucked-string",
+      "chain": "karplus-bright-reverb"
+    },
+    {
+      "id": "duduk",
+      "name": "Duduk",
+      "region": "North Africa / Middle East",
+      "family": "wind",
+      "chain": "sine-formant-reverb"
+    },
+    {
+      "id": "zurna",
+      "name": "Zurna",
+      "region": "North Africa / Middle East",
+      "family": "wind",
+      "chain": "saw-formant-reverb"
+    },
+    {
+      "id": "tar",
+      "name": "Tar",
+      "region": "North Africa / Middle East",
+      "family": "plucked-string",
+      "chain": "karplus-formant"
+    },
+    {
+      "id": "dotar",
+      "name": "Dotar",
+      "region": "North Africa / Middle East",
+      "family": "plucked-string",
+      "chain": "karplus-formant"
+    },
+    {
+      "id": "charango",
+      "name": "Charango",
+      "region": "Americas",
+      "family": "plucked-string",
+      "chain": "karplus-formant"
+    },
+    {
+      "id": "cuatro",
+      "name": "Cuatro",
+      "region": "Americas",
+      "family": "plucked-string",
+      "chain": "karplus-formant"
+    },
+    {
+      "id": "cajon",
+      "name": "Cajón",
+      "region": "Americas",
+      "family": "percussion",
+      "chain": "sine-envelope-reverb"
+    },
+    {
+      "id": "berimbau",
+      "name": "Berimbau",
+      "region": "Americas",
+      "family": "plucked-string",
+      "chain": "karplus-pitch-envelope"
+    },
+    {
+      "id": "steel-pan",
+      "name": "Steel Pan",
+      "region": "Americas",
+      "family": "percussion",
+      "chain": "karplus-bright-reverb"
+    },
+    {
+      "id": "kulintang",
+      "name": "Kulintang",
+      "region": "East Asia",
+      "family": "percussion",
+      "chain": "karplus-bright-reverb"
+    },
+    {
+      "id": "angklung",
+      "name": "Angklung",
+      "region": "East Asia",
+      "family": "percussion",
+      "chain": "karplus-reverb"
+    },
+    {
+      "id": "sape",
+      "name": "Sape",
+      "region": "East Asia",
+      "family": "plucked-string",
+      "chain": "karplus-formant-reverb"
+    },
+    {
+      "id": "morin-khuur",
+      "name": "Morin Khuur",
+      "region": "East Asia",
+      "family": "bowed-string",
+      "chain": "saw-moog-reverb"
+    },
+    {
+      "id": "dombra",
+      "name": "Dombra",
+      "region": "East Asia",
+      "family": "plucked-string",
+      "chain": "karplus-formant"
+    },
+    {
+      "id": "balalaika",
+      "name": "Balalaika",
+      "region": "Europe",
+      "family": "plucked-string",
+      "chain": "karplus-formant"
+    }
+  ]
+}

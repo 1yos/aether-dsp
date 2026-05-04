@@ -1,0 +1,36 @@
+[package]
+name = "aether-samples"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Sample library manager for AetherDSP — on-demand download from GitHub Releases"
+publish = false
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = "1"
+# reqwest and tokio are OPTIONAL — only compiled when the "download" feature is enabled.
+# The workspace build (cargo check --workspace) does NOT enable this feature.
+# The Tauri app enables it explicitly: aether-samples = { features = ["download"] }
+reqwest = { version = "0.12", features = ["blocking", "json", "stream"], default-features = false, optional = true }
+tokio = { version = "1", features = ["full"], optional = true }
+sha2 = "0.10"
+hex = "0.4"
+# ruzstd: pure-Rust zstd decoder — no C build, no cc crate, no path-with-spaces issues.
+# Used for decompressing .tar.zst sample packs.
+ruzstd = "0.7"
+tar = "0.4"
+dirs = "5"
+
+[features]
+# Default is empty — no network deps in the workspace build.
+# Enable "download" explicitly in the Tauri app Cargo.toml.
+default = []
+download = ["dep:reqwest", "dep:tokio"]
+
+[dev-dependencies]
+tempfile = "3"

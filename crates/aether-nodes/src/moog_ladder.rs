@@ -14,6 +14,7 @@ use std::f32::consts::PI;
 #[derive(Clone, Copy, Default)]
 struct LadderState {
     stage: [f32; 4],
+    #[allow(dead_code)]
     stage_tanh: [f32; 4],
     delay: [f32; 6],
 }

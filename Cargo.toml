@@ -11,6 +11,7 @@ members = [
     "crates/aether-midi",
     "crates/aether-sampler",
     "crates/aether-timbre",
+    "crates/aether-samples",
     # "crates/aether-plugin",  # Build separately
 ]
 resolver = "2"

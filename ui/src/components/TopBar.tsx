@@ -8,6 +8,7 @@ import { STUDIO_MODES } from "../types/modes";
 import { useProjectSave } from "../hooks/useProjectSave";
 import { useEngineStore } from "../studio/store/engineStore";
 import { ModulationMatrix } from "./ModulationMatrix";
+import { SampleLibrary } from "./SampleLibrary";
 import { useState } from "react";
 import "./TopBar.css";
 
@@ -17,6 +18,7 @@ export function TopBar() {
   const wsStatus = useEngineStore((s) => s.wsStatus);
   const audioActive = useEngineStore((s) => s.audioActive);
   const [showModMatrix, setShowModMatrix] = useState(false);
+  const [showSampleLibrary, setShowSampleLibrary] = useState(false);
 
   const statusColor =
     wsStatus === "connected"
@@ -140,6 +142,65 @@ export function TopBar() {
             />
           </svg>
         </button>
+
+        {showModMatrix && (
+          <ModulationMatrix onClose={() => setShowModMatrix(false)} />
+        )}
+
+        {/* Sample Library panel */}
+        <button
+          className={`tb-btn ${showSampleLibrary ? "active" : ""}`}
+          title="Sample Library — download instrument packs"
+          onClick={() => setShowSampleLibrary((v) => !v)}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect
+              x="1"
+              y="2"
+              width="12"
+              height="2.5"
+              rx="0.5"
+              stroke="currentColor"
+              strokeWidth="1.2"
+            />
+            <rect
+              x="1"
+              y="5.75"
+              width="12"
+              height="2.5"
+              rx="0.5"
+              stroke="currentColor"
+              strokeWidth="1.2"
+            />
+            <rect
+              x="1"
+              y="9.5"
+              width="12"
+              height="2.5"
+              rx="0.5"
+              stroke="currentColor"
+              strokeWidth="1.2"
+            />
+            <circle cx="11" cy="3.25" r="1" fill="currentColor" />
+          </svg>
+        </button>
+
+        {showSampleLibrary && (
+          <div
+            style={{
+              position: "fixed",
+              top: 48,
+              right: 0,
+              width: 560,
+              height: "calc(100vh - 48px)",
+              zIndex: 1000,
+              boxShadow: "-8px 0 32px rgba(0,0,0,0.6)",
+              borderLeft: "1px solid #0f1e2e",
+            }}
+          >
+            <SampleLibrary onClose={() => setShowSampleLibrary(false)} />
+          </div>
+        )}
 
         {showModMatrix && (
           <ModulationMatrix onClose={() => setShowModMatrix(false)} />
