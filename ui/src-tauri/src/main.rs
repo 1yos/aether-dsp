@@ -47,21 +47,30 @@ async fn download_sample_pack(
     window: tauri::Window,
     state: State<'_, SampleState>,
 ) -> Result<(), String> {
-    // Clone pack_id for the closure
-    let pack_id_clone = pack_id.clone();
-    let window_clone = window.clone();
+    // Extract the Arc<Mutex<...>> so it can be moved into spawn_blocking
+    // without carrying the borrowed State lifetime across the await point.
+    let manager = state.manager.lock().unwrap();
+    drop(manager); // release lock immediately; we just needed to verify it's accessible
 
-    // Run the blocking download on a thread pool
+    // SAFETY: we move the raw pointer to the Mutex into the blocking thread.
+    // This is safe because `state` is managed by Tauri and lives for the
+    // entire application lifetime, outliving any spawned task.
+    let manager_ptr: *const Mutex<aether_samples::SampleManager> = &*state.manager;
+    // SAFETY: Tauri's managed state lives for 'static.
+    let manager_ref: &'static Mutex<aether_samples::SampleManager> =
+        unsafe { &*manager_ptr };
+
     let result = tauri::async_runtime::spawn_blocking(move || {
-        let mut manager = state.manager.lock().unwrap();
+        let mut manager = manager_ref.lock().unwrap();
         #[cfg(feature = "download")]
         {
-            manager.download_pack(&pack_id_clone, |progress| {
-                let _ = window_clone.emit("sample-download-progress", &progress);
+            manager.download_pack(&pack_id, |progress| {
+                let _ = window.emit("sample-download-progress", &progress);
             })
         }
         #[cfg(not(feature = "download"))]
         {
+            let _ = pack_id; // suppress unused warning
             Err(aether_samples::SampleError::Network(
                 "Download feature not enabled".into(),
             ))
