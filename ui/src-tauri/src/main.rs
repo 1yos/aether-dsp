@@ -4,7 +4,7 @@
 )]
 
 use std::sync::{Arc, Mutex};
-use tauri::{Manager, State};
+use tauri::State;
 
 // ── Sample library state ──────────────────────────────────────────────────────
 
@@ -22,12 +22,8 @@ fn get_host_url() -> String {
 /// Fetch the sample manifest from GitHub Releases and return it as JSON.
 #[tauri::command]
 fn fetch_sample_manifest(state: State<SampleState>) -> Result<String, String> {
-    #[cfg(feature = "download")]
-    {
-        let mut manager = state.manager.lock().unwrap();
-        manager.fetch_manifest().map_err(|e| e.to_string())?;
-    }
-    let manager = state.manager.lock().unwrap();
+    let mut manager = state.manager.lock().unwrap();
+    manager.fetch_manifest().map_err(|e| e.to_string())?;
     let manifest = manager.manifest.as_ref()
         .ok_or_else(|| "Manifest not loaded".to_string())?;
     serde_json::to_string(manifest).map_err(|e| e.to_string())
@@ -48,24 +44,13 @@ async fn download_sample_pack(
     window: tauri::Window,
     state: State<'_, SampleState>,
 ) -> Result<(), String> {
-    // Clone the Arc so the closure owns its own reference — no lifetime issues.
     let manager_arc = Arc::clone(&state.manager);
 
     let result = tauri::async_runtime::spawn_blocking(move || {
         let mut manager = manager_arc.lock().unwrap();
-        #[cfg(feature = "download")]
-        {
-            manager.download_pack(&pack_id, |progress| {
-                let _ = window.emit("sample-download-progress", &progress);
-            })
-        }
-        #[cfg(not(feature = "download"))]
-        {
-            let _ = pack_id;
-            Err(aether_samples::SampleError::Network(
-                "Download feature not enabled".into(),
-            ))
-        }
+        manager.download_pack(&pack_id, |progress| {
+            let _ = window.emit("sample-download-progress", &progress);
+        })
     })
     .await
     .map_err(|e| e.to_string())?;
@@ -156,10 +141,16 @@ fn main() {
                 }
             }
 
+            // Open DevTools automatically in debug builds.
             #[cfg(debug_assertions)]
-            if let Some(window) = app.get_window("main") {
-                window.open_devtools();
+            {
+                use tauri::Manager;
+                if let Some(window) = app.get_window("main") {
+                    window.open_devtools();
+                }
             }
+            #[cfg(not(debug_assertions))]
+            let _ = app;
 
             Ok(())
         })
