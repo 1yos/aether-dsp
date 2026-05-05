@@ -9,6 +9,7 @@ import { useProjectSave } from "../hooks/useProjectSave";
 import { useEngineStore } from "../studio/store/engineStore";
 import { ModulationMatrix } from "./ModulationMatrix";
 import { SampleLibrary } from "./SampleLibrary";
+import { SettingsPanel } from "./SettingsPanel";
 import { usePatchShare } from "../hooks/usePatchShare";
 import { useState, useEffect, useCallback } from "react";
 import "./TopBar.css";
@@ -24,6 +25,7 @@ export function TopBar({
   const audioActive = useEngineStore((s) => s.audioActive);
   const [showModMatrix, setShowModMatrix] = useState(false);
   const [showSampleLibrary, setShowSampleLibrary] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
@@ -383,6 +385,35 @@ export function TopBar({
 
         {showModMatrix && (
           <ModulationMatrix onClose={() => setShowModMatrix(false)} />
+        )}
+
+        <div className="tb-divider" />
+
+        {/* Settings */}
+        <button
+          className={`tb-btn ${showSettings ? "active" : ""}`}
+          title="Settings — audio device, buffer size, MIDI"
+          onClick={() => setShowSettings((v) => !v)}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle
+              cx="7"
+              cy="7"
+              r="2"
+              stroke="currentColor"
+              strokeWidth="1.2"
+            />
+            <path
+              d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.93 2.93l1.06 1.06M10.01 10.01l1.06 1.06M2.93 11.07l1.06-1.06M10.01 3.99l1.06-1.06"
+              stroke="currentColor"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+
+        {showSettings && (
+          <SettingsPanel onClose={() => setShowSettings(false)} />
         )}
 
         <div className="tb-divider" />

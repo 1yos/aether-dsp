@@ -11,6 +11,8 @@ import { useCatalog } from "../catalog/useCatalog";
 import { getCountryFlag } from "../catalog/countryFlags";
 import type { CatalogInstrument } from "../catalog/types";
 import { KeyboardPlayer } from "../components/KeyboardPlayer";
+import { useModeStore } from "../store/useModeStore";
+import { useEngineStore } from "../studio/store/engineStore";
 import "./ExploreMode.css";
 
 // ── Region definitions with geographic centers and cultural identity ──────────
@@ -501,6 +503,37 @@ export function ExploreMode() {
     useState<CatalogInstrument | null>(null);
   const [isSearching, setIsSearching] = useState(false);
 
+  const setMode = useModeStore((s) => s.setMode);
+  const loadPatch = useEngineStore((s) => s.loadPatch);
+
+  const handleAddToCanvas = useCallback(
+    async (instrument: CatalogInstrument) => {
+      // Load the instrument's .aether-instrument preset file
+      const presetId = instrument.id.toLowerCase().replace(/\s+/g, "-");
+      try {
+        const res = await fetch(`/instruments/${presetId}.aether-instrument`);
+        if (res.ok) {
+          const patch = await res.json();
+          loadPatch(patch);
+        } else {
+          // Fallback: load a generic SamplerNode patch for this instrument
+          loadPatch({
+            version: "1.0",
+            nodes: [{ id: "sampler-0", type: "SamplerNode", params: {} }],
+            connections: [],
+            output_node: "sampler-0",
+          });
+        }
+      } catch {
+        // Network error — still switch to Create mode with empty graph
+      }
+      setSelectedInstrument(null);
+      setKeyboardInstrument(null);
+      setMode("create");
+    },
+    [loadPatch, setMode],
+  );
+
   // Count instruments per region
   const instrumentCounts = instruments.reduce<Record<string, number>>(
     (acc, inst) => {
@@ -699,7 +732,7 @@ export function ExploreMode() {
           region={getRegionDef(selectedInstrument.region)}
           onClose={() => setSelectedInstrument(null)}
           onTryIt={handleTryIt}
-          onAddToCanvas={() => setSelectedInstrument(null)}
+          onAddToCanvas={() => handleAddToCanvas(selectedInstrument)}
         />
       )}
 
@@ -711,7 +744,7 @@ export function ExploreMode() {
             flag: getCountryFlag(keyboardInstrument.country),
           }}
           onClose={() => setKeyboardInstrument(null)}
-          onAddToCanvas={() => setKeyboardInstrument(null)}
+          onAddToCanvas={() => handleAddToCanvas(keyboardInstrument)}
         />
       )}
     </div>

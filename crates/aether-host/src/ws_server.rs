@@ -73,6 +73,17 @@ async fn handle_connection(stream: tokio::net::TcpStream, state: Arc<WsState>) {
     loop {
         tokio::select! {
             _ = scope_interval.tick() => {
+                // Apply modulation connections every frame (33ms) — reads LFO/envelope
+                // output buffers and injects values into target parameters.
+                {
+                    let gm = state.graph_manager.lock().await;
+                    if !gm.mod_connections.is_empty() {
+                        if let Ok(mut sched) = state.scheduler.try_lock() {
+                            gm.apply_modulation(&mut sched);
+                        }
+                    }
+                }
+
                 // Poll all scope consumers and send binary frames (64 samples = 256 bytes each)
                 let mut consumers = state.scope_consumers.lock().await;
                 for consumer in consumers.values_mut() {

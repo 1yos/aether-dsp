@@ -21,6 +21,7 @@ use aether_sampler::node::SamplerNode;
 use aether_sampler::instrument::{LoadedInstrument, SamplerInstrument};
 use arc_swap::ArcSwap;
 use aether_timbre::node::TimbreTransferNode;
+use aether_timbre::analysis::TimbreProfile;
 use ringbuf::{traits::Split, HeapCons, HeapRb};
 use serde::{Deserialize, Serialize};
 
@@ -108,6 +109,8 @@ pub enum NodeExtra {
         midi_queue: Arc<Mutex<Vec<MidiEvent>>>,
         instrument_slot: Arc<ArcSwap<Option<LoadedInstrument>>>,
     },
+    /// Timbre profile slot for a TimbreTransferNode.
+    TimbreSlot(std::sync::Arc<std::sync::Mutex<Option<aether_timbre::analysis::TimbreProfile>>>),
 }
 
 // ── RecordingState ────────────────────────────────────────────────────────────
@@ -151,6 +154,8 @@ pub struct GraphManager {
     pub instrument_slots: HashMap<NodeId, Arc<ArcSwap<Option<LoadedInstrument>>>>,
     /// Active modulation connections (LFO/envelope → parameter).
     pub mod_connections: Vec<ModConnection>,
+    /// TimbreTransfer profile slots — keyed by NodeId, shared with the RT node.
+    pub timbre_slots: HashMap<NodeId, std::sync::Arc<std::sync::Mutex<Option<aether_timbre::analysis::TimbreProfile>>>>,
 }
 
 impl GraphManager {
@@ -168,6 +173,7 @@ impl GraphManager {
             scope_consumers: HashMap::new(),
             instrument_slots: HashMap::new(),
             mod_connections: Vec::new(),
+            timbre_slots: HashMap::new(),
         }
     }
 
@@ -190,6 +196,7 @@ impl GraphManager {
                         self.midi_queues.lock().unwrap().insert(node_id, midi_queue);
                         self.instrument_slots.insert(node_id, instrument_slot);
                     }
+                    NodeExtra::TimbreSlot(slot) => { self.timbre_slots.insert(node_id, slot); }
                     _ => {}
                 }
                 let label = format!("{}-{}", node_type, node_id.index);
@@ -456,8 +463,64 @@ impl GraphManager {
                 });
                 Response::Ack { command: "remove_modulation".into() }
             }
-            Intent::AnalyzeTimbre { .. } => Response::Ack { command: "analyze_timbre".into() },
-            Intent::ApplyTimbreTransfer { .. } => Response::Ack { command: "apply_timbre_transfer".into() },
+            Intent::AnalyzeTimbre { instrument_json } => {
+                let instrument: aether_sampler::instrument::SamplerInstrument =
+                    match serde_json::from_str(&instrument_json) {
+                        Ok(i) => i,
+                        Err(e) => return Response::Error { message: format!("AnalyzeTimbre: bad JSON: {e}") },
+                    };
+
+                let base_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+                let fft_size = 2048usize;
+                let mut profile = TimbreProfile::new(&instrument.name, self.sample_rate, fft_size);
+
+                for zone in &instrument.zones {
+                    let path = if std::path::Path::new(&zone.file_path).is_absolute() {
+                        std::path::PathBuf::from(&zone.file_path)
+                    } else {
+                        base_dir.join(&zone.file_path)
+                    };
+                    if !path.exists() { continue; }
+
+                    if let Ok(buf) = aether_sampler::buffer::SampleBuffer::load_wav(&path) {
+                        profile.add_envelope(zone.root_note, &buf.samples);
+                    }
+                }
+
+                if profile.envelopes.is_empty() {
+                    return Response::Error { message: "AnalyzeTimbre: no valid audio zones found".into() };
+                }
+
+                // Push the profile into all TimbreTransferNode slots in the graph
+                for slot in self.timbre_slots.values() {
+                    if let Ok(mut guard) = slot.lock() {
+                        *guard = Some(profile.clone());
+                    }
+                }
+
+                Response::Ack { command: "analyze_timbre".into() }
+            }
+
+            Intent::ApplyTimbreTransfer { timbre_transfer_node_id, profile_name } => {
+                let _ = profile_name; // reserved for multi-profile support
+                let slot = self.timbre_slots.iter()
+                    .find(|(k, _)| k.index == timbre_transfer_node_id)
+                    .map(|(_, v)| std::sync::Arc::clone(v));
+
+                match slot {
+                    None => Response::Error {
+                        message: format!("No TimbreTransferNode with id {timbre_transfer_node_id}"),
+                    },
+                    Some(slot) => {
+                        let has_profile = slot.lock().map(|g| g.is_some()).unwrap_or(false);
+                        if has_profile {
+                            Response::Ack { command: "apply_timbre_transfer".into() }
+                        } else {
+                            Response::Error { message: "No timbre profile loaded — run AnalyzeTimbre first".into() }
+                        }
+                    }
+                }
+            }
             Intent::ExportClap { node_id: _, generation: _, output_path } => export_clap(output_path),
 
             Intent::StartRecording { output_path } => {
@@ -513,9 +576,8 @@ impl GraphManager {
     }
 
     /// Apply modulation connections: read LFO/envelope output from source nodes
-    /// and inject it into target parameter values. Called once per audio buffer
-    /// from the WebSocket handler after graph mutations settle.
-    #[allow(dead_code)]
+    /// and inject it into target parameter values. Called once per 33ms frame
+    /// from the WebSocket scope polling loop.
     pub fn apply_modulation(&self, scheduler: &mut Scheduler) {
         for conn in &self.mod_connections {
             let src_id = NodeId { index: conn.src_node_id, generation: conn.src_gen };
@@ -771,7 +833,11 @@ fn make_node(node_type: &str, _sample_rate: f32) -> Option<(Box<dyn aether_core:
             let slot = node.instrument_slot();
             Some((Box::new(node), NodeExtra::SamplerSlot { midi_queue: queue, instrument_slot: slot }))
         }
-        "TimbreTransferNode" => Some((Box::new(TimbreTransferNode::new()), NodeExtra::None)),
+        "TimbreTransferNode" => {
+            let node = TimbreTransferNode::new();
+            let slot = node.profile_slot();
+            Some((Box::new(node), NodeExtra::TimbreSlot(slot)))
+        }
         "RecordNode" => {
             let (producer, consumer) = HeapRb::<f32>::new(96_000).split();
             Some((Box::new(RecordNode::new(producer)), NodeExtra::RecordConsumer(consumer)))
