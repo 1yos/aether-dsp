@@ -1,4 +1,5 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
+import type React from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -18,8 +19,15 @@ import { ModuleBar } from "../../modules/ModuleBar";
 import { ModulePanel } from "../../modules/ModulePanel";
 import { useModuleStore } from "../../modules/useModuleStore";
 import { moduleRegistry } from "../../modules/moduleRegistry";
+import { WebGLCanvas } from "./WebGLCanvas";
+
+// Feature flag: set to true to use the WebGL canvas instead of React Flow.
+// The WebGL canvas handles 1000+ nodes at 60fps with animated signal flow.
+const USE_WEBGL = true;
 
 const nodeTypes = { studioNode: StudioNode };
+
+// ── React Flow inner canvas (fallback) ────────────────────────────────────────
 
 function Canvas() {
   const {
@@ -43,30 +51,22 @@ function Canvas() {
     removeNode: s.removeNode,
     selectedNodeId: s.selectedNodeId,
   }));
-
   const sendIntent = useEngineStore((s) => s.sendIntent);
-
   const { fitView } = useReactFlow();
 
-  // Fit view when nodes change significantly
-  const nodeCount = nodes.length;
   useEffect(() => {
-    if (nodeCount > 0) {
+    if (nodes.length > 0)
       setTimeout(() => fitView({ padding: 0.15, duration: 400 }), 60);
-    }
-  }, [nodeCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [nodes.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keyboard delete
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
       const isEditable =
         tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
-
       if ((e.key === "Delete" || e.key === "Backspace") && tag !== "INPUT") {
         if (selectedNodeId) removeNode(selectedNodeId);
       }
-
       if (e.ctrlKey && !isEditable) {
         if (e.key === "z" || e.key === "Z") {
           e.preventDefault();
@@ -83,9 +83,7 @@ function Canvas() {
 
   const onEdgeClick = useCallback(
     (_: React.MouseEvent, edge: { id: string }) => {
-      if (window.confirm("Disconnect this edge?")) {
-        disconnectEdge(edge.id);
-      }
+      if (window.confirm("Disconnect this edge?")) disconnectEdge(edge.id);
     },
     [disconnectEdge],
   );
@@ -134,14 +132,43 @@ function Canvas() {
   );
 }
 
-export function StudioCanvas({
+// ── Octave display ────────────────────────────────────────────────────────────
+
+function OctaveDisplay({
+  octaveRef,
+}: {
+  octaveRef: React.MutableRefObject<number>;
+}) {
+  const [octave, setOctave] = useState(octaveRef.current);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.code === "KeyZ" || e.code === "KeyX") {
+        setTimeout(() => setOctave(octaveRef.current), 0);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [octaveRef]);
+  return (
+    <span style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+      Oct: <span style={{ color: "#38bdf8", fontWeight: 700 }}>{octave}</span>
+      <span style={{ color: "#1e2d3d" }}>
+        {" "}
+        (C{octave}={octaveRef.current * 12})
+      </span>
+    </span>
+  );
+}
+
+// ── React Flow fallback layout ────────────────────────────────────────────────
+
+function ReactFlowLayout({
   onOpenInstrumentMaker,
 }: {
   onOpenInstrumentMaker?: () => void;
 }) {
-  useEngine(); // Connect to host
-  const octaveRef = useComputerKeyboard(); // PC keyboard → MIDI
-
+  useEngine();
+  const octaveRef = useComputerKeyboard();
   const modules = useModuleStore((s) => s.layout.modules);
 
   return (
@@ -156,8 +183,6 @@ export function StudioCanvas({
     >
       <TransportBar onOpenInstrumentMaker={onOpenInstrumentMaker} />
       <ModuleBar />
-
-      {/* Keyboard shortcut hint bar */}
       <div
         style={{
           padding: "0 16px",
@@ -195,15 +220,12 @@ export function StudioCanvas({
         </span>
         <OctaveDisplay octaveRef={octaveRef} />
       </div>
-
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <NodePalette />
         <div style={{ flex: 1, position: "relative" }}>
           <ReactFlowProvider>
             <Canvas />
           </ReactFlowProvider>
-
-          {/* Module overlay — floating panels above the ReactFlow canvas */}
           {modules.map((mod) => {
             const ModuleComponent = moduleRegistry[mod.type];
             return (
@@ -218,36 +240,15 @@ export function StudioCanvas({
   );
 }
 
-// ── Octave display — re-renders on Z/X keypress ───────────────────────────────
+// ── Public export ─────────────────────────────────────────────────────────────
 
-import { useState } from "react";
-import type React from "react";
-
-function OctaveDisplay({
-  octaveRef,
+export function StudioCanvas({
+  onOpenInstrumentMaker,
 }: {
-  octaveRef: React.MutableRefObject<number>;
+  onOpenInstrumentMaker?: () => void;
 }) {
-  const [octave, setOctave] = useState(octaveRef.current);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.code === "KeyZ" || e.code === "KeyX") {
-        // Small delay so octaveRef has already been updated
-        setTimeout(() => setOctave(octaveRef.current), 0);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [octaveRef]);
-
-  return (
-    <span style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-      Oct: <span style={{ color: "#38bdf8", fontWeight: 700 }}>{octave}</span>
-      <span style={{ color: "#1e2d3d" }}>
-        {" "}
-        (C{octave}={octaveRef.current * 12})
-      </span>
-    </span>
-  );
+  if (USE_WEBGL) {
+    return <WebGLCanvas onOpenInstrumentMaker={onOpenInstrumentMaker} />;
+  }
+  return <ReactFlowLayout onOpenInstrumentMaker={onOpenInstrumentMaker} />;
 }
