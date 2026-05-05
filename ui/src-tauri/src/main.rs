@@ -3,13 +3,13 @@
     windows_subsystem = "windows"
 )]
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tauri::{Manager, State};
 
 // ── Sample library state ──────────────────────────────────────────────────────
 
 struct SampleState {
-    manager: Mutex<aether_samples::SampleManager>,
+    manager: Arc<Mutex<aether_samples::SampleManager>>,
 }
 
 // ── Tauri commands ────────────────────────────────────────────────────────────
@@ -22,11 +22,12 @@ fn get_host_url() -> String {
 /// Fetch the sample manifest from GitHub Releases and return it as JSON.
 #[tauri::command]
 fn fetch_sample_manifest(state: State<SampleState>) -> Result<String, String> {
-    let mut manager = state.manager.lock().unwrap();
     #[cfg(feature = "download")]
     {
+        let mut manager = state.manager.lock().unwrap();
         manager.fetch_manifest().map_err(|e| e.to_string())?;
     }
+    let manager = state.manager.lock().unwrap();
     let manifest = manager.manifest.as_ref()
         .ok_or_else(|| "Manifest not loaded".to_string())?;
     serde_json::to_string(manifest).map_err(|e| e.to_string())
@@ -47,21 +48,11 @@ async fn download_sample_pack(
     window: tauri::Window,
     state: State<'_, SampleState>,
 ) -> Result<(), String> {
-    // Extract the Arc<Mutex<...>> so it can be moved into spawn_blocking
-    // without carrying the borrowed State lifetime across the await point.
-    let manager = state.manager.lock().unwrap();
-    drop(manager); // release lock immediately; we just needed to verify it's accessible
-
-    // SAFETY: we move the raw pointer to the Mutex into the blocking thread.
-    // This is safe because `state` is managed by Tauri and lives for the
-    // entire application lifetime, outliving any spawned task.
-    let manager_ptr: *const Mutex<aether_samples::SampleManager> = &*state.manager;
-    // SAFETY: Tauri's managed state lives for 'static.
-    let manager_ref: &'static Mutex<aether_samples::SampleManager> =
-        unsafe { &*manager_ptr };
+    // Clone the Arc so the closure owns its own reference — no lifetime issues.
+    let manager_arc = Arc::clone(&state.manager);
 
     let result = tauri::async_runtime::spawn_blocking(move || {
-        let mut manager = manager_ref.lock().unwrap();
+        let mut manager = manager_arc.lock().unwrap();
         #[cfg(feature = "download")]
         {
             manager.download_pack(&pack_id, |progress| {
@@ -70,7 +61,7 @@ async fn download_sample_pack(
         }
         #[cfg(not(feature = "download"))]
         {
-            let _ = pack_id; // suppress unused warning
+            let _ = pack_id;
             Err(aether_samples::SampleError::Network(
                 "Download feature not enabled".into(),
             ))
@@ -130,7 +121,7 @@ fn main() {
 
     tauri::Builder::default()
         .manage(SampleState {
-            manager: Mutex::new(sample_manager),
+            manager: Arc::new(Mutex::new(sample_manager)),
         })
         .setup(|app| {
             // Spawn aether-host as a sidecar process (Tauri v1 API).
