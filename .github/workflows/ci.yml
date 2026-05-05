@@ -11,6 +11,9 @@ env:
   # Faster linker on Linux
   CARGO_INCREMENTAL: 0
   RUSTFLAGS: "-C debuginfo=0"
+  # Opt into Node.js 24 for all actions (checkout, setup-node, etc.)
+  # Required before GitHub forces it on June 2nd, 2026.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   rust:
