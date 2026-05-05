@@ -9,8 +9,6 @@ use crate::error::SampleError;
 use crate::manifest::{PackStatus, SampleManifest};
 
 #[cfg(feature = "download")]
-use crate::manifest::SamplePack;
-#[cfg(feature = "download")]
 use crate::progress::{DownloadPhase, DownloadProgress};
 #[cfg(feature = "download")]
 use crate::{MANIFEST_URL, RELEASES_BASE_URL};
