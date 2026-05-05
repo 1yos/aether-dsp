@@ -345,7 +345,17 @@ impl ClapPlugin for AetherPlugin {
     ];
 }
 
+impl Vst3Plugin for AetherPlugin {
+    const VST3_CLASS_ID: [u8; 16] = *b"AetherDSPInstrmt";
+    const VST3_SUBCATEGORIES: &'static [Vst3SubCategory] = &[
+        Vst3SubCategory::Instrument,
+        Vst3SubCategory::Synth,
+        Vst3SubCategory::Stereo,
+    ];
+}
+
 nih_export_clap!(AetherPlugin);
+nih_export_vst3!(AetherPlugin);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

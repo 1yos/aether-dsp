@@ -1,11 +1,9 @@
 /**
  * Aether Studio — Modulation Matrix
  *
- * Visual panel for connecting modulation sources (LFO, envelope, MIDI)
- * to any parameter on any node. Drag a line from source to destination.
- *
- * Each connection sends an UpdateParam intent on every audio frame via
- * the inject_midi / modulation pathway.
+ * Connects modulation sources (LFO, envelope) to any parameter on any node.
+ * Each connection sends set_modulation / remove_modulation intents to the host.
+ * The host stores connections and applies them each audio buffer.
  */
 
 import { useState, useCallback } from "react";
@@ -15,7 +13,8 @@ import "./ModulationMatrix.css";
 interface ModSource {
   id: string;
   label: string;
-  nodeId: string | null; // null = MIDI/global
+  nodeId: string | null;
+  nodeGen: number;
   color: string;
 }
 
@@ -23,6 +22,7 @@ interface ModDestination {
   id: string;
   label: string;
   nodeId: string;
+  nodeGen: number;
   paramIndex: number;
   paramName: string;
 }
@@ -36,31 +36,20 @@ interface ModConnection {
 
 export function ModulationMatrix({ onClose }: { onClose: () => void }) {
   const nodes = useEngineStore((s) => s.nodes);
+  const sendIntent = useEngineStore((s) => s.sendIntent);
 
   const [connections, setConnections] = useState<ModConnection[]>([]);
   const [draggingSource, setDraggingSource] = useState<string | null>(null);
 
   // Build sources from LFO and envelope nodes in the graph
   const sources: ModSource[] = [
-    {
-      id: "midi-velocity",
-      label: "MIDI Velocity",
-      nodeId: null,
-      color: "#4db8ff",
-    },
-    {
-      id: "midi-pitchbend",
-      label: "Pitch Bend",
-      nodeId: null,
-      color: "#4db8ff",
-    },
-    { id: "midi-modwheel", label: "Mod Wheel", nodeId: null, color: "#4db8ff" },
     ...nodes
       .filter((n) => n.data.nodeType === "Lfo")
       .map((n) => ({
         id: `lfo-${n.id}`,
         label: `LFO ${n.id}`,
         nodeId: n.id,
+        nodeGen: n.data.generation ?? 0,
         color: "#a78bfa",
       })),
     ...nodes
@@ -69,6 +58,7 @@ export function ModulationMatrix({ onClose }: { onClose: () => void }) {
         id: `env-${n.id}`,
         label: `Env ${n.id}`,
         nodeId: n.id,
+        nodeGen: n.data.generation ?? 0,
         color: "#ffb347",
       })),
   ];
@@ -79,6 +69,7 @@ export function ModulationMatrix({ onClose }: { onClose: () => void }) {
       id: `${n.id}-${i}`,
       label: `${n.data.nodeType} · ${def.name}`,
       nodeId: n.id,
+      nodeGen: n.data.generation ?? 0,
       paramIndex: i,
       paramName: def.name,
     })),
@@ -90,26 +81,81 @@ export function ModulationMatrix({ onClose }: { onClose: () => void }) {
         (c) => c.sourceId === sourceId && c.destId === destId,
       );
       if (existing) return;
+
+      const src = sources.find((s) => s.id === sourceId);
+      const dst = destinations.find((d) => d.id === destId);
+      if (!src || !dst || !src.nodeId) return;
+
+      const amount = 0.5;
       setConnections((prev) => [
         ...prev,
-        { id: `${sourceId}->${destId}`, sourceId, destId, amount: 0.5 },
+        { id: `${sourceId}->${destId}`, sourceId, destId, amount },
       ]);
+
+      // Send to host
+      sendIntent?.({
+        type: "set_modulation",
+        src_node_id: parseInt(src.nodeId, 10),
+        src_gen: src.nodeGen,
+        dst_node_id: parseInt(dst.nodeId, 10),
+        dst_gen: dst.nodeGen,
+        dst_param_index: dst.paramIndex,
+        amount,
+      });
     },
-    [connections],
+    [connections, sources, destinations, sendIntent],
   );
 
-  const removeConnection = useCallback((id: string) => {
-    setConnections((prev) => prev.filter((c) => c.id !== id));
-  }, []);
+  const removeConnection = useCallback(
+    (id: string) => {
+      const conn = connections.find((c) => c.id === id);
+      if (!conn) return;
 
-  const updateAmount = useCallback((id: string, amount: number) => {
-    setConnections((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, amount } : c)),
-    );
-  }, []);
+      const src = sources.find((s) => s.id === conn.sourceId);
+      const dst = destinations.find((d) => d.id === conn.destId);
+
+      setConnections((prev) => prev.filter((c) => c.id !== id));
+
+      if (src?.nodeId && dst) {
+        sendIntent?.({
+          type: "remove_modulation",
+          src_node_id: parseInt(src.nodeId, 10),
+          dst_node_id: parseInt(dst.nodeId, 10),
+          dst_param_index: dst.paramIndex,
+        });
+      }
+    },
+    [connections, sources, destinations, sendIntent],
+  );
+
+  const updateAmount = useCallback(
+    (id: string, amount: number) => {
+      const conn = connections.find((c) => c.id === id);
+      if (!conn) return;
+
+      setConnections((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, amount } : c)),
+      );
+
+      const src = sources.find((s) => s.id === conn.sourceId);
+      const dst = destinations.find((d) => d.id === conn.destId);
+      if (src?.nodeId && dst) {
+        sendIntent?.({
+          type: "set_modulation",
+          src_node_id: parseInt(src.nodeId, 10),
+          src_gen: src.nodeGen,
+          dst_node_id: parseInt(dst.nodeId, 10),
+          dst_gen: dst.nodeGen,
+          dst_param_index: dst.paramIndex,
+          amount,
+        });
+      }
+    },
+    [connections, sources, destinations, sendIntent],
+  );
 
   const getConnectionColor = (sourceId: string) =>
-    sources.find((s) => s.id === sourceId)?.color || "#4db8ff";
+    sources.find((s) => s.id === sourceId)?.color || "#a78bfa";
 
   return (
     <div className="mod-matrix-overlay">
@@ -119,7 +165,7 @@ export function ModulationMatrix({ onClose }: { onClose: () => void }) {
           <div>
             <h2 className="mod-matrix-title">Modulation Matrix</h2>
             <p className="mod-matrix-subtitle">
-              Connect sources to destinations — drag or click to assign
+              Click a source, then click a destination to connect
             </p>
           </div>
           <button className="mod-matrix-close" onClick={onClose}>

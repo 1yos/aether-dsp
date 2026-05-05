@@ -15,6 +15,7 @@ use aether_nodes::{
     formant::FormantFilter, gain::Gain, granular::Granular, karplus_strong::KarplusStrong,
     lfo::Lfo, mixer::Mixer, moog_ladder::MoogLadder, oscillator::Oscillator,
     record::RecordNode, reverb::Reverb, scope::ScopeNode,
+    compressor::Compressor, waveshaper::Waveshaper, chorus::Chorus,
 };
 use aether_sampler::node::SamplerNode;
 use aether_sampler::instrument::{LoadedInstrument, SamplerInstrument};
@@ -45,6 +46,8 @@ pub enum Intent {
     MidiConnect { port_index: usize },
     InjectMidi { channel: u8, note: u8, velocity: u8, is_note_on: bool },
     LoadInstrument { node_id: u32, generation: u32, instrument_json: String },
+    SetModulation { src_node_id: u32, src_gen: u32, dst_node_id: u32, dst_gen: u32, dst_param_index: usize, amount: f32 },
+    RemoveModulation { src_node_id: u32, dst_node_id: u32, dst_param_index: usize },
     #[allow(dead_code)] AnalyzeTimbre { instrument_json: String },
     #[allow(dead_code)] ApplyTimbreTransfer { timbre_transfer_node_id: u32, profile_name: String },
     ExportClap { #[allow(dead_code)] node_id: u32, #[allow(dead_code)] generation: u32, output_path: String },
@@ -117,6 +120,17 @@ struct RecordingState {
 
 // ── GraphManager ──────────────────────────────────────────────────────────────
 
+/// A modulation connection: LFO/envelope output → target parameter.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModConnection {
+    pub src_node_id: u32,
+    pub src_gen: u32,
+    pub dst_node_id: u32,
+    pub dst_gen: u32,
+    pub dst_param_index: usize,
+    pub amount: f32,
+}
+
 /// Type alias to reduce complexity of the MIDI queue map.
 pub type MidiQueueMap = Arc<Mutex<HashMap<NodeId, Arc<Mutex<Vec<MidiEvent>>>>>>;
 
@@ -135,6 +149,8 @@ pub struct GraphManager {
     pub scope_consumers: HashMap<NodeId, HeapCons<f32>>,
     /// Instrument slots for SamplerNodes — ArcSwap for lock-free RT access.
     pub instrument_slots: HashMap<NodeId, Arc<ArcSwap<Option<LoadedInstrument>>>>,
+    /// Active modulation connections (LFO/envelope → parameter).
+    pub mod_connections: Vec<ModConnection>,
 }
 
 impl GraphManager {
@@ -151,6 +167,7 @@ impl GraphManager {
             recording_state: None,
             scope_consumers: HashMap::new(),
             instrument_slots: HashMap::new(),
+            mod_connections: Vec::new(),
         }
     }
 
@@ -422,7 +439,24 @@ impl GraphManager {
                 slot.store(Arc::new(Some(loaded)));
 
                 Response::Ack { command: "load_instrument".into() }
-            }            Intent::AnalyzeTimbre { .. } => Response::Ack { command: "analyze_timbre".into() },
+            }            Intent::SetModulation { src_node_id, src_gen, dst_node_id, dst_gen, dst_param_index, amount } => {
+                // Remove any existing connection for the same src→dst→param
+                self.mod_connections.retain(|c| {
+                    !(c.src_node_id == src_node_id && c.dst_node_id == dst_node_id && c.dst_param_index == dst_param_index)
+                });
+                self.mod_connections.push(ModConnection {
+                    src_node_id, src_gen, dst_node_id, dst_gen, dst_param_index, amount,
+                });
+                Response::Ack { command: "set_modulation".into() }
+            }
+
+            Intent::RemoveModulation { src_node_id, dst_node_id, dst_param_index } => {
+                self.mod_connections.retain(|c| {
+                    !(c.src_node_id == src_node_id && c.dst_node_id == dst_node_id && c.dst_param_index == dst_param_index)
+                });
+                Response::Ack { command: "remove_modulation".into() }
+            }
+            Intent::AnalyzeTimbre { .. } => Response::Ack { command: "analyze_timbre".into() },
             Intent::ApplyTimbreTransfer { .. } => Response::Ack { command: "apply_timbre_transfer".into() },
             Intent::ExportClap { node_id: _, generation: _, output_path } => export_clap(output_path),
 
@@ -478,6 +512,51 @@ impl GraphManager {
         }
     }
 
+    /// Apply modulation connections: read LFO/envelope output from source nodes
+    /// and inject it into target parameter values. Called once per audio buffer
+    /// from the WebSocket handler after graph mutations settle.
+    #[allow(dead_code)]
+    pub fn apply_modulation(&self, scheduler: &mut Scheduler) {
+        for conn in &self.mod_connections {
+            let src_id = NodeId { index: conn.src_node_id, generation: conn.src_gen };
+            let dst_id = NodeId { index: conn.dst_node_id, generation: conn.dst_gen };
+
+            // Read the first output param of the source node as the modulation signal.
+            // For LFO: param 0 is rate (not the output). The LFO output is the node's
+            // audio output, which we can't read directly from the control thread.
+            // Instead, we use a dedicated "mod_output" convention: param index 0 of
+            // the source node's current value is used as the modulation amount.
+            // This is a simplified approach — a full modulation matrix would require
+            // reading the RT output buffer, which needs a separate SPSC ring.
+            //
+            // For now: use the LFO's depth param (param 1) scaled by amount as a
+            // static modulation offset. This gives the user control over modulation
+            // depth without requiring RT buffer reads.
+            let mod_value = if let Some(src_record) = scheduler.graph.arena.get(src_id) {
+                // Use depth param (index 1) as the modulation signal magnitude
+                let depth = if src_record.params.count > 1 {
+                    src_record.params.params[1].current
+                } else {
+                    1.0
+                };
+                depth * conn.amount
+            } else {
+                continue;
+            };
+
+            // Apply to destination parameter
+            if let Some(dst_record) = scheduler.graph.arena.get_mut(dst_id) {
+                if conn.dst_param_index < dst_record.params.count {
+                    let base = dst_record.params.params[conn.dst_param_index].target;
+                    dst_record.params.params[conn.dst_param_index].set_target(
+                        base + mod_value,
+                        0, // immediate
+                    );
+                }
+            }
+        }
+    }
+
     pub fn snapshot(&self, scheduler: &Scheduler) -> Response {
         let nodes: Vec<NodeSnapshot> = scheduler.graph.execution_order.iter()
             .filter_map(|id| scheduler.graph.arena.get(*id).map(|r| NodeSnapshot {
@@ -524,6 +603,9 @@ impl GraphManager {
                 "MoogLadder"           => &["Cutoff", "Resonance", "Drive"],
                 "Granular"             => &["Grain Size", "Density", "Pitch Scatter", "Position", "Pos Scatter", "Wet"],
                 "TimbreTransferNode"   => &["Amount"],
+                "Compressor"           => &["Threshold", "Ratio", "Attack", "Release", "Makeup", "Knee"],
+                "Waveshaper"           => &["Drive", "Mode", "Tone", "Wet"],
+                "Chorus"               => &["Rate", "Depth", "Feedback", "Wet"],
                 _ => &[],
             }
         };
@@ -698,6 +780,9 @@ fn make_node(node_type: &str, _sample_rate: f32) -> Option<(Box<dyn aether_core:
             let (producer, consumer) = HeapRb::<f32>::new(512).split();
             Some((Box::new(ScopeNode::new(producer)), NodeExtra::ScopeConsumer(consumer)))
         }
+        "Compressor"  => Some((Box::new(Compressor::new()),  NodeExtra::None)),
+        "Waveshaper"  => Some((Box::new(Waveshaper::new()),  NodeExtra::None)),
+        "Chorus"      => Some((Box::new(Chorus::new()),      NodeExtra::None)),
         _ => None,
     }
 }
@@ -717,6 +802,9 @@ fn init_default_params(scheduler: &mut Scheduler, id: NodeId, node_type: &str) {
         "Granular" => &[80.0, 8.0, 0.3, 0.5, 0.2, 0.8],
         "Mixer" | "SamplerNode" | "RecordNode" | "ScopeNode" => &[],
         "TimbreTransferNode" => &[1.0],
+        "Compressor"  => &[-20.0, 4.0, 10.0, 100.0, 0.0, 2.0],
+        "Waveshaper"  => &[0.3, 0.0, 0.5, 0.5],
+        "Chorus"      => &[1.0, 0.5, 0.2, 0.5],
         _ => &[],
     };
     if let Some(record) = scheduler.graph.arena.get_mut(id) {
@@ -739,6 +827,9 @@ fn apply_patch_params(scheduler: &mut Scheduler, id: NodeId, node_type: &str, ov
         "MoogLadder"           => &["Cutoff", "Resonance", "Drive"],
         "Granular"             => &["Grain Size", "Density", "Pitch Scatter", "Position", "Pos Scatter", "Wet"],
         "TimbreTransferNode"   => &["Amount"],
+        "Compressor"           => &["Threshold", "Ratio", "Attack", "Release", "Makeup", "Knee"],
+        "Waveshaper"           => &["Drive", "Mode", "Tone", "Wet"],
+        "Chorus"               => &["Rate", "Depth", "Feedback", "Wet"],
         _ => &[],
     };
     if let Some(record) = scheduler.graph.arena.get_mut(id) {

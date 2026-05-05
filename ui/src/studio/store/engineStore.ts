@@ -176,6 +176,41 @@ export const NODE_DEFS: Record<string, NodeDef> = {
       { name: "Wet", min: 0, max: 1, default: 0.8 },
     ],
   },
+  Compressor: {
+    type: "Compressor",
+    inputs: 1,
+    color: "#f06292",
+    params: [
+      { name: "Threshold", min: -60, max: 0, default: -20 },
+      { name: "Ratio", min: 1, max: 20, default: 4 },
+      { name: "Attack", min: 0.1, max: 200, default: 10 },
+      { name: "Release", min: 10, max: 2000, default: 100 },
+      { name: "Makeup", min: 0, max: 24, default: 0 },
+      { name: "Knee", min: 0, max: 12, default: 2 },
+    ],
+  },
+  Waveshaper: {
+    type: "Waveshaper",
+    inputs: 1,
+    color: "#ff7043",
+    params: [
+      { name: "Drive", min: 0, max: 1, default: 0.3 },
+      { name: "Mode", min: 0, max: 4, default: 0 },
+      { name: "Tone", min: 0, max: 1, default: 0.5 },
+      { name: "Wet", min: 0, max: 1, default: 0.5 },
+    ],
+  },
+  Chorus: {
+    type: "Chorus",
+    inputs: 1,
+    color: "#26c6da",
+    params: [
+      { name: "Rate", min: 0.1, max: 10, default: 1.0 },
+      { name: "Depth", min: 0, max: 1, default: 0.5 },
+      { name: "Feedback", min: 0, max: 0.95, default: 0.2 },
+      { name: "Wet", min: 0, max: 1, default: 0.5 },
+    ],
+  },
 };
 
 interface EngineStore {
