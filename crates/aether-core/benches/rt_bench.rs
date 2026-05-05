@@ -5,18 +5,15 @@
 
 use aether_core::{
     arena::NodeId,
-    buffer_pool::BufferPool,
     command::Command,
-    graph::DspGraph,
-    node::{DspNode, NodeRecord},
+    node::DspNode,
     param::ParamBlock,
     scheduler::Scheduler,
-    state::StateBlob,
     BUFFER_SIZE, MAX_INPUTS,
 };
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use ringbuf::{
-    traits::{Consumer, Producer, Split},
+    traits::Split,
     HeapRb,
 };
 
