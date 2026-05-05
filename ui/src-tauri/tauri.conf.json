@@ -29,9 +29,6 @@
           "$DOWNLOAD/**",
           "$DESKTOP/**"
         ]
-      },
-      "updater": {
-        "all": true
       }
     },
     "bundle": {
