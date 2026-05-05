@@ -1,7 +1,7 @@
 # aether-core
 
-[![crates.io](https://img.shields.io/crates/v/aether-core.svg)](https://crates.io/crates/aether-core)
-[![docs.rs](https://docs.rs/aether-core/badge.svg)](https://docs.rs/aether-core)
+[![crates.io](https://img.shields.io/crates/v/aetherdsp-core.svg)](https://crates.io/crates/aetherdsp-core)
+[![docs.rs](https://docs.rs/aetherdsp-core/badge.svg)](https://docs.rs/aetherdsp-core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Hard real-time modular DSP engine for Rust.
@@ -37,35 +37,35 @@ Hard real-time modular DSP engine for Rust.
 
 ```rust
 use aether_core::{
-    arena::NodeArena,
-    graph::AudioGraph,
     scheduler::Scheduler,
     node::DspNode,
     param::ParamBlock,
-    state::StateBlob,
-    BUFFER_SIZE,
+    BUFFER_SIZE, MAX_INPUTS,
 };
 
-// Implement a node
 struct Gain { amount: f32 }
 
 impl DspNode for Gain {
     fn process(
         &mut self,
-        inputs: &[Option<&[f32; BUFFER_SIZE]>; aether_core::MAX_INPUTS],
+        inputs: &[Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS],
         output: &mut [f32; BUFFER_SIZE],
         _params: &mut ParamBlock,
         _sample_rate: f32,
     ) {
-        let input = inputs[0].map(|b| b.as_ref()).unwrap_or(&[0.0; BUFFER_SIZE]);
+        let silence = [0.0f32; BUFFER_SIZE];
+        let input = inputs[0].unwrap_or(&silence);
         for (o, i) in output.iter_mut().zip(input.iter()) {
             *o = i * self.amount;
         }
     }
-    fn capture_state(&self) -> StateBlob { StateBlob::EMPTY }
-    fn restore_state(&mut self, _: StateBlob) {}
     fn type_name(&self) -> &'static str { "Gain" }
 }
+
+// Build a graph and run it
+let mut sched = Scheduler::new(48_000.0);
+let id = sched.graph.add_node(Box::new(Gain { amount: 0.5 })).unwrap();
+sched.graph.set_output_node(id);
 ```
 
 ## Benchmark results

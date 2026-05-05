@@ -20,30 +20,35 @@ AetherDSP is two things at once: a production-grade audio engine library for Rus
 
 ### The Engine (Rust crates)
 
-| Crate                                                                 | Version | Description                                                              |
-| --------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------ |
-| [`aetherdsp-core`](https://crates.io/crates/aetherdsp-core)           | 0.1.1   | RT scheduler, generational arena, lock-free graph, buffer pool           |
-| [`aetherdsp-nodes`](https://crates.io/crates/aetherdsp-nodes)         | 0.2.0   | 12 DSP nodes: oscillator, filters, reverb, LFO, granular, Karplus-Strong |
-| [`aetherdsp-ndk`](https://crates.io/crates/aetherdsp-ndk)             | 0.1.1   | Node Development Kit — build custom nodes with `#[aether_node]`          |
-| [`aetherdsp-ndk-macro`](https://crates.io/crates/aetherdsp-ndk-macro) | 0.1.1   | Proc-macro behind the NDK                                                |
-| [`aetherdsp-midi`](https://crates.io/crates/aetherdsp-midi)           | 0.1.1   | MIDI engine with 8 tuning systems including Ethiopian, Arabic, Gamelan   |
-| [`aetherdsp-sampler`](https://crates.io/crates/aetherdsp-sampler)     | 0.2.0   | Polyphonic sampler with ArcSwap lock-free instrument loading             |
-| [`aetherdsp-timbre`](https://crates.io/crates/aetherdsp-timbre)       | 0.1.1   | FFT-based spectral timbre analysis and transfer                          |
-| [`aetherdsp-manifest`](https://crates.io/crates/aetherdsp-manifest)   | 0.1.1   | Node package manifest format                                             |
-| [`aetherdsp-registry`](https://crates.io/crates/aetherdsp-registry)   | 0.1.1   | Runtime node type registry                                               |
+| Crate                                                                 | Version | Description                                                                                              |
+| --------------------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| [`aetherdsp-core`](https://crates.io/crates/aetherdsp-core)           | 0.1.1   | RT scheduler, generational arena, lock-free graph, buffer pool                                           |
+| [`aetherdsp-nodes`](https://crates.io/crates/aetherdsp-nodes)         | 0.2.0   | 15 DSP nodes: oscillator, filters, reverb, LFO, granular, Karplus-Strong, compressor, waveshaper, chorus |
+| [`aetherdsp-ndk`](https://crates.io/crates/aetherdsp-ndk)             | 0.1.1   | Node Development Kit — build custom nodes with `#[aether_node]`                                          |
+| [`aetherdsp-ndk-macro`](https://crates.io/crates/aetherdsp-ndk-macro) | 0.1.1   | Proc-macro behind the NDK                                                                                |
+| [`aetherdsp-midi`](https://crates.io/crates/aetherdsp-midi)           | 0.1.1   | MIDI engine with 8 tuning systems including Ethiopian, Arabic, Gamelan                                   |
+| [`aetherdsp-sampler`](https://crates.io/crates/aetherdsp-sampler)     | 0.2.0   | Polyphonic sampler with ArcSwap lock-free instrument loading                                             |
+| [`aetherdsp-timbre`](https://crates.io/crates/aetherdsp-timbre)       | 0.1.1   | FFT-based spectral timbre analysis and transfer                                                          |
+| [`aetherdsp-manifest`](https://crates.io/crates/aetherdsp-manifest)   | 0.1.1   | Node package manifest format                                                                             |
+| [`aetherdsp-registry`](https://crates.io/crates/aetherdsp-registry)   | 0.1.1   | Runtime node type registry                                                                               |
+| `aether-samples`                                                      | 0.1.1   | On-demand sample pack download and management                                                            |
 
-### The Studio (Aether Studio)
+### The Studio (Aether Studio v0.2)
 
 A 4-mode music production interface built with React + Tauri:
 
 - **Explore** — World map with 57 instruments from 8 regions. Click a region, browse its instruments, try them with your PC keyboard before adding to your project.
-- **Create** — Modular node graph. Connect oscillators, filters, reverb, LFO, granular synthesis, and more.
-- **Arrange** — Timeline and piano roll with scale highlighting for world music tuning systems.
+- **Create** — Modular node graph with a custom WebGL renderer. Connect oscillators, filters, reverb, LFO, granular synthesis, compressor, waveshaper, chorus, and more. Wire modulations between any node's output and any parameter via the Modulation Matrix.
+- **Arrange** — Non-Western piano roll with 13 rhythmic systems (Teentaal, Maqsum, Gamelan Lancaran, and more) and 14 scale systems (Ethiopian Tizita/Bati/Ambassel, Arabic Maqam Rast/Bayati/Hijaz, Indian Raga Yaman/Bhairav, Gamelan Slendro/Pelog). Beat name headers, accent highlighting, and microtonal cent-deviation bars on every key.
 - **Perform** — Clip launcher for live performance.
 
-**Custom instrument interfaces:** Plucked string instruments (Krar, Oud, Sitar, Kora) show an interactive fretboard. Percussion instruments (Djembe, Tabla, Kpanlogo) show a drum pad layout. Wind instruments show a breath pad. All interfaces fall back to the standard piano keyboard with a toggle button.
+**Instrument presets:** 57 `.aether-instrument` files ship with the studio — one per instrument. Each loads a complete node graph with correct tuning, envelope, and effects for that instrument.
 
-**Microtonal keyboard visualization:** When an instrument uses a non-12-TET tuning, the piano keyboard shows cent-deviation indicators on each key — blue for flat, amber for sharp — so you can see exactly which notes are tuned differently.
+**Instrument Recorder:** Record your own instrument samples directly from a microphone. The recorder prompts note-by-note, auto-detects pitch via autocorrelation, and exports a `.aether-instrument` file ready to load into any SamplerNode.
+
+**Patch sharing:** Share your node graph with anyone via a single URL. Patches are uploaded as GitHub Gists and auto-loaded from the `?patch=` URL parameter.
+
+**Plugin export:** Builds as both a `.clap` and `.vst3` plugin for use in any compatible DAW.
 
 ---
 
@@ -61,12 +66,27 @@ A 4-mode music production interface built with React + Tauri:
 | `DelayLine`           | Feedback delay with tempo sync                                                                   |
 | `KarplusStrong`       | Physically accurate plucked string synthesis                                                     |
 | `Granular`            | Grain size, density, pitch scatter, position — world music textures                              |
+| `Compressor`          | RMS-based dynamic range compression with soft-knee curve                                         |
+| `Waveshaper`          | 5 distortion modes: tanh, hard-clip, fold-back, bit-crush, tube saturation                       |
+| `Chorus`              | BBD-style modulated delay for thickening and widening                                            |
 | `Gain`                | Smoothed gain control                                                                            |
 | `Mixer`               | N-input summing mixer · SIMD FMA-optimized accumulation                                          |
 | `SamplerNode`         | Polyphonic sampler, MIDI-driven, ArcSwap lock-free, round-robin zones                            |
 | `TimbreTransferNode`  | FFT spectral envelope transfer                                                                   |
 | `ScopeNode`           | Oscilloscope output                                                                              |
 | `RecordNode`          | Lock-free WAV recording via SPSC ring buffer                                                     |
+
+---
+
+## Modulation System
+
+Any node output can modulate any parameter in the graph. The Modulation Matrix UI lets you create and remove connections visually. Under the hood, `ModConnection` structs are stored in `GraphManager` and applied each block before parameter smoothing runs.
+
+```
+LFO output → Filter cutoff frequency
+Envelope output → Oscillator amplitude
+Compressor gain reduction → Reverb wet level
+```
 
 ---
 
@@ -79,12 +99,17 @@ AetherDSP treats tuning as a first-class feature. Every instrument loads with it
 | 12-TET              | Standard equal temperament                    |
 | Ethiopian Tizita    | Pentatonic with characteristic flat intervals |
 | Ethiopian Bati      | Minor pentatonic variant                      |
+| Ethiopian Ambassel  | Pentatonic with raised 4th                    |
 | Arabic Maqam Rast   | Quarter-tone flats on 3rd and 7th             |
 | Arabic Maqam Bayati | Half-flat on 2nd degree                       |
+| Arabic Maqam Hijaz  | Augmented 2nd between 2nd and 3rd degrees     |
 | Indian Raga Yaman   | Just intonation, raised 4th (Kalyan thaat)    |
+| Indian Raga Bhairav | Flat 2nd and flat 6th                         |
 | Gamelan Slendro     | 5-tone Javanese scale                         |
 | Gamelan Pelog       | 7-tone Javanese scale with unequal intervals  |
 | Just Intonation     | Pure harmonic ratios                          |
+| Western Pentatonic  | 5-tone major pentatonic                       |
+| Chromatic           | All 12 semitones                              |
 
 ---
 
@@ -191,7 +216,7 @@ Set-Location C:\aether-dsp
 | ----------------- | ------- | ----------------------------------------- |
 | Rust              | 1.78+   | `stable-x86_64-pc-windows-gnu` on Windows |
 | MSYS2 MinGW64 GCC | 13+     | Required linker on Windows                |
-| Node.js           | 18+ LTS | For the UI                                |
+| Node.js           | 20+ LTS | For the UI                                |
 
 **Windows setup:**
 
@@ -212,23 +237,29 @@ New-Item -ItemType Junction -Path "C:\aether-dsp" -Target "D:\path\to\aether-dsp
 aether-dsp/
 ├── crates/
 │   ├── aether-core/        # RT engine: arena, graph, scheduler, params
-│   ├── aether-nodes/       # DSP nodes: 12 nodes including granular, Moog, reverb
+│   ├── aether-nodes/       # 15 DSP nodes including compressor, waveshaper, chorus
 │   ├── aether-midi/        # MIDI engine + 9 tuning systems
 │   ├── aether-sampler/     # Polyphonic sampler with ArcSwap
 │   ├── aether-timbre/      # Spectral timbre analysis and transfer
+│   ├── aether-samples/     # Sample pack download and management
 │   ├── aether-ndk/         # Node Development Kit
 │   ├── aether-ndk-macro/   # #[aether_node] proc-macro
 │   ├── aether-manifest/    # Node package manifest format
 │   ├── aether-registry/    # Runtime node registry
 │   ├── aether-host/        # CPAL audio host + WebSocket bridge (not published)
+│   ├── aether-plugin/      # CLAP + VST3 plugin (not published)
 │   └── aether-cli/         # Developer CLI (not published)
 ├── ui/                     # React + Tauri studio interface
 │   ├── src/
 │   │   ├── modes/          # Explore, Create, Arrange, Perform
-│   │   ├── components/     # TopBar, KeyboardPlayer, ModulationMatrix
+│   │   ├── components/     # TopBar, KeyboardPlayer, ModulationMatrix, InstrumentRecorder
 │   │   ├── catalog/        # 57-instrument world music catalog
-│   │   └── studio/         # Node graph, engine store, WebSocket
+│   │   ├── hooks/          # usePatchShare, useSampleLibrary, useInstrumentEngine
+│   │   └── studio/         # WebGL node graph, engine store, WebSocket
 │   └── src-tauri/          # Tauri standalone app wrapper
+├── assets/
+│   ├── instruments/        # Drum kit and instrument definitions
+│   └── presets/            # World music presets (Krar, etc.)
 ├── scripts/                # Build and publish scripts
 └── docs/                   # Architecture, SDK guides, design docs
 ```
@@ -245,6 +276,7 @@ Connect to `ws://127.0.0.1:9001` (started by `aether-host`).
 { "type": "update_param", "node_id": 0, "generation": 0, "param_index": 0, "value": 880.0, "ramp_ms": 20 }
 { "type": "inject_midi", "channel": 0, "note": 60, "velocity": 90, "is_note_on": true }
 { "type": "load_instrument", "node_id": 2, "generation": 0, "instrument_json": "..." }
+{ "type": "set_modulation", "src_node_id": 3, "dst_node_id": 1, "param_index": 0, "amount": 0.5 }
 { "type": "get_snapshot" }
 ```
 
@@ -259,19 +291,18 @@ Every push runs on **Windows, macOS, and Linux**:
 - `cargo clippy -- -D warnings`
 - Benchmark regression check
 - TypeScript check + Vite build
-- Tauri standalone app build (Linux)
+- Tauri standalone app build (Linux, produces `.deb`, `.rpm`, `.AppImage`)
 
 ---
 
 ## Roadmap
 
-| Version | Milestone                                                                        |
-| ------- | -------------------------------------------------------------------------------- |
-| v0.1    | RT engine + UI + WebSocket + 9 crates on crates.io                               |
-| v0.2    | 12 DSP nodes, world tuning systems, ArcSwap RT fix, Tauri app, modulation matrix |
-| v0.3    | SIMD optimization, real instrument samples, CLAP plugin export                   |
-| v0.4    | Collaborative sessions, AI timbre transfer, mobile support                       |
-| v1.0    | Stable public release                                                            |
+| Version | Milestone                                                                                                                                   |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| v0.1    | RT engine + UI + WebSocket + 9 crates on crates.io                                                                                          |
+| v0.2    | 15 DSP nodes, modulation matrix, WebGL canvas, non-Western piano roll, VST3/CLAP export, sample library, patch sharing, instrument recorder |
+| v0.3    | SIMD optimization, AI timbre transfer, mobile support                                                                                       |
+| v1.0    | Stable public release                                                                                                                       |
 
 ---
 
