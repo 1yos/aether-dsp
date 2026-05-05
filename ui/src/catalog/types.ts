@@ -71,6 +71,8 @@ export interface CustomCatalogEntry extends CatalogInstrument {
 // Type alias for compatibility
 export type Instrument = CatalogInstrument & {
   flag?: string; // Emoji flag for display
+  file?: string; // Path to .aether-instrument preset file
+  hasSamples?: boolean; // Whether real samples are available
 };
 
 // Region type alias for mode switcher

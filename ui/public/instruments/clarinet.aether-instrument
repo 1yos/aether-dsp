@@ -1,63 +1,21 @@
-﻿{
-    "name":  "Clarinet",
-    "family":  "wind",
-    "region":  "Europe",
-    "country":  "Germany",
-    "tuning":  {
-                   "name":  "12-tet",
-                   "frequencies":  null
-               },
-    "adsr":  {
-                 "attack":  0.01,
-                 "decay":  0.1,
-                 "sustain":  0.7,
-                 "release":  0.3
-             },
-    "zones":  [
-                  {
-                      "id":  "clarinet-46",
-                      "file_path":  "../../../../../samples/VSCO-2-CE/clarinet/clarinet_As2.wav",
-                      "root_note":  46,
-                      "note_low":  44,
-                      "note_high":  48,
-                      "velocity_low":  0,
-                      "velocity_high":  127,
-                      "articulation":  "SustainLoop",
-                      "volume_db":  0,
-                      "tune_cents":  0,
-                      "loop_start":  null,
-                      "loop_end":  null,
-                      "release_file":  null
-                  },
-                  {
-                      "id":  "clarinet-58",
-                      "file_path":  "../../../../../samples/VSCO-2-CE/clarinet/clarinet_As3.wav",
-                      "root_note":  58,
-                      "note_low":  56,
-                      "note_high":  60,
-                      "velocity_low":  0,
-                      "velocity_high":  127,
-                      "articulation":  "SustainLoop",
-                      "volume_db":  0,
-                      "tune_cents":  0,
-                      "loop_start":  null,
-                      "loop_end":  null,
-                      "release_file":  null
-                  },
-                  {
-                      "id":  "clarinet-70",
-                      "file_path":  "../../../../../samples/VSCO-2-CE/clarinet/clarinet_As4.wav",
-                      "root_note":  70,
-                      "note_low":  68,
-                      "note_high":  72,
-                      "velocity_low":  0,
-                      "velocity_high":  127,
-                      "articulation":  "SustainLoop",
-                      "volume_db":  0,
-                      "tune_cents":  0,
-                      "loop_start":  null,
-                      "loop_end":  null,
-                      "release_file":  null
-                  }
-              ]
+{
+  "name": "Clarinet",
+  "description": "European single-reed woodwind with a warm, hollow tone. Distinctive chalumeau register with a dark, woody quality that brightens in the upper register.",
+  "instrument_id": "clarinet",
+  "source": "synthesis",
+  "tuning": "12-tet",
+  "nodes": [
+    { "id": "osc",  "type": "Oscillator",   "params": { "Frequency": 370, "Amplitude": 0.5, "Waveform": 0, "MIDI Note": -1 } },
+    { "id": "form", "type": "FormantFilter", "params": { "Vowel": 3, "Shift": 0.2, "Wet": 0.55 } },
+    { "id": "env",  "type": "AdsrEnvelope",  "params": { "Attack": 0.04, "Decay": 0.1, "Sustain": 0.78, "Release": 0.35, "Gate": 1.0 } },
+    { "id": "rev",  "type": "Reverb",        "params": { "Room Size": 0.42, "Damping": 0.52, "Wet": 0.25, "Width": 0.88 } },
+    { "id": "out",  "type": "Gain",          "params": { "Gain": 0.72 } }
+  ],
+  "connections": [
+    { "from": "osc",  "to": "form", "slot": 0 },
+    { "from": "form", "to": "env",  "slot": 0 },
+    { "from": "env",  "to": "rev",  "slot": 0 },
+    { "from": "rev",  "to": "out",  "slot": 0 }
+  ],
+  "output_node": "out"
 }

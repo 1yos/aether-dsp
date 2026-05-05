@@ -90,7 +90,18 @@ export function KeyboardPlayer({
   const [velocity, setVelocity] = useState(90);
   const [activeNotes, setActiveNotes] = useState<Set<number>>(new Set());
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const { playNote, stopNote, isEngineConnected } = useInstrumentEngine();
+  const { playNote, stopNote, isEngineConnected, loadInstrumentPreset } =
+    useInstrumentEngine();
+
+  // Load the instrument's synthesis preset when the player opens
+  useEffect(() => {
+    if (isEngineConnected && instrument.file) {
+      loadInstrumentPreset(
+        instrument as Parameters<typeof loadInstrumentPreset>[0],
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [instrument.id, isEngineConnected]);
 
   // Precompute cent deviations for all MIDI notes in the visible range
   const centDeviations = useMemo(() => {

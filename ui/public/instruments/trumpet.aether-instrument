@@ -1,48 +1,21 @@
-﻿{
-    "name":  "Trumpet",
-    "family":  "wind",
-    "region":  "Europe",
-    "country":  "Germany",
-    "tuning":  {
-                   "name":  "12-tet",
-                   "frequencies":  null
-               },
-    "adsr":  {
-                 "attack":  0.01,
-                 "decay":  0.1,
-                 "sustain":  0.7,
-                 "release":  0.3
-             },
-    "zones":  [
-                  {
-                      "id":  "trumpet-45",
-                      "file_path":  "../../../../../samples/VSCO-2-CE/trumpet/trumpet_A2.wav",
-                      "root_note":  45,
-                      "note_low":  43,
-                      "note_high":  47,
-                      "velocity_low":  0,
-                      "velocity_high":  127,
-                      "articulation":  "SustainLoop",
-                      "volume_db":  0,
-                      "tune_cents":  0,
-                      "loop_start":  null,
-                      "loop_end":  null,
-                      "release_file":  null
-                  },
-                  {
-                      "id":  "trumpet-69",
-                      "file_path":  "../../../../../samples/VSCO-2-CE/trumpet/trumpet_A4.wav",
-                      "root_note":  69,
-                      "note_low":  67,
-                      "note_high":  71,
-                      "velocity_low":  0,
-                      "velocity_high":  127,
-                      "articulation":  "SustainLoop",
-                      "volume_db":  0,
-                      "tune_cents":  0,
-                      "loop_start":  null,
-                      "loop_end":  null,
-                      "release_file":  null
-                  }
-              ]
+{
+  "name": "Trumpet",
+  "description": "European brass instrument with a brilliant, penetrating tone. Bright, brassy timbre with a strong fundamental and rich upper harmonics. Powerful attack with a warm, full sustain.",
+  "instrument_id": "trumpet",
+  "source": "synthesis",
+  "tuning": "12-tet",
+  "nodes": [
+    { "id": "osc",  "type": "Oscillator",   "params": { "Frequency": 440, "Amplitude": 0.6, "Waveform": 1, "MIDI Note": -1 } },
+    { "id": "filt", "type": "MoogLadder",   "params": { "Cutoff": 3000, "Resonance": 0.55, "Drive": 0.3 } },
+    { "id": "env",  "type": "AdsrEnvelope", "params": { "Attack": 0.03, "Decay": 0.1, "Sustain": 0.78, "Release": 0.3, "Gate": 1.0 } },
+    { "id": "rev",  "type": "Reverb",       "params": { "Room Size": 0.45, "Damping": 0.5, "Wet": 0.25, "Width": 0.88 } },
+    { "id": "out",  "type": "Gain",         "params": { "Gain": 0.75 } }
+  ],
+  "connections": [
+    { "from": "osc",  "to": "filt", "slot": 0 },
+    { "from": "filt", "to": "env",  "slot": 0 },
+    { "from": "env",  "to": "rev",  "slot": 0 },
+    { "from": "rev",  "to": "out",  "slot": 0 }
+  ],
+  "output_node": "out"
 }

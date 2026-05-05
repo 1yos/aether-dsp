@@ -1,93 +1,21 @@
-﻿{
-    "name":  "Flute",
-    "family":  "wind",
-    "region":  "Europe",
-    "country":  "Germany",
-    "tuning":  {
-                   "name":  "12-tet",
-                   "frequencies":  null
-               },
-    "adsr":  {
-                 "attack":  0.01,
-                 "decay":  0.1,
-                 "sustain":  0.7,
-                 "release":  0.3
-             },
-    "zones":  [
-                  {
-                      "id":  "flute-57",
-                      "file_path":  "../../../../../samples/VSCO-2-CE/flute/flute_A3.wav",
-                      "root_note":  57,
-                      "note_low":  55,
-                      "note_high":  59,
-                      "velocity_low":  0,
-                      "velocity_high":  127,
-                      "articulation":  "SustainLoop",
-                      "volume_db":  0,
-                      "tune_cents":  0,
-                      "loop_start":  null,
-                      "loop_end":  null,
-                      "release_file":  null
-                  },
-                  {
-                      "id":  "flute-69",
-                      "file_path":  "../../../../../samples/VSCO-2-CE/flute/flute_A4.wav",
-                      "root_note":  69,
-                      "note_low":  67,
-                      "note_high":  71,
-                      "velocity_low":  0,
-                      "velocity_high":  127,
-                      "articulation":  "SustainLoop",
-                      "volume_db":  0,
-                      "tune_cents":  0,
-                      "loop_start":  null,
-                      "loop_end":  null,
-                      "release_file":  null
-                  },
-                  {
-                      "id":  "flute-81",
-                      "file_path":  "../../../../../samples/VSCO-2-CE/flute/flute_A5.wav",
-                      "root_note":  81,
-                      "note_low":  79,
-                      "note_high":  83,
-                      "velocity_low":  0,
-                      "velocity_high":  127,
-                      "articulation":  "SustainLoop",
-                      "volume_db":  0,
-                      "tune_cents":  0,
-                      "loop_start":  null,
-                      "loop_end":  null,
-                      "release_file":  null
-                  },
-                  {
-                      "id":  "flute-64",
-                      "file_path":  "../../../../../samples/VSCO-2-CE/flute/flute_E4.wav",
-                      "root_note":  64,
-                      "note_low":  62,
-                      "note_high":  66,
-                      "velocity_low":  0,
-                      "velocity_high":  127,
-                      "articulation":  "SustainLoop",
-                      "volume_db":  0,
-                      "tune_cents":  0,
-                      "loop_start":  null,
-                      "loop_end":  null,
-                      "release_file":  null
-                  },
-                  {
-                      "id":  "flute-76",
-                      "file_path":  "../../../../../samples/VSCO-2-CE/flute/flute_E5.wav",
-                      "root_note":  76,
-                      "note_low":  74,
-                      "note_high":  78,
-                      "velocity_low":  0,
-                      "velocity_high":  127,
-                      "articulation":  "SustainLoop",
-                      "volume_db":  0,
-                      "tune_cents":  0,
-                      "loop_start":  null,
-                      "loop_end":  null,
-                      "release_file":  null
-                  }
-              ]
+{
+  "name": "Flute",
+  "description": "European transverse flute with a pure, silvery tone. Clear, bright upper register with a gentle, airy quality in the lower octave. Smooth legato and agile articulation.",
+  "instrument_id": "flute",
+  "source": "synthesis",
+  "tuning": "12-tet",
+  "nodes": [
+    { "id": "osc",  "type": "Oscillator",   "params": { "Frequency": 523, "Amplitude": 0.48, "Waveform": 0, "MIDI Note": -1 } },
+    { "id": "form", "type": "FormantFilter", "params": { "Vowel": 2, "Shift": 0.3, "Wet": 0.45 } },
+    { "id": "env",  "type": "AdsrEnvelope",  "params": { "Attack": 0.05, "Decay": 0.08, "Sustain": 0.85, "Release": 0.35, "Gate": 1.0 } },
+    { "id": "rev",  "type": "Reverb",        "params": { "Room Size": 0.45, "Damping": 0.55, "Wet": 0.28, "Width": 0.9 } },
+    { "id": "out",  "type": "Gain",          "params": { "Gain": 0.7 } }
+  ],
+  "connections": [
+    { "from": "osc",  "to": "form", "slot": 0 },
+    { "from": "form", "to": "env",  "slot": 0 },
+    { "from": "env",  "to": "rev",  "slot": 0 },
+    { "from": "rev",  "to": "out",  "slot": 0 }
+  ],
+  "output_node": "out"
 }

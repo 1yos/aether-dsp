@@ -511,12 +511,19 @@ impl GraphManager {
     pub fn build_patch_def(&self, scheduler: &Scheduler) -> PatchDef {
         let param_names_for = |node_type: &str| -> &[&str] {
             match node_type {
-                "Oscillator" => &["Frequency", "Amplitude", "Waveform"],
-                "StateVariableFilter" => &["Cutoff", "Resonance", "Mode"],
-                "AdsrEnvelope" => &["Attack", "Decay", "Sustain", "Release", "Gate"],
-                "DelayLine" => &["Time", "Feedback", "Wet"],
-                "Gain" => &["Gain"],
-                "TimbreTransferNode" => &["Amount"],
+                "Oscillator"           => &["Frequency", "Amplitude", "Waveform", "MIDI Note"],
+                "StateVariableFilter"  => &["Cutoff", "Resonance", "Mode"],
+                "AdsrEnvelope"         => &["Attack", "Decay", "Sustain", "Release", "Gate"],
+                "DelayLine"            => &["Time", "Feedback", "Wet"],
+                "Gain"                 => &["Gain"],
+                "Mixer"                => &["Gain 0", "Gain 1", "Gain 2", "Gain 3"],
+                "Reverb"               => &["Room Size", "Damping", "Wet", "Width"],
+                "Lfo"                  => &["Rate", "Depth", "Waveform", "Phase"],
+                "KarplusStrong"        => &["Frequency", "Decay", "Brightness", "Trigger"],
+                "FormantFilter"        => &["Vowel", "Shift", "Wet"],
+                "MoogLadder"           => &["Cutoff", "Resonance", "Drive"],
+                "Granular"             => &["Grain Size", "Density", "Pitch Scatter", "Position", "Pos Scatter", "Wet"],
+                "TimbreTransferNode"   => &["Amount"],
                 _ => &[],
             }
         };
@@ -719,12 +726,19 @@ fn init_default_params(scheduler: &mut Scheduler, id: NodeId, node_type: &str) {
 
 fn apply_patch_params(scheduler: &mut Scheduler, id: NodeId, node_type: &str, overrides: &HashMap<String, f32>) {
     let param_names: &[&str] = match node_type {
-        "Oscillator" => &["Frequency", "Amplitude", "Waveform"],
-        "StateVariableFilter" => &["Cutoff", "Resonance", "Mode"],
-        "AdsrEnvelope" => &["Attack", "Decay", "Sustain", "Release", "Gate"],
-        "DelayLine" => &["Time", "Feedback", "Wet"],
-        "Gain" => &["Gain"],
-        "TimbreTransferNode" => &["Amount"],
+        "Oscillator"           => &["Frequency", "Amplitude", "Waveform", "MIDI Note"],
+        "StateVariableFilter"  => &["Cutoff", "Resonance", "Mode"],
+        "AdsrEnvelope"         => &["Attack", "Decay", "Sustain", "Release", "Gate"],
+        "DelayLine"            => &["Time", "Feedback", "Wet"],
+        "Gain"                 => &["Gain"],
+        "Mixer"                => &["Gain 0", "Gain 1", "Gain 2", "Gain 3"],
+        "Reverb"               => &["Room Size", "Damping", "Wet", "Width"],
+        "Lfo"                  => &["Rate", "Depth", "Waveform", "Phase"],
+        "KarplusStrong"        => &["Frequency", "Decay", "Brightness", "Trigger"],
+        "FormantFilter"        => &["Vowel", "Shift", "Wet"],
+        "MoogLadder"           => &["Cutoff", "Resonance", "Drive"],
+        "Granular"             => &["Grain Size", "Density", "Pitch Scatter", "Position", "Pos Scatter", "Wet"],
+        "TimbreTransferNode"   => &["Amount"],
         _ => &[],
     };
     if let Some(record) = scheduler.graph.arena.get_mut(id) {

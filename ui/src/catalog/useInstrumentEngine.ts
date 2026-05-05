@@ -1,23 +1,30 @@
 /**
  * useInstrumentEngine — bridges the catalog to the Rust audio engine.
  *
- * Add to Canvas:
- *   1. Send add_node (SamplerNode) → host responds with snapshot containing new node ID
- *   2. Send load_instrument with the instrument JSON → host loads WAV files and swaps in
- *   3. Automatically connect SamplerNode → output node
- *
- * Try It (keyboard player):
- *   - Creates a temporary SamplerNode, loads the instrument, connects to output
- *   - On close, removes the temporary node
- *
- * Play note / Stop note:
- *   - Sends inject_midi intents to the host
- *   - Falls back to Web Audio when host is not connected
+ * When an instrument is opened, it loads the .aether-instrument preset
+ * (synthesis patch) via load_patch. For instruments with real samples,
+ * the preset includes a SamplerNode that the sample library populates.
  */
 
 import { useCallback, useRef } from "react";
 import { useEngineStore } from "../studio/store/engineStore";
 import type { CatalogInstrument } from "./types";
+
+// Preset cache — avoid re-fetching on every open
+const presetCache = new Map<string, object>();
+
+async function fetchPreset(filePath: string): Promise<object | null> {
+  if (presetCache.has(filePath)) return presetCache.get(filePath)!;
+  try {
+    const res = await fetch(`/${filePath}`);
+    if (!res.ok) return null;
+    const preset = await res.json();
+    presetCache.set(filePath, preset);
+    return preset;
+  } catch {
+    return null;
+  }
+}
 
 // Pending instrument load: after add_node we need to wait for the snapshot
 // to get the new node ID, then send load_instrument.
@@ -35,9 +42,30 @@ export function useInstrumentEngine() {
   const nodes = useEngineStore((s) => s.nodes);
   const outputNodeId = useEngineStore((s) => s.outputNodeId);
   const addNode = useEngineStore((s) => s.addNode);
+  const loadPatch = useEngineStore((s) => s.loadPatch);
 
   // Track catalog instrument ID → node ID mapping
   const instrumentNodeMap = useRef<Map<string, string>>(new Map());
+
+  /**
+   * Load an instrument's synthesis preset into the engine.
+   * Called when opening the keyboard player or adding to canvas.
+   */
+  const loadInstrumentPreset = useCallback(
+    async (instrument: CatalogInstrument & { file?: string }) => {
+      if (!sendIntent) return false;
+
+      const filePath =
+        instrument.file ?? `instruments/${instrument.id}.aether-instrument`;
+      const preset = await fetchPreset(filePath);
+      if (!preset) return false;
+
+      // The preset is a PatchDef — send it directly to the engine
+      loadPatch(preset);
+      return true;
+    },
+    [sendIntent, loadPatch],
+  );
 
   /**
    * Add an instrument to the canvas as a SamplerNode.
@@ -45,10 +73,14 @@ export function useInstrumentEngine() {
    * useWebSocket picks up pendingLoad and sends load_instrument.
    */
   const addToCanvas = useCallback(
-    async (instrument: CatalogInstrument) => {
+    async (instrument: CatalogInstrument & { file?: string }) => {
       if (!sendIntent) return;
 
-      // Build the instrument JSON for the host
+      // Try to load the synthesis preset first
+      const loaded = await loadInstrumentPreset(instrument);
+      if (loaded) return;
+
+      // Fallback: add a SamplerNode and load instrument JSON
       const instrumentJson = JSON.stringify({
         name: instrument.name,
         family: instrument.family,
@@ -63,22 +95,19 @@ export function useInstrumentEngine() {
         max_voices: 16,
       });
 
-      // Set pending load so the snapshot handler can pick it up
       pendingLoad = {
         instrumentId: instrument.id,
         instrumentJson,
         autoConnect: true,
       };
 
-      // Add the SamplerNode — host will respond with snapshot
       addNode("SamplerNode");
     },
-    [sendIntent, addNode],
+    [sendIntent, addNode, loadInstrumentPreset],
   );
 
   /**
    * Called by useWebSocket when a snapshot arrives after add_node.
-   * Finds the newest SamplerNode and sends load_instrument for it.
    */
   const handleSnapshotAfterAdd = useCallback(
     (newNodeId: string, generation: number) => {
@@ -86,7 +115,6 @@ export function useInstrumentEngine() {
       const { instrumentId, instrumentJson, autoConnect } = pendingLoad;
       pendingLoad = null;
 
-      // Load the instrument into the new node
       sendIntent({
         type: "load_instrument",
         node_id: parseInt(newNodeId, 10),
@@ -94,10 +122,8 @@ export function useInstrumentEngine() {
         instrument_json: instrumentJson,
       });
 
-      // Track the mapping
       instrumentNodeMap.current.set(instrumentId, newNodeId);
 
-      // Auto-connect to output if requested
       if (autoConnect && outputNodeId) {
         sendIntent({
           type: "connect",
@@ -153,6 +179,7 @@ export function useInstrumentEngine() {
 
   return {
     addToCanvas,
+    loadInstrumentPreset,
     handleSnapshotAfterAdd,
     playNote,
     stopNote,

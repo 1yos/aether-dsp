@@ -1,78 +1,21 @@
-﻿{
-    "name":  "Violin",
-    "family":  "bowed-string",
-    "region":  "Europe",
-    "country":  "Italy",
-    "tuning":  {
-                   "name":  "12-tet",
-                   "frequencies":  null
-               },
-    "adsr":  {
-                 "attack":  0.01,
-                 "decay":  0.1,
-                 "sustain":  0.7,
-                 "release":  0.3
-             },
-    "zones":  [
-                  {
-                      "id":  "violin-57",
-                      "file_path":  "../../../../../samples/VSCO-2-CE/violin/violin_A3.wav",
-                      "root_note":  57,
-                      "note_low":  55,
-                      "note_high":  59,
-                      "velocity_low":  0,
-                      "velocity_high":  127,
-                      "articulation":  "SustainLoop",
-                      "volume_db":  0,
-                      "tune_cents":  0,
-                      "loop_start":  null,
-                      "loop_end":  null,
-                      "release_file":  null
-                  },
-                  {
-                      "id":  "violin-69",
-                      "file_path":  "../../../../../samples/VSCO-2-CE/violin/violin_A4.wav",
-                      "root_note":  69,
-                      "note_low":  67,
-                      "note_high":  71,
-                      "velocity_low":  0,
-                      "velocity_high":  127,
-                      "articulation":  "SustainLoop",
-                      "volume_db":  0,
-                      "tune_cents":  0,
-                      "loop_start":  null,
-                      "loop_end":  null,
-                      "release_file":  null
-                  },
-                  {
-                      "id":  "violin-64",
-                      "file_path":  "../../../../../samples/VSCO-2-CE/violin/violin_E4.wav",
-                      "root_note":  64,
-                      "note_low":  62,
-                      "note_high":  66,
-                      "velocity_low":  0,
-                      "velocity_high":  127,
-                      "articulation":  "SustainLoop",
-                      "volume_db":  0,
-                      "tune_cents":  0,
-                      "loop_start":  null,
-                      "loop_end":  null,
-                      "release_file":  null
-                  },
-                  {
-                      "id":  "violin-76",
-                      "file_path":  "../../../../../samples/VSCO-2-CE/violin/violin_E5.wav",
-                      "root_note":  76,
-                      "note_low":  74,
-                      "note_high":  78,
-                      "velocity_low":  0,
-                      "velocity_high":  127,
-                      "articulation":  "SustainLoop",
-                      "volume_db":  0,
-                      "tune_cents":  0,
-                      "loop_start":  null,
-                      "loop_end":  null,
-                      "release_file":  null
-                  }
-              ]
+{
+  "name": "Violin",
+  "description": "European bowed string instrument with a bright, singing tone. Warm upper register with a rich harmonic spectrum, capable of expressive dynamics from whisper to soaring.",
+  "instrument_id": "violin",
+  "source": "synthesis",
+  "tuning": "12-tet",
+  "nodes": [
+    { "id": "osc",  "type": "Oscillator",   "params": { "Frequency": 440, "Amplitude": 0.55, "Waveform": 1, "MIDI Note": -1 } },
+    { "id": "filt", "type": "MoogLadder",   "params": { "Cutoff": 3500, "Resonance": 0.4, "Drive": 0.05 } },
+    { "id": "env",  "type": "AdsrEnvelope", "params": { "Attack": 0.06, "Decay": 0.1, "Sustain": 0.82, "Release": 0.45, "Gate": 1.0 } },
+    { "id": "rev",  "type": "Reverb",       "params": { "Room Size": 0.5, "Damping": 0.45, "Wet": 0.28, "Width": 0.9 } },
+    { "id": "out",  "type": "Gain",         "params": { "Gain": 0.75 } }
+  ],
+  "connections": [
+    { "from": "osc",  "to": "filt", "slot": 0 },
+    { "from": "filt", "to": "env",  "slot": 0 },
+    { "from": "env",  "to": "rev",  "slot": 0 },
+    { "from": "rev",  "to": "out",  "slot": 0 }
+  ],
+  "output_node": "out"
 }
