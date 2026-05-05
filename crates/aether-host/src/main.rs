@@ -37,6 +37,20 @@ use graph_manager::{GraphManager, Intent, PatchDef};
 use ws_server::WsState;
 
 fn main() -> anyhow::Result<()> {
+    // ── Crash reporting (optional) ────────────────────────────────────────────
+    // Set AETHER_SENTRY_DSN=https://... to enable. No-op if unset.
+    let _sentry_guard = if let Ok(dsn) = std::env::var("AETHER_SENTRY_DSN") {
+        Some(sentry::init((
+            dsn,
+            sentry::ClientOptions {
+                release: sentry::release_name!(),
+                environment: Some(if cfg!(debug_assertions) { "development" } else { "production" }.into()),
+                ..Default::default()
+            },
+        )))
+    } else {
+        None
+    };
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No audio output device");
     let config = device.default_output_config()?;

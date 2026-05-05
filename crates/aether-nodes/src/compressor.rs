@@ -63,7 +63,7 @@ impl DspNode for Compressor {
         let release_coeff = (-1.0 / (release_ms * 0.001 * sample_rate)).exp();
         let makeup_linear = Self::db_to_linear(makeup_db);
 
-        for (i, out) in output.iter_mut().enumerate() {
+        for i in 0..BUFFER_SIZE {
             let x = input[i];
 
             // RMS envelope follower (squared signal, smoothed)
@@ -105,7 +105,7 @@ impl DspNode for Compressor {
                 release_coeff * self.gain_env + (1.0 - release_coeff) * target_gain
             };
 
-            *out = x * self.gain_env * makeup_linear;
+            output[i] = x * self.gain_env * makeup_linear;
             params.tick_all();
         }
     }

@@ -29,6 +29,9 @@
           "$DOWNLOAD/**",
           "$DESKTOP/**"
         ]
+      },
+      "updater": {
+        "all": true
       }
     },
     "bundle": {
@@ -52,7 +55,12 @@
       "csp": null
     },
     "updater": {
-      "active": false
+      "active": true,
+      "dialog": true,
+      "pubkey": "",
+      "endpoints": [
+        "https://github.com/1yos/aether-dsp/releases/latest/download/latest.json"
+      ]
     },
     "windows": [
       {

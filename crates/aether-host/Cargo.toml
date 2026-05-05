@@ -33,6 +33,9 @@ anyhow = "1"
 tokio = { version = "1", features = ["full"] }
 tokio-tungstenite = "0.21"
 futures-util = "0.3"
+# Crash reporting — optional, enabled via AETHER_SENTRY_DSN env var at runtime.
+# The sentry crate is zero-cost when no DSN is configured.
+sentry = { version = "0.34", default-features = false, features = ["backtrace", "contexts", "panic", "reqwest", "rustls"] }
 
 [dev-dependencies]
 proptest = "1"
