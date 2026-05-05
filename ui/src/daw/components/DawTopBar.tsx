@@ -3,9 +3,10 @@
  * Single 48px bar. No redundancy.
  */
 
-import { useState, useRef, useCallback } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import { useDawStore, DawView } from "../store/dawStore";
 import { useEngineStore } from "../../studio/store/engineStore";
+import { useState } from "react";
 
 const VIEWS: Array<{
   id: DawView;
@@ -55,6 +56,64 @@ export function DawTopBar({ onOpenRecorder }: DawTopBarProps) {
       setBpm(Math.round(60000 / avg));
     }
   }, [setBpm]);
+
+  // Wire transport play/stop to engine mute toggle
+  const toggleMute = useEngineStore((s) => s.toggleMute);
+  const sendIntent = useEngineStore((s) => s.sendIntent);
+
+  // Sync DAW play state → engine (unmute when playing, mute when stopped)
+  useEffect(() => {
+    sendIntent?.({ type: "set_mute", muted: !transport.isPlaying });
+  }, [transport.isPlaying, sendIntent]);
+
+  // BPM → engine
+  useEffect(() => {
+    sendIntent?.({ type: "set_bpm", bpm: transport.bpm });
+  }, [transport.bpm, sendIntent]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      )
+        return;
+      if (e.ctrlKey || e.metaKey) return;
+      switch (e.key) {
+        case "F1":
+          e.preventDefault();
+          setView("song");
+          break;
+        case "F2":
+          e.preventDefault();
+          setView("piano-roll");
+          break;
+        case "F3":
+          e.preventDefault();
+          setView("mixer");
+          break;
+        case "F4":
+          e.preventDefault();
+          setView("patcher");
+          break;
+        case " ":
+          e.preventDefault();
+          if (transport.isPlaying) stop();
+          else play();
+          break;
+        case "r":
+        case "R":
+          e.preventDefault();
+          toggleRecord();
+          break;
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [transport.isPlaying, play, stop, toggleRecord, setView]);
+
+  void toggleMute; // used via sendIntent above
 
   const statusColor =
     wsStatus === "connected"

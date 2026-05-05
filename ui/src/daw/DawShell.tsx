@@ -13,7 +13,7 @@
  * └─────────────────────────────────────────────────────┘
  */
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useEffect, useState } from "react";
 import { useDawStore } from "./store/dawStore";
 import { DawTopBar } from "./components/DawTopBar";
 import { DawBrowser } from "./components/DawBrowser";
@@ -25,7 +25,6 @@ import { PropertiesPanel } from "./components/PropertiesPanel";
 import { useEngineSocket } from "../hooks/useEngineSocket";
 import { useProjectSave } from "../hooks/useProjectSave";
 import { InstrumentRecorder } from "../components/InstrumentRecorder";
-import { useState } from "react";
 
 export function DawShell() {
   useEngineSocket();
@@ -38,8 +37,26 @@ export function DawShell() {
   const propertiesHeight = useDawStore((s) => s.propertiesHeight);
   const setBrowserWidth = useDawStore((s) => s.setBrowserWidth);
   const setPropertiesHeight = useDawStore((s) => s.setPropertiesHeight);
+  const transport = useDawStore((s) => s.transport);
+  const setTransport = useDawStore((s) => s.setTransport);
 
   const [showRecorder, setShowRecorder] = useState(false);
+
+  // Advance playhead while playing
+  useEffect(() => {
+    if (!transport.isPlaying) return;
+    const interval = setInterval(() => {
+      setTransport({
+        playheadBeat: transport.playheadBeat + transport.bpm / 60 / 10,
+      });
+    }, 100);
+    return () => clearInterval(interval);
+  }, [
+    transport.isPlaying,
+    transport.bpm,
+    transport.playheadBeat,
+    setTransport,
+  ]);
 
   // ── Resize handles ────────────────────────────────────────────────────────
   const browserResizing = useRef(false);
