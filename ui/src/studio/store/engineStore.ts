@@ -277,6 +277,8 @@ interface EngineStore {
   // MIDI actions
   listMidiPorts: () => void;
   connectMidiPort: (index: number) => void;
+  setMidiRoute: (channel: number, nodeId: string, generation: number) => void;
+  removeMidiRoute: (channel: number) => void;
   setMidiPorts: (ports: string[]) => void;
   setConnectedMidiPort: (port: string | null) => void;
 
@@ -435,6 +437,19 @@ export const useEngineStore = create<EngineStore>((set, get) => ({
 
   connectMidiPort: (index) => {
     get().sendIntent?.({ type: "midi_connect", port_index: index });
+  },
+
+  setMidiRoute: (channel, nodeId, generation) => {
+    get().sendIntent?.({
+      type: "set_midi_route",
+      channel,
+      node_id: parseInt(nodeId, 10),
+      generation,
+    });
+  },
+
+  removeMidiRoute: (channel) => {
+    get().sendIntent?.({ type: "remove_midi_route", channel });
   },
 
   setMidiPorts: (ports) => set({ midiPorts: ports }),

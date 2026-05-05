@@ -49,6 +49,10 @@ pub enum Intent {
     LoadInstrument { node_id: u32, generation: u32, instrument_json: String },
     SetModulation { src_node_id: u32, src_gen: u32, dst_node_id: u32, dst_gen: u32, dst_param_index: usize, amount: f32 },
     RemoveModulation { src_node_id: u32, dst_node_id: u32, dst_param_index: usize },
+    /// Assign a MIDI channel to a specific node (for per-channel routing).
+    SetMidiRoute { channel: u8, node_id: u32, generation: u32 },
+    /// Remove a MIDI channel routing.
+    RemoveMidiRoute { channel: u8 },
     #[allow(dead_code)] AnalyzeTimbre { instrument_json: String },
     #[allow(dead_code)] ApplyTimbreTransfer { timbre_transfer_node_id: u32, profile_name: String },
     ExportClap { #[allow(dead_code)] node_id: u32, #[allow(dead_code)] generation: u32, output_path: String },
@@ -154,6 +158,9 @@ pub struct GraphManager {
     pub instrument_slots: HashMap<NodeId, Arc<ArcSwap<Option<LoadedInstrument>>>>,
     /// Active modulation connections (LFO/envelope → parameter).
     pub mod_connections: Vec<ModConnection>,
+    /// Per-channel MIDI routing: channel → NodeId.
+    /// Channel 255 = broadcast to all (default).
+    pub midi_routes: HashMap<u8, NodeId>,
     /// TimbreTransfer profile slots — keyed by NodeId, shared with the RT node.
     pub timbre_slots: HashMap<NodeId, std::sync::Arc<std::sync::Mutex<Option<aether_timbre::analysis::TimbreProfile>>>>,
 }
@@ -173,6 +180,7 @@ impl GraphManager {
             scope_consumers: HashMap::new(),
             instrument_slots: HashMap::new(),
             mod_connections: Vec::new(),
+            midi_routes: HashMap::new(),
             timbre_slots: HashMap::new(),
         }
     }
@@ -375,8 +383,28 @@ impl GraphManager {
                 };
                 let event = MidiEvent { timestamp: 0, channel, kind };
                 let queues = self.midi_queues.lock().unwrap();
-                for q in queues.values() { q.lock().unwrap().push(event.clone()); }
+
+                // Per-channel routing: if a route exists for this channel, send only to that node.
+                // Otherwise broadcast to all queues (legacy behaviour).
+                if let Some(target_id) = self.midi_routes.get(&channel) {
+                    if let Some(q) = queues.get(target_id) {
+                        q.lock().unwrap().push(event);
+                    }
+                } else {
+                    for q in queues.values() { q.lock().unwrap().push(event.clone()); }
+                }
                 Response::Ack { command: "inject_midi".into() }
+            }
+
+            Intent::SetMidiRoute { channel, node_id, generation } => {
+                let id = NodeId { index: node_id, generation };
+                self.midi_routes.insert(channel, id);
+                Response::Ack { command: "set_midi_route".into() }
+            }
+
+            Intent::RemoveMidiRoute { channel } => {
+                self.midi_routes.remove(&channel);
+                Response::Ack { command: "remove_midi_route".into() }
             }
 
             Intent::LoadInstrument { node_id, generation, instrument_json } => {

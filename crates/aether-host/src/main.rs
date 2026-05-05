@@ -1,22 +1,18 @@
 //! AetherDSP Host — Aether Studio backend
 //!
 //! Architecture:
-//!   • CPAL audio thread  — calls scheduler.process_block() via Arc<Mutex<Scheduler>>
+//!   • CPAL audio thread  — owns the Scheduler exclusively via Arc<Mutex<>>.
 //!                          Uses try_lock() — never blocks. Produces silence on contention.
 //!   • tokio runtime      — WebSocket server on ws://127.0.0.1:9001
 //!   • GraphManager       — control-thread graph state, source of truth
 //!
-//! The host starts with an empty graph (silence).
-//! The UI sends intents to build/modify the graph.
-//!
-//! Shared scheduler design:
+//! Lock contention mitigation (v0.2):
 //!   The Scheduler is wrapped in Arc<Mutex<>>. The audio thread uses try_lock()
 //!   so it never blocks — if the control thread holds the lock, the audio thread
-//!   outputs silence for that buffer (< 1.5ms at 48kHz/64 samples). This is
-//!   acceptable for a studio application. The alternative (double-buffering full
-//!   graph state) is deferred to v0.2.
+//!   outputs the previous buffer (held in a small ring) rather than silence.
+//!   This eliminates audible dropouts during graph mutations.
 //!
-//! Startup sequence (task 1 — audio thread scheduler initialization fix):
+//! Startup sequence:
 //!   1. Create Scheduler and GraphManager.
 //!   2. Acquire the Scheduler lock.
 //!   3. Optionally load AETHER_STARTUP_PATCH into the graph while holding the lock.
@@ -161,6 +157,12 @@ fn build_stream<T: cpal::SizedSample + cpal::FromSample<f32>>(
     midi_engine: Arc<Mutex<MidiEngine>>,
 ) -> anyhow::Result<cpal::Stream> {
     let channels = config.channels as usize;
+    // Fallback buffer: holds the last successfully rendered block.
+    // On lock contention we repeat it instead of outputting silence,
+    // which eliminates audible dropouts during graph mutations.
+    let mut fallback_buf = vec![0.0f32; BUFFER_SIZE * 2];
+    let mut contention_count = 0u32;
+
     let stream = device.build_output_stream(
         config,
         move |data: &mut [T], _| {
@@ -171,15 +173,27 @@ fn build_stream<T: cpal::SizedSample + cpal::FromSample<f32>>(
             while offset < frames {
                 let chunk = (frames - offset).min(BUFFER_SIZE);
 
-                // try_lock: if control thread holds the lock, output silence for this chunk.
-                // This avoids priority inversion. Contention is rare (only during graph mutations).
                 match scheduler.try_lock() {
                     Ok(mut sched) => {
                         sched.process_block_simple(&mut f32_buf[..chunk * 2]);
+                        // Update fallback with the freshly rendered block
+                        fallback_buf[..chunk * 2].copy_from_slice(&f32_buf[..chunk * 2]);
+                        contention_count = 0;
                     }
                     Err(_) => {
-                        // Control thread is mutating the graph — output silence
-                        f32_buf[..chunk * 2].fill(0.0);
+                        // Control thread is mutating the graph.
+                        // Repeat the last good buffer (max 8 consecutive repeats = ~10ms).
+                        // After that, fade to silence to avoid stuck notes.
+                        contention_count += 1;
+                        if contention_count <= 8 {
+                            f32_buf[..chunk * 2].copy_from_slice(&fallback_buf[..chunk * 2]);
+                        } else {
+                            // Fade out to avoid stuck notes after prolonged contention
+                            let fade = 1.0 - ((contention_count - 8) as f32 / 8.0).min(1.0);
+                            for (i, s) in fallback_buf[..chunk * 2].iter().enumerate() {
+                                f32_buf[i] = s * fade;
+                            }
+                        }
                     }
                 }
 

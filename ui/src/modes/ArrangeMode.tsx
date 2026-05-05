@@ -22,6 +22,7 @@ import {
   isInScale,
   getCentDeviation,
 } from "./scale-systems";
+import { useEngineStore } from "../studio/store/engineStore";
 import "./ArrangeMode.css";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -449,6 +450,28 @@ function PianoRoll({
   );
 }
 
+// ── Track type ────────────────────────────────────────────────────────────────
+
+interface Track {
+  id: string;
+  name: string;
+  color: string;
+  muted: boolean;
+  solo: boolean;
+  clips: Array<{ start: number; width: number }>;
+}
+
+const TRACK_COLORS_PALETTE = [
+  "#d4a017",
+  "#ef4444",
+  "#a78bfa",
+  "#38bdf8",
+  "#34d399",
+  "#f97316",
+  "#e879f9",
+  "#facc15",
+];
+
 // ── Main ArrangeMode ──────────────────────────────────────────────────────────
 
 export function ArrangeMode() {
@@ -461,13 +484,48 @@ export function ArrangeMode() {
     { id: "6", pitch: 64, beat: 12, duration: 2, velocity: 95 },
   ]);
 
+  const [tracks, setTracks] = useState<Track[]>([
+    {
+      id: "t1",
+      name: "Krar",
+      color: "#d4a017",
+      muted: false,
+      solo: false,
+      clips: [
+        { start: 0, width: 50 },
+        { start: 60, width: 30 },
+      ],
+    },
+    {
+      id: "t2",
+      name: "Kebero",
+      color: "#ef4444",
+      muted: false,
+      solo: false,
+      clips: [{ start: 0, width: 100 }],
+    },
+    {
+      id: "t3",
+      name: "Masenqo",
+      color: "#a78bfa",
+      muted: false,
+      solo: false,
+      clips: [{ start: 25, width: 50 }],
+    },
+  ]);
+
   const [scaleId, setScaleId] = useState("ethiopian-tizita");
   const [rhythmId, setRhythmId] = useState("12-8");
   const [totalCycles, setTotalCycles] = useState(2);
   const [showPianoRoll, setShowPianoRoll] = useState(true);
+  const [isRecording, setIsRecording] = useState(false);
+  const recordingPathRef = useRef<string>("");
 
   const scale = getScaleSystem(scaleId);
   const rhythm = getRhythmicSystem(rhythmId);
+
+  const sendIntent = useEngineStore((s) => s.sendIntent);
+  const engineRecording = useEngineStore((s) => s.isRecording);
 
   const addNote = useCallback((pitch: number, beat: number) => {
     setNotes((prev) => [
@@ -479,6 +537,65 @@ export function ArrangeMode() {
   const removeNote = useCallback((id: string) => {
     setNotes((prev) => prev.filter((n) => n.id !== id));
   }, []);
+
+  const addTrack = useCallback(() => {
+    const idx = tracks.length % TRACK_COLORS_PALETTE.length;
+    setTracks((prev) => [
+      ...prev,
+      {
+        id: `t${Date.now()}`,
+        name: `Track ${prev.length + 1}`,
+        color: TRACK_COLORS_PALETTE[idx],
+        muted: false,
+        solo: false,
+        clips: [],
+      },
+    ]);
+  }, [tracks.length]);
+
+  const removeTrack = useCallback((id: string) => {
+    setTracks((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const toggleMute = useCallback((id: string) => {
+    setTracks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, muted: !t.muted } : t)),
+    );
+  }, []);
+
+  const toggleSolo = useCallback((id: string) => {
+    setTracks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, solo: !t.solo } : t)),
+    );
+  }, []);
+
+  const handleRecord = useCallback(() => {
+    if (isRecording || engineRecording) {
+      sendIntent?.({ type: "stop_recording" });
+      setIsRecording(false);
+    } else {
+      const path = `recording-${Date.now()}.wav`;
+      recordingPathRef.current = path;
+      sendIntent?.({ type: "start_recording", output_path: path });
+      setIsRecording(true);
+    }
+  }, [isRecording, engineRecording, sendIntent]);
+
+  const handleExportWav = useCallback(() => {
+    if (isRecording || engineRecording) {
+      sendIntent?.({ type: "stop_recording" });
+      setIsRecording(false);
+    } else {
+      const path = `export-${Date.now()}.wav`;
+      sendIntent?.({ type: "start_recording", output_path: path });
+      // Auto-stop after 30 seconds (safety limit)
+      setTimeout(() => {
+        sendIntent?.({ type: "stop_recording" });
+        setIsRecording(false);
+      }, 30000);
+      setIsRecording(true);
+    }
+  }, [isRecording, engineRecording, sendIntent]);
 
   return (
     <div className="arrange-mode">
@@ -508,7 +625,6 @@ export function ArrangeMode() {
               </span>
             </div>
             <div className="pr-controls">
-              {/* Scale selector */}
               <select
                 className="pr-scale-select"
                 value={scaleId}
@@ -521,8 +637,6 @@ export function ArrangeMode() {
                   </option>
                 ))}
               </select>
-
-              {/* Rhythm selector */}
               <select
                 className="pr-scale-select"
                 value={rhythmId}
@@ -535,8 +649,6 @@ export function ArrangeMode() {
                   </option>
                 ))}
               </select>
-
-              {/* Cycles */}
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <span style={{ fontSize: 10, color: "#4a6a8a" }}>Cycles:</span>
                 <button
@@ -562,7 +674,37 @@ export function ArrangeMode() {
                   +
                 </button>
               </div>
-
+              {/* Record button */}
+              <button
+                className="pr-tool-btn"
+                onClick={handleRecord}
+                style={{
+                  background:
+                    isRecording || engineRecording
+                      ? "rgba(239,68,68,0.2)"
+                      : undefined,
+                  color: isRecording || engineRecording ? "#ef4444" : undefined,
+                  border:
+                    isRecording || engineRecording
+                      ? "1px solid #ef4444"
+                      : undefined,
+                }}
+                title={
+                  isRecording || engineRecording
+                    ? "Stop recording"
+                    : "Record audio"
+                }
+              >
+                {isRecording || engineRecording ? "■ Stop" : "● Rec"}
+              </button>
+              {/* Export WAV */}
+              <button
+                className="pr-tool-btn"
+                onClick={handleExportWav}
+                title="Export to WAV"
+              >
+                ↓ WAV
+              </button>
               <button
                 className="pr-close-btn"
                 onClick={() => setShowPianoRoll(false)}
@@ -611,7 +753,9 @@ export function ArrangeMode() {
         <div className="tl-header">
           <div className="tl-title">Timeline</div>
           <div className="tl-controls">
-            <button className="pr-tool-btn">+ Track</button>
+            <button className="pr-tool-btn" onClick={addTrack}>
+              + Track
+            </button>
             {!showPianoRoll && (
               <button
                 className="pr-tool-btn"
@@ -644,27 +788,12 @@ export function ArrangeMode() {
             )}
           </div>
 
-          {[
-            {
-              name: "Krar",
-              color: "#d4a017",
-              clips: [
-                { start: 0, width: 50 },
-                { start: 60, width: 30 },
-              ],
-            },
-            {
-              name: "Kebero",
-              color: "#ef4444",
-              clips: [{ start: 0, width: 100 }],
-            },
-            {
-              name: "Masenqo",
-              color: "#a78bfa",
-              clips: [{ start: 25, width: 50 }],
-            },
-          ].map((track, i) => (
-            <div key={i} className="tl-track">
+          {tracks.map((track) => (
+            <div
+              key={track.id}
+              className="tl-track"
+              style={{ opacity: track.muted ? 0.4 : 1 }}
+            >
               <div className="tl-track-header">
                 <div
                   className="tl-track-color"
@@ -672,8 +801,30 @@ export function ArrangeMode() {
                 />
                 <span className="tl-track-name">{track.name}</span>
                 <div className="tl-track-btns">
-                  <button className="tl-track-btn">S</button>
-                  <button className="tl-track-btn">M</button>
+                  <button
+                    className="tl-track-btn"
+                    onClick={() => toggleSolo(track.id)}
+                    style={{ color: track.solo ? "#ffd54f" : undefined }}
+                    title="Solo"
+                  >
+                    S
+                  </button>
+                  <button
+                    className="tl-track-btn"
+                    onClick={() => toggleMute(track.id)}
+                    style={{ color: track.muted ? "#ef4444" : undefined }}
+                    title="Mute"
+                  >
+                    M
+                  </button>
+                  <button
+                    className="tl-track-btn"
+                    onClick={() => removeTrack(track.id)}
+                    title="Remove track"
+                    style={{ color: "#4a6a8a" }}
+                  >
+                    ✕
+                  </button>
                 </div>
               </div>
               <div className="tl-track-lane">
