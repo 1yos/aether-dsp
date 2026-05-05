@@ -3,7 +3,7 @@
  * Complete redesigned UI with 4 modes
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useModeStore } from "./store/useModeStore";
 import { TopBar } from "./components/TopBar";
 import { ExploreMode } from "./modes/ExploreMode";
@@ -11,11 +11,13 @@ import { CreateMode } from "./modes/CreateMode";
 import { ArrangeMode } from "./modes/ArrangeMode";
 import { PerformMode } from "./modes/PerformMode";
 import { useProjectSave } from "./hooks/useProjectSave";
+import { InstrumentRecorder } from "./components/InstrumentRecorder";
 import "./styles/tokens.css";
 import "./App.css";
 
 export default function App() {
   const { currentMode, setMode } = useModeStore();
+  const [showRecorder, setShowRecorder] = useState(false);
 
   // Project save/load (Ctrl+S, Ctrl+O, autosave every 2 min)
   useProjectSave();
@@ -59,8 +61,11 @@ export default function App() {
 
   return (
     <div className="app">
-      <TopBar />
+      <TopBar onOpenInstrumentMaker={() => setShowRecorder(true)} />
       <div className="app-content">{renderMode()}</div>
+      {showRecorder && (
+        <InstrumentRecorder onClose={() => setShowRecorder(false)} />
+      )}
     </div>
   );
 }
