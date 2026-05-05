@@ -11,6 +11,7 @@ import { CreateMode } from "./modes/CreateMode";
 import { ArrangeMode } from "./modes/ArrangeMode";
 import { PerformMode } from "./modes/PerformMode";
 import { useProjectSave } from "./hooks/useProjectSave";
+import { useEngineSocket } from "./hooks/useEngineSocket";
 import { InstrumentRecorder } from "./components/InstrumentRecorder";
 import "./styles/tokens.css";
 import "./App.css";
@@ -18,6 +19,9 @@ import "./App.css";
 export default function App() {
   const { currentMode, setMode } = useModeStore();
   const [showRecorder, setShowRecorder] = useState(false);
+
+  // Connect to aether-host WebSocket — wires sendIntent + wsStatus into engineStore
+  useEngineSocket();
 
   // Project save/load (Ctrl+S, Ctrl+O, autosave every 2 min)
   useProjectSave();
