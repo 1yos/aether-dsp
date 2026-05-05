@@ -96,6 +96,15 @@ export function useEngineSocket() {
             );
             break;
 
+          case "cpu_usage": {
+            // Dispatch a custom DOM event so CpuMeter components can subscribe
+            const event = new CustomEvent("aether:cpu_usage", {
+              detail: { nodes: msg.nodes },
+            });
+            window.dispatchEvent(event);
+            break;
+          }
+
           case "error":
             console.warn("[aether-host]", msg.message);
             break;

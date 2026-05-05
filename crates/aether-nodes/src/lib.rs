@@ -16,6 +16,11 @@ pub mod scope;
 pub mod waveshaper;
 pub mod chorus;
 
+#[cfg(test)]
+mod tests {
+    mod regression;
+}
+
 pub use record::RecordNode;
 pub use scope::ScopeNode;
 pub use compressor::Compressor;

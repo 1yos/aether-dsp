@@ -10,6 +10,7 @@ import { useEngineStore } from "../studio/store/engineStore";
 import { ModulationMatrix } from "./ModulationMatrix";
 import { SampleLibrary } from "./SampleLibrary";
 import { SettingsPanel } from "./SettingsPanel";
+import { PatchBrowser } from "./PatchBrowser";
 import { usePatchShare } from "../hooks/usePatchShare";
 import { useState, useEffect, useCallback } from "react";
 import "./TopBar.css";
@@ -26,6 +27,7 @@ export function TopBar({
   const [showModMatrix, setShowModMatrix] = useState(false);
   const [showSampleLibrary, setShowSampleLibrary] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPatchBrowser, setShowPatchBrowser] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
@@ -263,6 +265,35 @@ export function TopBar({
               <circle cx="7" cy="4" r="1" fill="currentColor" opacity="0.4" />
             </svg>
           </button>
+        )}
+
+        {/* Community patches browser */}
+        <button
+          className={`tb-btn ${showPatchBrowser ? "active" : ""}`}
+          title="Community Patches — browse patches shared by other users"
+          onClick={() => setShowPatchBrowser((v) => !v)}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect
+              x="1"
+              y="2"
+              width="12"
+              height="10"
+              rx="1.5"
+              stroke="currentColor"
+              strokeWidth="1.2"
+            />
+            <path
+              d="M4 5h6M4 7.5h4"
+              stroke="currentColor"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+
+        {showPatchBrowser && (
+          <PatchBrowser onClose={() => setShowPatchBrowser(false)} />
         )}
 
         {/* Share patch */}

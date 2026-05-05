@@ -18,6 +18,9 @@ import { ModuleBar } from "../../modules/ModuleBar";
 import { ModulePanel } from "../../modules/ModulePanel";
 import { useModuleStore } from "../../modules/useModuleStore";
 import { moduleRegistry } from "../../modules/moduleRegistry";
+import { NodeContextMenu } from "./NodeContextMenu";
+import { NodeParamEditor } from "./NodeParamEditor";
+import { useCpuMeter, CpuBar, MasterCpuIndicator } from "./CpuMeter";
 
 const NODE_W = 220;
 const NODE_H_BASE = 80;
@@ -29,10 +32,15 @@ function nodeHeight(nodeType: string): number {
   return NODE_H_BASE + def.params.length * PARAM_H;
 }
 
-export function WebGLCanvas({ onOpenInstrumentMaker }: { onOpenInstrumentMaker?: () => void }) {
+export function WebGLCanvas({
+  onOpenInstrumentMaker,
+}: {
+  onOpenInstrumentMaker?: () => void;
+}) {
   useEngine();
   const octaveRef = useComputerKeyboard();
   const modules = useModuleStore((s) => s.layout.modules);
+  const cpuData = useCpuMeter();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<WebGLRenderer | null>(null);
@@ -43,6 +51,22 @@ export function WebGLCanvas({ onOpenInstrumentMaker }: { onOpenInstrumentMaker?:
   const panRef = useRef<[number, number]>([100, 100]);
   const zoomRef = useRef<number>(1);
   const [, forceUpdate] = useState(0); // trigger overlay re-render
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    nodeId: string;
+    nodeType: string;
+    generation: number;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  // Param editor state
+  const [paramEditor, setParamEditor] = useState<{
+    nodeId: string;
+    nodeType: string;
+    generation: number;
+  } | null>(null);
 
   // Interaction state
   const draggingNodeRef = useRef<string | null>(null);
@@ -65,7 +89,10 @@ export function WebGLCanvas({ onOpenInstrumentMaker }: { onOpenInstrumentMaker?:
   useEffect(() => {
     for (const node of nodes) {
       if (!nodePositionsRef.current.has(node.id)) {
-        nodePositionsRef.current.set(node.id, [node.position.x, node.position.y]);
+        nodePositionsRef.current.set(node.id, [
+          node.position.x,
+          node.position.y,
+        ]);
       }
     }
     // Remove stale positions
@@ -78,10 +105,14 @@ export function WebGLCanvas({ onOpenInstrumentMaker }: { onOpenInstrumentMaker?:
   // Build GraphNode/GraphEdge arrays for the renderer
   const buildGraphNodes = useCallback((): GraphNode[] => {
     return nodes.map((n) => {
-      const [x, y] = nodePositionsRef.current.get(n.id) ?? [n.position.x, n.position.y];
+      const [x, y] = nodePositionsRef.current.get(n.id) ?? [
+        n.position.x,
+        n.position.y,
+      ];
       return {
         id: n.id,
-        x, y,
+        x,
+        y,
         width: NODE_W,
         height: nodeHeight(n.data.nodeType),
         color: n.data.color ?? "#4fc3f7",
@@ -93,23 +124,31 @@ export function WebGLCanvas({ onOpenInstrumentMaker }: { onOpenInstrumentMaker?:
   }, [nodes, selectedNodeId]);
 
   const buildGraphEdges = useCallback((): GraphEdge[] => {
-    return edges.map((e) => {
-      const srcNode = nodes.find((n) => n.id === e.source);
-      const dstNode = nodes.find((n) => n.id === e.target);
-      if (!srcNode || !dstNode) return null;
-      const [sx, sy] = nodePositionsRef.current.get(srcNode.id) ?? [srcNode.position.x, srcNode.position.y];
-      const [dx, dy] = nodePositionsRef.current.get(dstNode.id) ?? [dstNode.position.x, dstNode.position.y];
-      const srcH = nodeHeight(srcNode.data.nodeType);
-      const dstH = nodeHeight(dstNode.data.nodeType);
-      return {
-        id: e.id,
-        srcX: sx + NODE_W,
-        srcY: sy + srcH / 2,
-        dstX: dx,
-        dstY: dy + dstH / 2,
-        color: srcNode.data.color ?? "#38bdf8",
-      };
-    }).filter(Boolean) as GraphEdge[];
+    return edges
+      .map((e) => {
+        const srcNode = nodes.find((n) => n.id === e.source);
+        const dstNode = nodes.find((n) => n.id === e.target);
+        if (!srcNode || !dstNode) return null;
+        const [sx, sy] = nodePositionsRef.current.get(srcNode.id) ?? [
+          srcNode.position.x,
+          srcNode.position.y,
+        ];
+        const [dx, dy] = nodePositionsRef.current.get(dstNode.id) ?? [
+          dstNode.position.x,
+          dstNode.position.y,
+        ];
+        const srcH = nodeHeight(srcNode.data.nodeType);
+        const dstH = nodeHeight(dstNode.data.nodeType);
+        return {
+          id: e.id,
+          srcX: sx + NODE_W,
+          srcY: sy + srcH / 2,
+          dstX: dx,
+          dstY: dy + dstH / 2,
+          color: srcNode.data.color ?? "#38bdf8",
+        };
+      })
+      .filter(Boolean) as GraphEdge[];
   }, [nodes, edges]);
 
   // Init WebGL
@@ -163,70 +202,129 @@ export function WebGLCanvas({ onOpenInstrumentMaker }: { onOpenInstrumentMaker?:
 
   // Re-render when data changes (the RAF loop handles animation, but we need
   // to trigger overlay re-render for HTML node controls)
-  useEffect(() => { forceUpdate((n) => n + 1); }, [nodes, edges, selectedNodeId]);
+  useEffect(() => {
+    forceUpdate((n) => n + 1);
+  }, [nodes, edges, selectedNodeId]);
 
   // ── Canvas → world coordinate conversion ─────────────────────────────────
-  const canvasToWorld = useCallback((cx: number, cy: number): [number, number] => {
-    const canvas = canvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    const px = (cx - rect.left) * devicePixelRatio;
-    const py = (cy - rect.top) * devicePixelRatio;
-    return [
-      (px - panRef.current[0]) / zoomRef.current,
-      (py - panRef.current[1]) / zoomRef.current,
-    ];
-  }, []);
+  const canvasToWorld = useCallback(
+    (cx: number, cy: number): [number, number] => {
+      const canvas = canvasRef.current!;
+      const rect = canvas.getBoundingClientRect();
+      const px = (cx - rect.left) * devicePixelRatio;
+      const py = (cy - rect.top) * devicePixelRatio;
+      return [
+        (px - panRef.current[0]) / zoomRef.current,
+        (py - panRef.current[1]) / zoomRef.current,
+      ];
+    },
+    [],
+  );
 
-  const hitTestNode = useCallback((wx: number, wy: number): string | null => {
-    for (const node of nodes) {
-      const [nx, ny] = nodePositionsRef.current.get(node.id) ?? [node.position.x, node.position.y];
-      const h = nodeHeight(node.data.nodeType);
-      if (wx >= nx && wx <= nx + NODE_W && wy >= ny && wy <= ny + h) {
-        return node.id;
+  const hitTestNode = useCallback(
+    (wx: number, wy: number): string | null => {
+      for (const node of nodes) {
+        const [nx, ny] = nodePositionsRef.current.get(node.id) ?? [
+          node.position.x,
+          node.position.y,
+        ];
+        const h = nodeHeight(node.data.nodeType);
+        if (wx >= nx && wx <= nx + NODE_W && wy >= ny && wy <= ny + h) {
+          return node.id;
+        }
       }
-    }
-    return null;
-  }, [nodes]);
+      return null;
+    },
+    [nodes],
+  );
 
   // ── Mouse handlers ────────────────────────────────────────────────────────
-  const onMouseDown = useCallback((e: React.MouseEvent) => {
-    const [wx, wy] = canvasToWorld(e.clientX, e.clientY);
+  const onMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      const [wx, wy] = canvasToWorld(e.clientX, e.clientY);
 
-    if (e.button === 1 || (e.button === 0 && e.altKey)) {
-      // Middle click or Alt+drag = pan
-      isPanningRef.current = true;
-      panStartRef.current = [e.clientX, e.clientY];
-      panOriginRef.current = [...panRef.current];
-      e.preventDefault();
-      return;
-    }
+      if (e.button === 1 || (e.button === 0 && e.altKey)) {
+        isPanningRef.current = true;
+        panStartRef.current = [e.clientX, e.clientY];
+        panOriginRef.current = [...panRef.current];
+        e.preventDefault();
+        return;
+      }
 
-    if (e.button === 0) {
+      if (e.button === 2) {
+        // Right-click = context menu
+        e.preventDefault();
+        const hit = hitTestNode(wx, wy);
+        if (hit) {
+          const node = nodes.find((n) => n.id === hit);
+          if (node) {
+            setContextMenu({
+              nodeId: hit,
+              nodeType: node.data.nodeType as string,
+              generation: (node.data.generation as number) ?? 0,
+              x: e.clientX,
+              y: e.clientY,
+            });
+          }
+        }
+        return;
+      }
+
+      if (e.button === 0) {
+        const hit = hitTestNode(wx, wy);
+        if (hit) {
+          setSelectedNode(hit);
+          draggingNodeRef.current = hit;
+          const [nx, ny] = nodePositionsRef.current.get(hit) ?? [0, 0];
+          dragOffsetRef.current = [wx - nx, wy - ny];
+        } else {
+          setSelectedNode(null);
+        }
+      }
+    },
+    [canvasToWorld, hitTestNode, setSelectedNode, nodes],
+  );
+
+  const onDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      const [wx, wy] = canvasToWorld(e.clientX, e.clientY);
       const hit = hitTestNode(wx, wy);
       if (hit) {
-        setSelectedNode(hit);
-        draggingNodeRef.current = hit;
-        const [nx, ny] = nodePositionsRef.current.get(hit) ?? [0, 0];
-        dragOffsetRef.current = [wx - nx, wy - ny];
-      } else {
-        setSelectedNode(null);
+        const node = nodes.find((n) => n.id === hit);
+        if (node) {
+          setParamEditor({
+            nodeId: hit,
+            nodeType: node.data.nodeType as string,
+            generation: (node.data.generation as number) ?? 0,
+          });
+        }
       }
-    }
-  }, [canvasToWorld, hitTestNode, setSelectedNode]);
+    },
+    [canvasToWorld, hitTestNode, nodes],
+  );
 
-  const onMouseMove = useCallback((e: React.MouseEvent) => {
-    if (isPanningRef.current) {
-      const dx = (e.clientX - panStartRef.current[0]) * devicePixelRatio;
-      const dy = (e.clientY - panStartRef.current[1]) * devicePixelRatio;
-      panRef.current = [panOriginRef.current[0] + dx, panOriginRef.current[1] + dy];
-      return;
-    }
-    if (draggingNodeRef.current) {
-      const [wx, wy] = canvasToWorld(e.clientX, e.clientY);
-      const [ox, oy] = dragOffsetRef.current;
-      nodePositionsRef.current.set(draggingNodeRef.current, [wx - ox, wy - oy]);
-    }
-  }, [canvasToWorld]);
+  const onMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (isPanningRef.current) {
+        const dx = (e.clientX - panStartRef.current[0]) * devicePixelRatio;
+        const dy = (e.clientY - panStartRef.current[1]) * devicePixelRatio;
+        panRef.current = [
+          panOriginRef.current[0] + dx,
+          panOriginRef.current[1] + dy,
+        ];
+        return;
+      }
+      if (draggingNodeRef.current) {
+        const [wx, wy] = canvasToWorld(e.clientX, e.clientY);
+        const [ox, oy] = dragOffsetRef.current;
+        nodePositionsRef.current.set(draggingNodeRef.current, [
+          wx - ox,
+          wy - oy,
+        ]);
+      }
+    },
+    [canvasToWorld],
+  );
 
   const onMouseUp = useCallback(() => {
     isPanningRef.current = false;
@@ -274,7 +372,10 @@ export function WebGLCanvas({ onOpenInstrumentMaker }: { onOpenInstrumentMaker?:
 
   // ── HTML overlay for node labels and param controls ───────────────────────
   const overlayNodes = nodes.map((n) => {
-    const [wx, wy] = nodePositionsRef.current.get(n.id) ?? [n.position.x, n.position.y];
+    const [wx, wy] = nodePositionsRef.current.get(n.id) ?? [
+      n.position.x,
+      n.position.y,
+    ];
     const screenX = wx * zoomRef.current + panRef.current[0] / devicePixelRatio;
     const screenY = wy * zoomRef.current + panRef.current[1] / devicePixelRatio;
     const w = NODE_W * zoomRef.current;
@@ -283,25 +384,81 @@ export function WebGLCanvas({ onOpenInstrumentMaker }: { onOpenInstrumentMaker?:
   });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", width: "100vw", height: "100vh", background: "#060e18" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100vw",
+        height: "100vh",
+        background: "#060e18",
+      }}
+    >
       <TransportBar onOpenInstrumentMaker={onOpenInstrumentMaker} />
       <ModuleBar />
 
       {/* Hint bar */}
-      <div style={{
-        padding: "0 16px", height: 24, background: "#060e18",
-        borderBottom: "1px solid #0a1520", display: "flex", alignItems: "center",
-        gap: 16, flexShrink: 0, fontSize: 10,
-        fontFamily: "'Inter', system-ui, sans-serif", color: "#1e2d3d", userSelect: "none",
-      }}>
+      <div
+        style={{
+          padding: "0 16px",
+          height: 24,
+          background: "#060e18",
+          borderBottom: "1px solid #0a1520",
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          flexShrink: 0,
+          fontSize: 10,
+          fontFamily: "'Inter', system-ui, sans-serif",
+          color: "#1e2d3d",
+          userSelect: "none",
+        }}
+      >
         <span style={{ color: "#334155", fontWeight: 600 }}>⌨ Keyboard</span>
-        <span>White: <span style={{ color: "#475569", fontFamily: "monospace" }}>A S D F G H J K L</span></span>
-        <span>Black: <span style={{ color: "#475569", fontFamily: "monospace" }}>W E · T Y U · O P</span></span>
-        <span>Octave: <span style={{ color: "#475569", fontFamily: "monospace" }}>Z↓ X↑</span></span>
-        <span>Pan: <span style={{ color: "#475569", fontFamily: "monospace" }}>Alt+drag / Middle-click</span></span>
-        <span>Zoom: <span style={{ color: "#475569", fontFamily: "monospace" }}>Scroll</span></span>
-        <span style={{ marginLeft: "auto" }}>
-          Oct: <span style={{ color: "#38bdf8", fontWeight: 700 }}>{octaveRef.current}</span>
+        <span>
+          White:{" "}
+          <span style={{ color: "#475569", fontFamily: "monospace" }}>
+            A S D F G H J K L
+          </span>
+        </span>
+        <span>
+          Black:{" "}
+          <span style={{ color: "#475569", fontFamily: "monospace" }}>
+            W E · T Y U · O P
+          </span>
+        </span>
+        <span>
+          Octave:{" "}
+          <span style={{ color: "#475569", fontFamily: "monospace" }}>
+            Z↓ X↑
+          </span>
+        </span>
+        <span>
+          Pan:{" "}
+          <span style={{ color: "#475569", fontFamily: "monospace" }}>
+            Alt+drag / Middle-click
+          </span>
+        </span>
+        <span>
+          Zoom:{" "}
+          <span style={{ color: "#475569", fontFamily: "monospace" }}>
+            Scroll
+          </span>
+        </span>
+        <span
+          style={{
+            marginLeft: "auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <MasterCpuIndicator />
+          <span>
+            Oct:{" "}
+            <span style={{ color: "#38bdf8", fontWeight: 700 }}>
+              {octaveRef.current}
+            </span>
+          </span>
         </span>
       </div>
 
@@ -311,16 +468,31 @@ export function WebGLCanvas({ onOpenInstrumentMaker }: { onOpenInstrumentMaker?:
           {/* WebGL canvas */}
           <canvas
             ref={canvasRef}
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", cursor: isPanningRef.current ? "grabbing" : "default" }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              cursor: isPanningRef.current ? "grabbing" : "default",
+            }}
             onMouseDown={onMouseDown}
             onMouseMove={onMouseMove}
             onMouseUp={onMouseUp}
             onMouseLeave={onMouseUp}
             onWheel={onWheel}
+            onContextMenu={(e) => e.preventDefault()}
+            onDoubleClick={onDoubleClick}
           />
 
           {/* HTML overlay — node labels rendered on top of WebGL */}
-          <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              pointerEvents: "none",
+              overflow: "hidden",
+            }}
+          >
             {overlayNodes.map(({ node, screenX, screenY, w, h }) => (
               <div
                 key={node.id}
@@ -338,25 +510,38 @@ export function WebGLCanvas({ onOpenInstrumentMaker }: { onOpenInstrumentMaker?:
                   boxSizing: "border-box",
                 }}
               >
-                <div style={{
-                  fontSize: Math.max(8, 11 * zoomRef.current),
-                  fontWeight: 600,
-                  color: "#e2e8f0",
-                  fontFamily: "'Inter', system-ui, sans-serif",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  lineHeight: 1.2,
-                }}>
+                {/* CPU bar above the node */}
+                <CpuBar
+                  nodeId={node.id}
+                  cpuData={cpuData}
+                  x={0}
+                  y={0}
+                  width={w}
+                  zoom={zoomRef.current}
+                />
+                <div
+                  style={{
+                    fontSize: Math.max(8, 11 * zoomRef.current),
+                    fontWeight: 600,
+                    color: "#e2e8f0",
+                    fontFamily: "'Inter', system-ui, sans-serif",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    lineHeight: 1.2,
+                  }}
+                >
                   {node.data.nodeType.replace(/([A-Z])/g, " $1").trim()}
                 </div>
                 {node.data.isOutput && (
-                  <div style={{
-                    fontSize: Math.max(6, 9 * zoomRef.current),
-                    color: "#00e5a0",
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                  }}>
+                  <div
+                    style={{
+                      fontSize: Math.max(6, 9 * zoomRef.current),
+                      color: "#00e5a0",
+                      fontWeight: 700,
+                      letterSpacing: "0.08em",
+                    }}
+                  >
                     ● OUTPUT
                   </div>
                 )}
@@ -375,6 +560,28 @@ export function WebGLCanvas({ onOpenInstrumentMaker }: { onOpenInstrumentMaker?:
           })}
         </div>
       </div>
+
+      {/* Right-click context menu */}
+      {contextMenu && (
+        <NodeContextMenu
+          nodeId={contextMenu.nodeId}
+          nodeType={contextMenu.nodeType}
+          generation={contextMenu.generation}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      {/* Double-click parameter editor */}
+      {paramEditor && (
+        <NodeParamEditor
+          nodeId={paramEditor.nodeId}
+          nodeType={paramEditor.nodeType}
+          generation={paramEditor.generation}
+          onClose={() => setParamEditor(null)}
+        />
+      )}
     </div>
   );
 }
