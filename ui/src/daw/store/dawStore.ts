@@ -13,7 +13,7 @@ import { create } from "zustand";
 
 // ── View ──────────────────────────────────────────────────────────────────────
 
-export type DawView = "song" | "piano-roll" | "mixer" | "patcher";
+export type DawView = "song" | "piano-roll" | "mixer" | "patcher" | "perform";
 
 // ── Song / Timeline ───────────────────────────────────────────────────────────
 
@@ -45,11 +45,21 @@ export interface Track {
   color: string;
   muted: boolean;
   solo: boolean;
+  armed: boolean; // record arm
   volume: number; // 0-1
   pan: number; // -1 to 1
   clips: Clip[];
-  instrumentPresetId?: string; // which .aether-instrument is loaded
-  channelId: string; // links to mixer channel
+  instrumentPresetId?: string;
+  channelId: string;
+  height: number; // track height in pixels (resizable)
+  effects: TrackEffect[];
+}
+
+export interface TrackEffect {
+  id: string;
+  type: string; // "EQ" | "Compressor" | "Reverb" | "Delay" | "Filter"
+  enabled: boolean;
+  params: Record<string, number>;
 }
 
 // ── Mixer ─────────────────────────────────────────────────────────────────────
@@ -123,6 +133,10 @@ interface DawStore {
   removeTrack: (id: string) => void;
   updateTrack: (id: string, patch: Partial<Track>) => void;
   selectTrack: (id: string | null) => void;
+  setTrackHeight: (id: string, height: number) => void;
+  addEffect: (trackId: string, effectType: string) => void;
+  removeEffect: (trackId: string, effectId: string) => void;
+  toggleEffect: (trackId: string, effectId: string) => void;
 
   // Actions — clips
   addClip: (trackId: string, startBeat: number) => void;
@@ -196,10 +210,13 @@ function makeTrack(type: TrackType, name: string): Track {
     color,
     muted: false,
     solo: false,
+    armed: false,
     volume: 0.8,
     pan: 0,
     clips: [],
     channelId,
+    height: 72,
+    effects: [],
   };
 }
 
@@ -291,6 +308,50 @@ export const useDawStore = create<DawStore>((set, get) => ({
     })),
 
   selectTrack: (id) => set({ selectedTrackId: id }),
+
+  setTrackHeight: (id, height) =>
+    set((s) => ({
+      tracks: s.tracks.map((t) =>
+        t.id === id ? { ...t, height: Math.max(48, Math.min(200, height)) } : t,
+      ),
+    })),
+
+  addEffect: (trackId, effectType) => {
+    const effect: TrackEffect = {
+      id: makeId("fx"),
+      type: effectType,
+      enabled: true,
+      params: {},
+    };
+    set((s) => ({
+      tracks: s.tracks.map((t) =>
+        t.id === trackId ? { ...t, effects: [...t.effects, effect] } : t,
+      ),
+    }));
+  },
+
+  removeEffect: (trackId, effectId) =>
+    set((s) => ({
+      tracks: s.tracks.map((t) =>
+        t.id === trackId
+          ? { ...t, effects: t.effects.filter((e) => e.id !== effectId) }
+          : t,
+      ),
+    })),
+
+  toggleEffect: (trackId, effectId) =>
+    set((s) => ({
+      tracks: s.tracks.map((t) =>
+        t.id === trackId
+          ? {
+              ...t,
+              effects: t.effects.map((e) =>
+                e.id === effectId ? { ...e, enabled: !e.enabled } : e,
+              ),
+            }
+          : t,
+      ),
+    })),
 
   addClip: (trackId, startBeat) => {
     clipCounter++;

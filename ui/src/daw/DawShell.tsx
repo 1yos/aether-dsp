@@ -21,6 +21,7 @@ import { SongView } from "./views/SongView";
 import { PianoRollView } from "./views/PianoRollView";
 import { MixerView } from "./views/MixerView";
 import { PatcherView } from "./views/PatcherView";
+import { PerformView } from "./views/PerformView";
 import { PropertiesPanel } from "./components/PropertiesPanel";
 import { useEngineSocket } from "../hooks/useEngineSocket";
 import { useProjectSave } from "../hooks/useProjectSave";
@@ -114,6 +115,8 @@ export function DawShell() {
         return <MixerView />;
       case "patcher":
         return <PatcherView />;
+      case "perform":
+        return <PerformView />;
     }
   };
 

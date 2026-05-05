@@ -18,6 +18,7 @@ const VIEWS: Array<{
   { id: "piano-roll", label: "Piano Roll", icon: "♩", shortcut: "F2" },
   { id: "mixer", label: "Mixer", icon: "⊟", shortcut: "F3" },
   { id: "patcher", label: "Patcher", icon: "⬡", shortcut: "F4" },
+  { id: "perform", label: "Perform", icon: "🎚", shortcut: "F5" },
 ];
 
 interface DawTopBarProps {
@@ -96,6 +97,10 @@ export function DawTopBar({ onOpenRecorder }: DawTopBarProps) {
         case "F4":
           e.preventDefault();
           setView("patcher");
+          break;
+        case "F5":
+          e.preventDefault();
+          setView("perform");
           break;
         case " ":
           e.preventDefault();
