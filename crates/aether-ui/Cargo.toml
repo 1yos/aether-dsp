@@ -5,7 +5,7 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Native GPU-accelerated UI for Aether Studio — built with gpui"
+description = "Native GPU-accelerated UI for Aether Studio — built with iced (wgpu)"
 publish = false
 
 [[bin]]
@@ -13,9 +13,9 @@ name = "aether-studio"
 path = "src/main.rs"
 
 [dependencies]
-# gpui — GPU-accelerated UI framework from Zed
-# Pinned to a known-good commit. Update periodically.
-gpui = { git = "https://github.com/zed-industries/zed", rev = "main" }
+# iced — GPU-accelerated UI framework using wgpu (Metal/Vulkan/DirectX)
+# Available on crates.io — no git clone needed
+iced = { version = "0.13", features = ["canvas", "wgpu", "multi-window", "tokio"] }
 
 # Audio engine
 aetherdsp-core    = { version = "0.1", path = "../aether-core" }
@@ -32,7 +32,7 @@ ringbuf  = { workspace = true }
 serde    = { workspace = true }
 serde_json = { workspace = true }
 
-# Async runtime (for background tasks)
+# Async runtime
 tokio = { version = "1", features = ["full"] }
 
 # Logging

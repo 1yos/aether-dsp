@@ -6,6 +6,10 @@ ar = "C:\\msys64\\mingw64\\bin\\ar.exe"
 # The CI runner uses a generic x86_64 baseline (no native flag there).
 rustflags = ["-C", "target-cpu=native"]
 
+[build]
+# Put the build artifacts in a path with no spaces — dlltool breaks on "D:\Audio kernel\"
+target-dir = "C:\\aether-target"
+
 [env]
 # Ensure MSYS2 tools take precedence over TDM-GCC for dlltool
 PATH = { value = "C:\\msys64\\mingw64\\bin", force = false }

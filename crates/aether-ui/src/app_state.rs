@@ -4,7 +4,7 @@
 //! The UI reads from AppState directly — no serialization, no round trips.
 
 use std::sync::{Arc, Mutex};
-use aetherdsp_core::scheduler::Scheduler;
+use aether_core::scheduler::Scheduler;
 
 // ── Transport ─────────────────────────────────────────────────────────────────
 
@@ -236,8 +236,7 @@ pub fn new_app_state() -> AppState {
     }))
 }
 
-impl AppState {
-    pub fn new() -> Self {
-        new_app_state()
-    }
+/// Create a new AppState — use this instead of AppState::new()
+pub fn create_app_state() -> AppState {
+    new_app_state()
 }
