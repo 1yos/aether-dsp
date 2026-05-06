@@ -586,10 +586,74 @@ struct TimelineCanvas {
     snap_beats: f64,
 }
 
-impl<Message> canvas::Program<Message> for TimelineCanvas {
-    type State = ();
+// ── Timeline canvas interaction state ────────────────────────────────────────
+
+#[derive(Default, Clone)]
+struct TimelineState {
+    dragging: bool,
+    last_beat: f64,
+    last_track: usize,
+}
+
+impl canvas::Program<Message> for TimelineCanvas {
+    type State = TimelineState;
+
+    fn update(
+        &self,
+        state: &mut TimelineState,
+        event: canvas::Event,
+        bounds: iced::Rectangle,
+        cursor: iced::mouse::Cursor,
+    ) -> (canvas::event::Status, Option<Message>) {
+        let ruler_h = 28.0f32;
+        let bw = self.zoom_x;
+
+        let pos = match cursor.position_in(bounds) {
+            Some(p) => p,
+            None => return (canvas::event::Status::Ignored, None),
+        };
+
+        // Convert pixel position to beat + track index
+        let beat = (pos.x / bw) as f64;
+        let track_idx = if pos.y > ruler_h {
+            let mut ty = ruler_h;
+            let mut idx = 0;
+            for (i, track) in self.tracks.iter().enumerate() {
+                if pos.y >= ty && pos.y < ty + track.height {
+                    idx = i;
+                    break;
+                }
+                ty += track.height;
+                idx = i;
+            }
+            idx
+        } else {
+            0
+        };
+
+        match event {
+            canvas::Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left)) => {
+                state.dragging = true;
+                state.last_beat = beat;
+                state.last_track = track_idx;
+                (canvas::event::Status::Captured,
+                 Some(Message::SongCanvasClick { beat, track_idx }))
+            }
+            canvas::Event::Mouse(iced::mouse::Event::CursorMoved { .. }) if state.dragging => {
+                state.last_beat = beat;
+                (canvas::event::Status::Captured,
+                 Some(Message::SongCanvasDrag { beat, track_idx }))
+            }
+            canvas::Event::Mouse(iced::mouse::Event::ButtonReleased(iced::mouse::Button::Left)) => {
+                state.dragging = false;
+                (canvas::event::Status::Captured, Some(Message::SongCanvasRelease))
+            }
+            _ => (canvas::event::Status::Ignored, None),
+        }
+    }
+
     fn draw(
-        &self, _: &(), renderer: &iced::Renderer, _: &Theme,
+        &self, _: &TimelineState, renderer: &iced::Renderer, _: &Theme,
         bounds: iced::Rectangle, _: iced::mouse::Cursor,
     ) -> Vec<canvas::Geometry> {
         let mut frame = canvas::Frame::new(renderer, bounds.size());
@@ -820,10 +884,62 @@ struct PianoRollCanvas {
     selected_ids: Vec<u64>,
 }
 
-impl<Message> canvas::Program<Message> for PianoRollCanvas {
-    type State = ();
+// ── Piano Roll canvas interaction state ──────────────────────────────────────
+
+#[derive(Default, Clone)]
+struct PianoRollCanvasState {
+    dragging: bool,
+    last_beat: f64,
+    last_pitch: u8,
+}
+
+impl canvas::Program<Message> for PianoRollCanvas {
+    type State = PianoRollCanvasState;
+
+    fn update(
+        &self,
+        state: &mut PianoRollCanvasState,
+        event: canvas::Event,
+        bounds: iced::Rectangle,
+        cursor: iced::mouse::Cursor,
+    ) -> (canvas::event::Status, Option<Message>) {
+        let bw = self.zoom_x;
+        let kh = self.zoom_y;
+        let total_keys = 128usize;
+
+        let pos = match cursor.position_in(bounds) {
+            Some(p) => p,
+            None => return (canvas::event::Status::Ignored, None),
+        };
+
+        let beat = (pos.x / bw) as f64;
+        let key_row = (pos.y / kh) as usize;
+        let pitch = (total_keys.saturating_sub(1 + key_row)) as u8;
+
+        match event {
+            canvas::Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left)) => {
+                state.dragging = true;
+                state.last_beat = beat;
+                state.last_pitch = pitch;
+                (canvas::event::Status::Captured,
+                 Some(Message::PianoRollClick { beat, pitch }))
+            }
+            canvas::Event::Mouse(iced::mouse::Event::CursorMoved { .. }) if state.dragging => {
+                state.last_beat = beat;
+                state.last_pitch = pitch;
+                (canvas::event::Status::Captured,
+                 Some(Message::PianoRollDrag { beat, pitch }))
+            }
+            canvas::Event::Mouse(iced::mouse::Event::ButtonReleased(iced::mouse::Button::Left)) => {
+                state.dragging = false;
+                (canvas::event::Status::Captured, Some(Message::PianoRollRelease))
+            }
+            _ => (canvas::event::Status::Ignored, None),
+        }
+    }
+
     fn draw(
-        &self, _: &(), renderer: &iced::Renderer, _: &Theme,
+        &self, _: &PianoRollCanvasState, renderer: &iced::Renderer, _: &Theme,
         bounds: iced::Rectangle, _: iced::mouse::Cursor,
     ) -> Vec<canvas::Geometry> {
         let mut frame = canvas::Frame::new(renderer, bounds.size());
