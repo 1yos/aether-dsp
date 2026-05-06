@@ -2,7 +2,7 @@
 //! DawApp — the iced Application struct.
 //! Full interactive DAW: Song view, Piano Roll, Mixer, transport.
 use iced::{
-    widget::{button, canvas, column, container, row, scrollable, text},
+    widget::{button, canvas, column, container, row, scrollable, slider, text},
     Alignment, Color, Element, Length, Task, Theme, time,
 };
 use std::time::{Duration, Instant};
@@ -41,6 +41,58 @@ pub enum Message {
     SetTrackVolume { track_idx: usize, volume: f32 },
     SetTrackMute   { track_idx: usize },
     SetTrackSolo   { track_idx: usize },
+    // Keyboard shortcuts
+    Undo,
+    Redo,
+    Copy,
+    Paste,
+    Duplicate,
+    DeleteSelected,
+    SelectAll,
+    TapTempo,
+    // Clip operations
+    ResizeClip { clip_id: u64, new_length: f64 },
+    RenameTrack { track_id: u64, name: String },
+    SetTrackInstrumentParam { track_idx: usize, param: InstrumentParam },
+    OpenInstrumentPanel(u64),
+    CloseInstrumentPanel,
+    AddEffect { track_idx: usize, effect_type: crate::app_state::EffectType },
+    RemoveEffect { track_idx: usize, effect_id: u64 },
+    ToggleEffect { track_idx: usize, effect_id: u64 },
+    SetEffectParam { track_idx: usize, effect_id: u64, param: EffectParamMsg },
+    // BPM
+    TapTempoClick,
+    SetBpmDirect(f32),
+    // Loop
+    ToggleLoop,
+    SetLoopStart(f64),
+    SetLoopEnd(f64),
+}
+
+#[derive(Debug, Clone)]
+pub enum InstrumentParam {
+    Waveform(f32),
+    Attack(f32),
+    Decay(f32),
+    Sustain(f32),
+    Release(f32),
+    Cutoff(f32),
+    Resonance(f32),
+    Gain(f32),
+}
+
+#[derive(Debug, Clone)]
+pub enum EffectParamMsg {
+    ReverbRoom(f32),
+    ReverbDamp(f32),
+    ReverbWet(f32),
+    DelayTime(f32),
+    DelayFeedback(f32),
+    DelayWet(f32),
+    CompThreshold(f32),
+    CompRatio(f32),
+    FilterCutoff(f32),
+    FilterResonance(f32),
 }
 
 // ── App struct ────────────────────────────────────────────────────────────────
@@ -70,7 +122,29 @@ impl DawApp {
     }
 
     pub fn subscription(&self) -> iced::Subscription<Message> {
-        time::every(Duration::from_millis(16)).map(Message::Tick)
+        use iced::keyboard::{self, key::Named};
+        let tick = time::every(Duration::from_millis(16)).map(Message::Tick);
+        let keys = keyboard::on_key_press(|key, modifiers| {
+            match key.as_ref() {
+                keyboard::Key::Named(Named::Space) => Some(Message::Play),
+                keyboard::Key::Character("z") if modifiers.control() => {
+                    if modifiers.shift() { Some(Message::Redo) } else { Some(Message::Undo) }
+                }
+                keyboard::Key::Character("y") if modifiers.control() => Some(Message::Redo),
+                keyboard::Key::Character("c") if modifiers.control() => Some(Message::Copy),
+                keyboard::Key::Character("v") if modifiers.control() => Some(Message::Paste),
+                keyboard::Key::Character("d") if modifiers.control() => Some(Message::Duplicate),
+                keyboard::Key::Character("a") if modifiers.control() => Some(Message::SelectAll),
+                keyboard::Key::Named(Named::Delete) | keyboard::Key::Named(Named::Backspace) => {
+                    Some(Message::DeleteSelected)
+                }
+                keyboard::Key::Character("1") => Some(Message::SetSongTool(SongTool::Draw)),
+                keyboard::Key::Character("2") => Some(Message::SetSongTool(SongTool::Select)),
+                keyboard::Key::Character("3") => Some(Message::SetSongTool(SongTool::Erase)),
+                _ => None,
+            }
+        });
+        iced::Subscription::batch([tick, keys])
     }
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
@@ -113,6 +187,7 @@ impl DawApp {
                     muted: false, solo: false, armed: false,
                     volume: 0.8, pan: 0.0, height: 72.0,
                     clips: Vec::new(), effects: Vec::new(),
+                    instrument: crate::instrument::InstrumentPreset::default_instrument(),
                 });
                 let sched_arc = s.scheduler.clone();
                 if let Ok(mut sched) = sched_arc.try_lock() {
@@ -370,6 +445,168 @@ impl DawApp {
                     if !was { s.tracks[track_idx].solo = true; }
                 }
             }
+
+            // ── Keyboard shortcuts ────────────────────────────────────────
+            Message::Undo => { self.state.lock().unwrap().undo(); }
+            Message::Redo => { self.state.lock().unwrap().redo(); }
+            Message::Copy => {
+                let mut s = self.state.lock().unwrap();
+                let view = s.active_view;
+                match view {
+                    ActiveView::Song      => s.copy_selected_clips(),
+                    ActiveView::PianoRoll => s.copy_selected_notes(),
+                    _ => {}
+                }
+            }
+            Message::Paste => {
+                let mut s = self.state.lock().unwrap();
+                let view = s.active_view;
+                match view {
+                    ActiveView::Song      => s.paste_clips(),
+                    ActiveView::PianoRoll => s.paste_notes(),
+                    _ => {}
+                }
+            }
+            Message::Duplicate => {
+                let mut s = self.state.lock().unwrap();
+                let view = s.active_view;
+                if view == ActiveView::Song {
+                    s.duplicate_selected_clips();
+                }
+            }
+            Message::DeleteSelected => {
+                let mut s = self.state.lock().unwrap();
+                let view = s.active_view;
+                match view {
+                    ActiveView::Song      => s.delete_selected_clips(),
+                    ActiveView::PianoRoll => s.delete_selected_notes(),
+                    _ => {}
+                }
+            }
+            Message::SelectAll => {
+                let mut s = self.state.lock().unwrap();
+                let view = s.active_view;
+                match view {
+                    ActiveView::Song      => s.select_all_clips(),
+                    ActiveView::PianoRoll => s.select_all_notes(),
+                    _ => {}
+                }
+            }
+            Message::TapTempo | Message::TapTempoClick => {
+                let mut s = self.state.lock().unwrap();
+                if let Some(bpm) = s.tap_tempo.tap() {
+                    s.transport.bpm = bpm.clamp(20.0, 300.0);
+                }
+            }
+
+            // ── Clip operations ───────────────────────────────────────────
+            Message::ResizeClip { clip_id, new_length } => {
+                let mut s = self.state.lock().unwrap();
+                if let Some(clip) = s.find_clip_mut(clip_id) {
+                    clip.length_beats = new_length.max(0.25);
+                }
+            }
+            Message::RenameTrack { track_id, name } => {
+                let mut s = self.state.lock().unwrap();
+                if let Some(track) = s.tracks.iter_mut().find(|t| t.id == track_id) {
+                    track.name = name;
+                }
+            }
+
+            // ── Instrument panel ──────────────────────────────────────────
+            Message::OpenInstrumentPanel(track_id) => {
+                self.state.lock().unwrap().instrument_panel_track = Some(track_id);
+            }
+            Message::CloseInstrumentPanel => {
+                self.state.lock().unwrap().instrument_panel_track = None;
+            }
+            Message::SetTrackInstrumentParam { track_idx, param } => {
+                let mut s = self.state.lock().unwrap();
+                if track_idx < s.tracks.len() {
+                    match param {
+                        InstrumentParam::Waveform(v)  => s.tracks[track_idx].instrument.waveform  = v,
+                        InstrumentParam::Attack(v)    => s.tracks[track_idx].instrument.attack    = v,
+                        InstrumentParam::Decay(v)     => s.tracks[track_idx].instrument.decay     = v,
+                        InstrumentParam::Sustain(v)   => s.tracks[track_idx].instrument.sustain   = v,
+                        InstrumentParam::Release(v)   => s.tracks[track_idx].instrument.release   = v,
+                        InstrumentParam::Cutoff(v)    => s.tracks[track_idx].instrument.cutoff    = v,
+                        InstrumentParam::Resonance(v) => s.tracks[track_idx].instrument.resonance = v,
+                        InstrumentParam::Gain(v)      => s.tracks[track_idx].instrument.gain      = v,
+                    }
+                    // Apply to live engine
+                    let preset = s.tracks[track_idx].instrument.clone();
+                    let sched_arc = s.scheduler.clone();
+                    if let Ok(mut sched) = sched_arc.try_lock() {
+                        if let Some(ref mut engine) = s.master_engine {
+                            if let Some(slot) = engine.tracks.get_mut(track_idx) {
+                                if let Some(ref mut te) = slot {
+                                    te.update_preset(&mut sched, preset);
+                                }
+                            }
+                        }
+                    };
+                }
+            }
+
+            // ── Effects ───────────────────────────────────────────────────
+            Message::AddEffect { track_idx, effect_type } => {
+                let mut s = self.state.lock().unwrap();
+                if track_idx < s.tracks.len() {
+                    s.push_undo("Add Effect");
+                    let id = s.next_id();
+                    s.tracks[track_idx].effects.push(crate::app_state::TrackEffect {
+                        id,
+                        effect_type,
+                        enabled: true,
+                        params: crate::app_state::EffectParams::default(),
+                    });
+                }
+            }
+            Message::RemoveEffect { track_idx, effect_id } => {
+                let mut s = self.state.lock().unwrap();
+                if track_idx < s.tracks.len() {
+                    s.push_undo("Remove Effect");
+                    s.tracks[track_idx].effects.retain(|e| e.id != effect_id);
+                }
+            }
+            Message::ToggleEffect { track_idx, effect_id } => {
+                let mut s = self.state.lock().unwrap();
+                if track_idx < s.tracks.len() {
+                    if let Some(fx) = s.tracks[track_idx].effects.iter_mut().find(|e| e.id == effect_id) {
+                        fx.enabled = !fx.enabled;
+                    }
+                }
+            }
+            Message::SetEffectParam { track_idx, effect_id, param } => {
+                let mut s = self.state.lock().unwrap();
+                if track_idx < s.tracks.len() {
+                    if let Some(fx) = s.tracks[track_idx].effects.iter_mut().find(|e| e.id == effect_id) {
+                        match param {
+                            EffectParamMsg::ReverbRoom(v)      => fx.params.reverb_room = v,
+                            EffectParamMsg::ReverbDamp(v)      => fx.params.reverb_damp = v,
+                            EffectParamMsg::ReverbWet(v)       => fx.params.reverb_wet = v,
+                            EffectParamMsg::DelayTime(v)       => fx.params.delay_time = v,
+                            EffectParamMsg::DelayFeedback(v)   => fx.params.delay_feedback = v,
+                            EffectParamMsg::DelayWet(v)        => fx.params.delay_wet = v,
+                            EffectParamMsg::CompThreshold(v)   => fx.params.comp_threshold = v,
+                            EffectParamMsg::CompRatio(v)       => fx.params.comp_ratio = v,
+                            EffectParamMsg::FilterCutoff(v)    => fx.params.filter_cutoff = v,
+                            EffectParamMsg::FilterResonance(v) => fx.params.filter_resonance = v,
+                        }
+                    }
+                }
+            }
+
+            // ── BPM / Loop ────────────────────────────────────────────────
+            Message::SetBpmDirect(bpm) => {
+                self.state.lock().unwrap().transport.bpm = bpm.clamp(20.0, 300.0);
+            }
+            Message::ToggleLoop => {
+                let mut s = self.state.lock().unwrap();
+                s.transport.loop_enabled = !s.transport.loop_enabled;
+            }
+            Message::SetLoopStart(b) => { self.state.lock().unwrap().transport.loop_start = b; }
+            Message::SetLoopEnd(b)   => { self.state.lock().unwrap().transport.loop_end = b; }
         }
         Task::none()
     }
@@ -383,16 +620,44 @@ impl DawApp {
         let song_st   = s.song_view.clone();
         let pr_st     = s.piano_roll.clone();
         let open_clip = pr_st.open_clip_id.and_then(|id| s.find_clip(id)).cloned();
+        let instr_panel_track = s.instrument_panel_track;
+        let selected_track_idx = s.selected_track_id
+            .and_then(|id| s.tracks.iter().position(|t| t.id == id));
         drop(s);
 
         let top_bar = build_top_bar(active, &transport, engine_ok);
         let workspace: Element<Message> = match active {
-            ActiveView::Song      => song_view_el(tracks, transport, song_st),
+            ActiveView::Song      => song_view_el(tracks.clone(), transport, song_st),
             ActiveView::PianoRoll => piano_roll_el(open_clip, pr_st),
-            ActiveView::Mixer     => mixer_view_el(tracks),
+            ActiveView::Mixer     => mixer_view_el(tracks.clone()),
             _ => placeholder_view("Coming soon"),
         };
-        column![top_bar, workspace].into()
+
+        // Instrument panel overlay (shown when a track instrument is open)
+        let instr_panel: Option<Element<Message>> = instr_panel_track.and_then(|tid| {
+            let track_idx = tracks.iter().position(|t| t.id == tid)?;
+            Some(instrument_panel_el(&tracks[track_idx], track_idx))
+        });
+
+        // Effects chain bar (shown for selected track in Song view)
+        let fx_bar: Option<Element<Message>> = if active == ActiveView::Song {
+            selected_track_idx.map(|idx| effects_bar_el(&tracks[idx], idx))
+        } else {
+            None
+        };
+
+        let mut main_col = column![top_bar, workspace];
+        if let Some(fx) = fx_bar {
+            main_col = main_col.push(fx);
+        }
+
+        if let Some(panel) = instr_panel {
+            // Overlay the instrument panel at the bottom
+            let base: Element<Message> = main_col.into();
+            column![base, panel].into()
+        } else {
+            main_col.into()
+        }
     }
 }
 
@@ -426,6 +691,7 @@ fn build_top_bar(
     let is_recording = transport.is_recording;
     let bpm          = transport.bpm;
     let beat         = transport.playhead_beat;
+    let loop_enabled = transport.loop_enabled;
 
     container(
         row![
@@ -440,6 +706,10 @@ fn build_top_bar(
                 .style(move |_,_| btn_style(is_recording, true)),
             text(format!("BPM {:.0}", bpm)).size(12).color(Color::WHITE),
             text(format!("{:.2}", beat)).size(11).color(Color::from_rgb(0.28,0.4,0.52)),
+            button(text("TAP").size(10)).on_press(Message::TapTempoClick)
+                .style(|_,_| btn_style(false, false)),
+            button(text("⟳ Loop").size(10)).on_press(Message::ToggleLoop)
+                .style(move |_,_| tab_style(loop_enabled)),
             iced::widget::horizontal_space(),
             text(if engine_ok { "● Live" } else { "● Offline" }).size(11)
                 .color(if engine_ok {
@@ -521,6 +791,7 @@ fn song_view_el(
         let vol  = (t.volume * 100.0) as u32;
         let muted = t.muted;
         let solo  = t.solo;
+        let tid   = t.id;
         container(
             row![
                 container(iced::widget::vertical_space())
@@ -539,6 +810,9 @@ fn song_view_el(
                         button(text("S").size(9))
                             .on_press(Message::SetTrackSolo { track_idx: i })
                             .style(move |_,_| btn_style(solo, false)),
+                        button(text("🎹").size(9))
+                            .on_press(Message::OpenInstrumentPanel(tid))
+                            .style(|_,_| btn_style(false, false)),
                     ].spacing(3),
                 ].spacing(2).padding([4, 8]),
             ].height(Length::Fixed(72.0)),
@@ -1139,4 +1413,177 @@ fn color_from_u32(c: u32) -> Color {
         ((c >>  8) & 0xff) as f32 / 255.0,
         ( c        & 0xff) as f32 / 255.0,
     )
+}
+
+// ── Instrument Panel ──────────────────────────────────────────────────────────
+
+fn instrument_panel_el(track: &crate::app_state::Track, track_idx: usize) -> Element<'static, Message> {
+    let p = track.instrument.clone();
+    let c = color_from_u32(track.color);
+    let name = track.name.clone();
+
+    let waveforms = ["Sine", "Saw", "Square", "Tri"];
+    let wave_row = waveforms.iter().enumerate().fold(row![].spacing(3), |r, (i, label)| {
+        let active = (p.waveform - i as f32).abs() < 0.1;
+        let idx = i;
+        r.push(
+            button(text(*label).size(9))
+                .on_press(Message::SetTrackInstrumentParam {
+                    track_idx,
+                    param: InstrumentParam::Waveform(idx as f32),
+                })
+                .style(move |_,_| tab_style(active))
+        )
+    });
+
+    let knob_row = row![
+        knob_col("ATK",  p.attack,   0.001, 4.0,  track_idx, |v| InstrumentParam::Attack(v)),
+        knob_col("DEC",  p.decay,    0.001, 4.0,  track_idx, |v| InstrumentParam::Decay(v)),
+        knob_col("SUS",  p.sustain,  0.0,   1.0,  track_idx, |v| InstrumentParam::Sustain(v)),
+        knob_col("REL",  p.release,  0.001, 4.0,  track_idx, |v| InstrumentParam::Release(v)),
+        knob_col("CUT",  p.cutoff / 20000.0, 0.0, 1.0, track_idx, |v| InstrumentParam::Cutoff(v * 20000.0)),
+        knob_col("RES",  p.resonance / 4.0, 0.0, 1.0, track_idx, |v| InstrumentParam::Resonance(v * 4.0)),
+        knob_col("GAIN", p.gain,     0.0,   1.0,  track_idx, |v| InstrumentParam::Gain(v)),
+    ].spacing(8);
+
+    container(
+        column![
+            row![
+                container(iced::widget::horizontal_space()).width(4).height(Length::Fill)
+                    .style(move |_| container::Style {
+                        background: Some(iced::Background::Color(c)),
+                        ..Default::default()
+                    }),
+                column![
+                    row![
+                        text(name).size(11).color(c),
+                        iced::widget::horizontal_space(),
+                        button(text("✕").size(10)).on_press(Message::CloseInstrumentPanel)
+                            .style(|_,_| btn_style(false, false)),
+                    ].spacing(8).align_y(Alignment::Center),
+                    wave_row,
+                    knob_row,
+                ].spacing(6).padding([4, 8]),
+            ].height(Length::Fill),
+        ],
+    )
+    .width(Length::Fill)
+    .height(Length::Fixed(110.0))
+    .style(|_| container::Style {
+        background: Some(iced::Background::Color(Color::from_rgb(0.03, 0.06, 0.1))),
+        border: iced::Border { color: Color::from_rgb(0.06,0.12,0.18), width: 1.0, radius: 0.0.into() },
+        ..Default::default()
+    })
+    .into()
+}
+
+fn knob_col<F>(label: &'static str, value: f32, min: f32, max: f32, track_idx: usize, make_param: F) -> Element<'static, Message>
+where
+    F: Fn(f32) -> InstrumentParam + 'static,
+{
+    let norm = ((value - min) / (max - min)).clamp(0.0, 1.0);
+    let pct = (norm * 100.0) as u32;
+    column![
+        text(label).size(8).color(Color::from_rgb(0.28,0.4,0.52)),
+        // Knob as a vertical slider (iced doesn't have a rotary knob widget yet)
+        container(
+            iced::widget::slider(0.0..=1.0_f32, norm, move |v| {
+                let real = min + v * (max - min);
+                Message::SetTrackInstrumentParam { track_idx, param: make_param(real) }
+            })
+            .step(0.001)
+        )
+        .width(Length::Fixed(36.0))
+        .height(Length::Fixed(60.0)),
+        text(format!("{}", pct)).size(8).color(Color::from_rgb(0.28,0.4,0.52)),
+    ]
+    .spacing(2)
+    .align_x(Alignment::Center)
+    .into()
+}
+
+// ── Effects bar ───────────────────────────────────────────────────────────────
+
+fn effects_bar_el(track: &crate::app_state::Track, track_idx: usize) -> Element<'static, Message> {
+    use crate::app_state::EffectType;
+
+    let effect_types = [
+        (EffectType::Eq,         "EQ",     Color::from_rgb(0.3, 0.72, 1.0)),
+        (EffectType::Compressor, "Comp",   Color::from_rgb(0.65, 0.55, 0.98)),
+        (EffectType::Reverb,     "Reverb", Color::from_rgb(0.2, 0.83, 0.6)),
+        (EffectType::Delay,      "Delay",  Color::from_rgb(0.98, 0.75, 0.14)),
+        (EffectType::Filter,     "Filter", Color::from_rgb(0.98, 0.45, 0.09)),
+    ];
+
+    let add_buttons = effect_types.iter().fold(row![].spacing(4), |r, (et, label, col)| {
+        let et2 = et.clone();
+        let c = *col;
+        r.push(
+            button(text(format!("+ {}", label)).size(9))
+                .on_press(Message::AddEffect { track_idx, effect_type: et2 })
+                .style(move |_,_| iced::widget::button::Style {
+                    background: Some(iced::Background::Color(Color { a: 0.08, ..c })),
+                    border: iced::Border { color: Color { a: 0.25, ..c }, width: 1.0, radius: 4.0.into() },
+                    text_color: c,
+                    ..Default::default()
+                })
+        )
+    });
+
+    let fx_chips: Vec<Element<Message>> = track.effects.iter().map(|fx| {
+        let label = fx.effect_type.label().to_string();
+        let enabled = fx.enabled;
+        let fid = fx.id;
+        let col = match fx.effect_type {
+            EffectType::Eq         => Color::from_rgb(0.3, 0.72, 1.0),
+            EffectType::Compressor => Color::from_rgb(0.65, 0.55, 0.98),
+            EffectType::Reverb     => Color::from_rgb(0.2, 0.83, 0.6),
+            EffectType::Delay      => Color::from_rgb(0.98, 0.75, 0.14),
+            EffectType::Filter     => Color::from_rgb(0.98, 0.45, 0.09),
+        };
+        let alpha = if enabled { 0.7 } else { 0.25 };
+        container(
+            row![
+                button(text(label).size(9))
+                    .on_press(Message::ToggleEffect { track_idx, effect_id: fid })
+                    .style(move |_,_| iced::widget::button::Style {
+                        background: Some(iced::Background::Color(Color { a: if enabled { 0.15 } else { 0.05 }, ..col })),
+                        border: iced::Border { color: Color { a: alpha, ..col }, width: 1.0, radius: 4.0.into() },
+                        text_color: Color { a: alpha, ..col },
+                        ..Default::default()
+                    }),
+                button(text("✕").size(8))
+                    .on_press(Message::RemoveEffect { track_idx, effect_id: fid })
+                    .style(|_,_| btn_style(false, false)),
+            ].spacing(2)
+        ).into()
+    }).collect();
+
+    let track_name = track.name.clone();
+    let track_color = color_from_u32(track.color);
+    let tid = track.id;
+
+    container(
+        row![
+            text(format!("FX: {}", track_name)).size(10).color(track_color),
+            button(text("🎹 Synth").size(9))
+                .on_press(Message::OpenInstrumentPanel(tid))
+                .style(|_,_| btn_style(false, false)),
+            iced::widget::vertical_rule(1),
+            add_buttons,
+            iced::widget::vertical_rule(1),
+        ]
+        .push(row(fx_chips).spacing(4))
+        .spacing(8)
+        .align_y(Alignment::Center)
+        .padding([4, 10]),
+    )
+    .width(Length::Fill)
+    .height(Length::Fixed(36.0))
+    .style(|_| container::Style {
+        background: Some(iced::Background::Color(Color::from_rgb(0.03, 0.06, 0.1))),
+        border: iced::Border { color: Color::from_rgb(0.06,0.12,0.18), width: 1.0, radius: 0.0.into() },
+        ..Default::default()
+    })
+    .into()
 }

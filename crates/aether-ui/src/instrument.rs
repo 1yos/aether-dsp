@@ -221,6 +221,20 @@ impl TrackEngine {
             set_param(sched, voice.gain_id, 0, self.preset.gain * vol);
         }
     }
+
+    /// Update the instrument preset and apply to all idle voices
+    pub fn update_preset(&mut self, sched: &mut Scheduler, preset: InstrumentPreset) {
+        self.preset = preset;
+        // Apply to all voices (they'll pick up new params on next note-on)
+        for voice in &self.voices {
+            if !voice.active {
+                Self::apply_preset_to_voice(
+                    sched, voice.osc_id, voice.env_id, voice.filt_id, voice.gain_id,
+                    &self.preset, 440.0,
+                );
+            }
+        }
+    }
 }
 
 // ── Master engine ─────────────────────────────────────────────────────────────

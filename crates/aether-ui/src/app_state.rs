@@ -1,8 +1,9 @@
 //! AppState — shared state between the audio engine and the UI.
 
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 use aether_core::scheduler::Scheduler;
-use crate::instrument::{MasterEngine, MidiEvent};
+use crate::instrument::{MasterEngine, MidiEvent, InstrumentPreset};
 
 // ── Transport ─────────────────────────────────────────────────────────────────
 
@@ -68,8 +69,70 @@ pub enum TrackType {
 #[derive(Debug, Clone)]
 pub struct TrackEffect {
     pub id: u64,
-    pub effect_type: String,
+    pub effect_type: EffectType,
     pub enabled: bool,
+    // Effect params
+    pub params: EffectParams,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum EffectType {
+    Eq,
+    Compressor,
+    Reverb,
+    Delay,
+    Filter,
+}
+
+impl EffectType {
+    pub fn label(&self) -> &'static str {
+        match self {
+            EffectType::Eq         => "EQ",
+            EffectType::Compressor => "Comp",
+            EffectType::Reverb     => "Reverb",
+            EffectType::Delay      => "Delay",
+            EffectType::Filter     => "Filter",
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct EffectParams {
+    // EQ
+    pub eq_low_gain: f32,   // dB -12..+12
+    pub eq_mid_gain: f32,
+    pub eq_high_gain: f32,
+    pub eq_mid_freq: f32,   // Hz
+    // Compressor
+    pub comp_threshold: f32, // dB
+    pub comp_ratio: f32,
+    pub comp_attack: f32,    // ms
+    pub comp_release: f32,   // ms
+    pub comp_makeup: f32,    // dB
+    // Reverb
+    pub reverb_room: f32,
+    pub reverb_damp: f32,
+    pub reverb_wet: f32,
+    // Delay
+    pub delay_time: f32,     // seconds
+    pub delay_feedback: f32,
+    pub delay_wet: f32,
+    // Filter
+    pub filter_cutoff: f32,
+    pub filter_resonance: f32,
+    pub filter_mode: u8,     // 0=LP 1=HP 2=BP
+}
+
+impl Default for EffectParams {
+    fn default() -> Self {
+        Self {
+            eq_low_gain: 0.0, eq_mid_gain: 0.0, eq_high_gain: 0.0, eq_mid_freq: 1000.0,
+            comp_threshold: -20.0, comp_ratio: 4.0, comp_attack: 5.0, comp_release: 100.0, comp_makeup: 0.0,
+            reverb_room: 0.5, reverb_damp: 0.5, reverb_wet: 0.3,
+            delay_time: 0.25, delay_feedback: 0.4, delay_wet: 0.3,
+            filter_cutoff: 2000.0, filter_resonance: 1.0, filter_mode: 0,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -86,6 +149,8 @@ pub struct Track {
     pub height: f32,
     pub clips: Vec<Clip>,
     pub effects: Vec<TrackEffect>,
+    // Instrument preset (for instrument tracks)
+    pub instrument: InstrumentPreset,
 }
 
 // ── Mixer ─────────────────────────────────────────────────────────────────────
@@ -205,6 +270,49 @@ impl Default for SongViewState {
     }
 }
 
+// ── Undo/Redo ─────────────────────────────────────────────────────────────────
+
+/// A snapshot of the session tracks for undo/redo.
+/// We snapshot only tracks (clips + notes) — not engine state.
+#[derive(Debug, Clone)]
+pub struct UndoSnapshot {
+    pub tracks: Vec<Track>,
+    pub label: String,
+}
+
+// ── Clipboard ─────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+pub enum Clipboard {
+    Clips(Vec<Clip>),
+    Notes(Vec<MidiNote>),
+    Empty,
+}
+
+// ── Tap tempo ─────────────────────────────────────────────────────────────────
+
+pub struct TapTempo {
+    pub taps: Vec<Instant>,
+}
+
+impl TapTempo {
+    pub fn new() -> Self { Self { taps: Vec::new() } }
+
+    pub fn tap(&mut self) -> Option<f32> {
+        let now = Instant::now();
+        // Discard taps older than 2 seconds
+        self.taps.retain(|t| now.duration_since(*t).as_secs_f32() < 2.0);
+        self.taps.push(now);
+        if self.taps.len() < 2 { return None; }
+        // Average interval between taps
+        let intervals: Vec<f32> = self.taps.windows(2)
+            .map(|w| w[1].duration_since(w[0]).as_secs_f32())
+            .collect();
+        let avg = intervals.iter().sum::<f32>() / intervals.len() as f32;
+        Some(60.0 / avg)
+    }
+}
+
 // ── AppState ──────────────────────────────────────────────────────────────────
 
 pub struct AppStateInner {
@@ -219,7 +327,6 @@ pub struct AppStateInner {
 
     // Transport
     pub transport: Transport,
-    // Accumulated fractional beat for the tick timer
     pub beat_accumulator: f64,
 
     // Session
@@ -227,6 +334,16 @@ pub struct AppStateInner {
     pub channels: Vec<MixerChannel>,
     pub selected_track_id: Option<u64>,
     pub selected_clip_id: Option<u64>,
+
+    // Undo/Redo
+    pub undo_stack: Vec<UndoSnapshot>,
+    pub redo_stack: Vec<UndoSnapshot>,
+
+    // Clipboard
+    pub clipboard: Clipboard,
+
+    // Tap tempo
+    pub tap_tempo: TapTempo,
 
     // View states
     pub active_view: ActiveView,
@@ -239,6 +356,8 @@ pub struct AppStateInner {
     pub browser_width: f32,
     pub properties_open: bool,
     pub properties_height: f32,
+    // Which track's instrument panel is open
+    pub instrument_panel_track: Option<u64>,
 
     next_id: u64,
 }
@@ -275,6 +394,170 @@ impl AppStateInner {
             }
         }
         None
+    }
+
+    /// Push current tracks state onto undo stack
+    pub fn push_undo(&mut self, label: &str) {
+        self.undo_stack.push(UndoSnapshot {
+            tracks: self.tracks.clone(),
+            label: label.to_string(),
+        });
+        // Cap undo history at 50 steps
+        if self.undo_stack.len() > 50 {
+            self.undo_stack.remove(0);
+        }
+        self.redo_stack.clear();
+    }
+
+    pub fn undo(&mut self) {
+        if let Some(snap) = self.undo_stack.pop() {
+            self.redo_stack.push(UndoSnapshot {
+                tracks: self.tracks.clone(),
+                label: snap.label.clone(),
+            });
+            self.tracks = snap.tracks;
+        }
+    }
+
+    pub fn redo(&mut self) {
+        if let Some(snap) = self.redo_stack.pop() {
+            self.undo_stack.push(UndoSnapshot {
+                tracks: self.tracks.clone(),
+                label: snap.label.clone(),
+            });
+            self.tracks = snap.tracks;
+        }
+    }
+
+    /// Copy selected clips to clipboard
+    pub fn copy_selected_clips(&mut self) {
+        let clips: Vec<Clip> = self.tracks.iter()
+            .flat_map(|t| t.clips.iter())
+            .filter(|c| self.song_view.selected_clip_ids.contains(&c.id))
+            .cloned()
+            .collect();
+        if !clips.is_empty() {
+            self.clipboard = Clipboard::Clips(clips);
+        }
+    }
+
+    /// Copy selected notes to clipboard
+    pub fn copy_selected_notes(&mut self) {
+        if let Some(clip_id) = self.piano_roll.open_clip_id {
+            if let Some(clip) = self.find_clip(clip_id) {
+                let notes: Vec<MidiNote> = clip.notes.iter()
+                    .filter(|n| self.piano_roll.selected_note_ids.contains(&n.id))
+                    .cloned()
+                    .collect();
+                if !notes.is_empty() {
+                    self.clipboard = Clipboard::Notes(notes);
+                }
+            }
+        }
+    }
+
+    /// Paste clips at playhead position
+    pub fn paste_clips(&mut self) {
+        if let Clipboard::Clips(clips) = self.clipboard.clone() {
+            let min_beat = clips.iter().map(|c| c.start_beat).fold(f64::MAX, f64::min);
+            let offset = self.transport.playhead_beat - min_beat;
+            self.push_undo("Paste");
+            for clip in clips {
+                // Find the track by track_id
+                if let Some(track) = self.tracks.iter_mut().find(|t| t.id == clip.track_id) {
+                    let new_id = self.next_id;
+                    self.next_id += 1;
+                    track.clips.push(Clip {
+                        id: new_id,
+                        start_beat: (clip.start_beat + offset).max(0.0),
+                        ..clip
+                    });
+                }
+            }
+        }
+    }
+
+    /// Paste notes at cursor position in piano roll
+    pub fn paste_notes(&mut self) {
+        if let Clipboard::Notes(notes) = self.clipboard.clone() {
+            if let Some(clip_id) = self.piano_roll.open_clip_id {
+                let min_beat = notes.iter().map(|n| n.beat).fold(f64::MAX, f64::min);
+                self.push_undo("Paste Notes");
+                if let Some(clip) = self.find_clip_mut(clip_id) {
+                    for note in notes {
+                        let new_id = clip.notes.iter().map(|n| n.id).max().unwrap_or(0) + 1;
+                        clip.notes.push(MidiNote {
+                            id: new_id,
+                            beat: note.beat - min_beat,
+                            ..note
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    /// Duplicate selected clips (place immediately after)
+    pub fn duplicate_selected_clips(&mut self) {
+        let selected: Vec<Clip> = self.tracks.iter()
+            .flat_map(|t| t.clips.iter())
+            .filter(|c| self.song_view.selected_clip_ids.contains(&c.id))
+            .cloned()
+            .collect();
+        if selected.is_empty() { return; }
+        self.push_undo("Duplicate");
+        for clip in selected {
+            let new_start = clip.start_beat + clip.length_beats;
+            if let Some(track) = self.tracks.iter_mut().find(|t| t.id == clip.track_id) {
+                let new_id = self.next_id;
+                self.next_id += 1;
+                track.clips.push(Clip {
+                    id: new_id,
+                    start_beat: new_start,
+                    ..clip
+                });
+            }
+        }
+    }
+
+    /// Delete selected clips
+    pub fn delete_selected_clips(&mut self) {
+        if self.song_view.selected_clip_ids.is_empty() { return; }
+        self.push_undo("Delete Clips");
+        let ids = self.song_view.selected_clip_ids.clone();
+        for track in &mut self.tracks {
+            track.clips.retain(|c| !ids.contains(&c.id));
+        }
+        self.song_view.selected_clip_ids.clear();
+    }
+
+    /// Delete selected notes in piano roll
+    pub fn delete_selected_notes(&mut self) {
+        if self.piano_roll.selected_note_ids.is_empty() { return; }
+        self.push_undo("Delete Notes");
+        let ids = self.piano_roll.selected_note_ids.clone();
+        if let Some(clip_id) = self.piano_roll.open_clip_id {
+            if let Some(clip) = self.find_clip_mut(clip_id) {
+                clip.notes.retain(|n| !ids.contains(&n.id));
+            }
+        }
+        self.piano_roll.selected_note_ids.clear();
+    }
+
+    /// Select all clips on all tracks
+    pub fn select_all_clips(&mut self) {
+        self.song_view.selected_clip_ids = self.tracks.iter()
+            .flat_map(|t| t.clips.iter().map(|c| c.id))
+            .collect();
+    }
+
+    /// Select all notes in open clip
+    pub fn select_all_notes(&mut self) {
+        if let Some(clip_id) = self.piano_roll.open_clip_id {
+            if let Some(clip) = self.find_clip(clip_id) {
+                self.piano_roll.selected_note_ids = clip.notes.iter().map(|n| n.id).collect();
+            }
+        }
     }
 
     /// Drain MIDI queue and send events to the master engine
@@ -367,6 +650,12 @@ pub fn create_app_state() -> AppState {
 
     let mut next_id = 0u64;
     let track_names = ["Kick", "Bass", "Melody", "Pad"];
+    let presets = [
+        InstrumentPreset::kick(),
+        InstrumentPreset::bass(),
+        InstrumentPreset::lead(),
+        InstrumentPreset::pad(),
+    ];
     let tracks: Vec<Track> = track_names.iter().enumerate().map(|(i, name)| {
         next_id += 1;
         Track {
@@ -377,6 +666,7 @@ pub fn create_app_state() -> AppState {
             muted: false, solo: false, armed: false,
             volume: 0.8, pan: 0.0, height: 72.0,
             clips: Vec::new(), effects: Vec::new(),
+            instrument: presets[i].clone(),
         }
     }).collect();
 
@@ -400,6 +690,10 @@ pub fn create_app_state() -> AppState {
         channels,
         selected_track_id: None,
         selected_clip_id: None,
+        undo_stack: Vec::new(),
+        redo_stack: Vec::new(),
+        clipboard: Clipboard::Empty,
+        tap_tempo: TapTempo::new(),
         active_view: ActiveView::Song,
         piano_roll: PianoRollState::default(),
         song_view: SongViewState::default(),
@@ -408,6 +702,7 @@ pub fn create_app_state() -> AppState {
         browser_width: 220.0,
         properties_open: false,
         properties_height: 180.0,
+        instrument_panel_track: None,
         next_id,
     }))
 }
