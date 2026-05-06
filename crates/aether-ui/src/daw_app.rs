@@ -1,47 +1,373 @@
+// daw_app
 //! DawApp — the iced Application struct.
+//! Full interactive DAW: Song view, Piano Roll, Mixer, transport.
 use iced::{
     widget::{button, canvas, column, container, row, scrollable, text},
-    Alignment, Color, Element, Length, Task, Theme,
+    Alignment, Color, Element, Length, Task, Theme, time,
 };
-use crate::app_state::{AppState, ActiveView};
+use std::time::{Duration, Instant};
+use crate::app_state::{
+    AppState, ActiveView, Clip, MidiNote, PianoRollTool, SongTool,
+};
+use crate::instrument::MidiEvent;
+
+// ── Messages ──────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    // Transport
     SetView(ActiveView),
-    Play, Stop, ToggleRecord, AddTrack, Tick,
+    Play, Stop, ToggleRecord, SetBpm(f32), Tick(Instant),
+    // Song view
+    AddTrack,
+    SongCanvasClick { beat: f64, track_idx: usize },
+    SongCanvasDrag  { beat: f64, track_idx: usize },
+    SongCanvasRelease,
+    OpenPianoRoll   { clip_id: u64, track_id: u64 },
+    DeleteClip(u64),
+    SetSongTool(SongTool),
+    SetSongSnap(f64),
+    // Piano Roll
+    PianoRollClick  { beat: f64, pitch: u8 },
+    PianoRollDrag   { beat: f64, pitch: u8 },
+    PianoRollRelease,
+    DeleteNote(u64),
+    SetPianoTool(PianoRollTool),
+    SetPianoSnap(f64),
+    PianoKeyPress(u8),
+    PianoKeyRelease(u8),
+    ClosePianoRoll,
+    // Mixer
+    SetTrackVolume { track_idx: usize, volume: f32 },
+    SetTrackMute   { track_idx: usize },
+    SetTrackSolo   { track_idx: usize },
 }
 
-pub struct DawApp { pub state: AppState }
+// ── App struct ────────────────────────────────────────────────────────────────
+
+pub struct DawApp {
+    pub state: AppState,
+    last_tick: Instant,
+    pr_drag_note_id: Option<u64>,
+    pr_drag_start_beat: f64,
+    pr_drag_start_pitch: u8,
+    song_drag_clip_id: Option<u64>,
+    song_drag_offset: f64,
+}
 
 impl DawApp {
     pub fn new(state: AppState) -> (Self, Task<Message>) {
-        (Self { state }, Task::none())
+        let app = Self {
+            state,
+            last_tick: Instant::now(),
+            pr_drag_note_id: None,
+            pr_drag_start_beat: 0.0,
+            pr_drag_start_pitch: 60,
+            song_drag_clip_id: None,
+            song_drag_offset: 0.0,
+        };
+        (app, Task::none())
+    }
+
+    pub fn subscription(&self) -> iced::Subscription<Message> {
+        time::every(Duration::from_millis(16)).map(Message::Tick)
     }
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::Tick(now) => {
+                let delta = now.duration_since(self.last_tick).as_secs_f64();
+                self.last_tick = now;
+                self.state.lock().unwrap().tick_transport(delta);
+            }
             Message::SetView(v) => { self.state.lock().unwrap().active_view = v; }
             Message::Play => { self.state.lock().unwrap().transport.is_playing = true; }
-            Message::Stop => { let mut s = self.state.lock().unwrap(); s.transport.is_playing = false; s.transport.playhead_beat = 0.0; }
-            Message::ToggleRecord => { let mut s = self.state.lock().unwrap(); s.transport.is_recording = !s.transport.is_recording; }
+            Message::Stop => {
+                let mut s = self.state.lock().unwrap();
+                s.transport.is_playing = false;
+                s.transport.playhead_beat = 0.0;
+                for i in 0..s.tracks.len() {
+                    s.midi_queue.push(crate::app_state::PendingMidi {
+                        track_idx: i, event: MidiEvent::AllNotesOff,
+                    });
+                }
+                s.flush_midi();
+            }
+            Message::ToggleRecord => {
+                let mut s = self.state.lock().unwrap();
+                s.transport.is_recording = !s.transport.is_recording;
+            }
+            Message::SetBpm(bpm) => {
+                self.state.lock().unwrap().transport.bpm = bpm.clamp(20.0, 300.0);
+            }
             Message::AddTrack => {
                 let mut s = self.state.lock().unwrap();
-                let id = s.next_id();
+                let id  = s.next_id();
                 let idx = s.tracks.len();
-                let colors = [0x4db8ffff_u32,0xa78bfaff,0x34d399ff,0xf97316ff,0xf43f5eff,0xfbbf24ff,0x06b6d4ff,0x8b5cf6ff];
+                let colors = [0x4db8ffff_u32,0xa78bfaff,0x34d399ff,0xf97316ff,
+                              0xf43f5eff,0xfbbf24ff,0x06b6d4ff,0x8b5cf6ff];
                 s.tracks.push(crate::app_state::Track {
-                    id, name: format!("Track {}", idx+1),
+                    id, name: format!("Track {}", idx + 1),
                     track_type: crate::app_state::TrackType::Instrument,
                     color: colors[idx % colors.len()],
                     muted: false, solo: false, armed: false,
                     volume: 0.8, pan: 0.0, height: 72.0,
                     clips: Vec::new(), effects: Vec::new(),
                 });
+                let sched_arc = s.scheduler.clone();
+                if let Ok(mut sched) = sched_arc.try_lock() {
+                    if let Some(ref mut engine) = s.master_engine {
+                        engine.ensure_track(&mut sched, idx);
+                    }
+                };
             }
-            Message::Tick => {
+
+            // ── Song view interactions ────────────────────────────────────
+            Message::SongCanvasClick { beat, track_idx } => {
                 let mut s = self.state.lock().unwrap();
-                if s.transport.is_playing {
-                    s.transport.playhead_beat += s.transport.bpm as f64 / 60.0 / 60.0;
+                let snap = s.song_view.snap_beats;
+                let snapped = (beat / snap).floor() * snap;
+                let tool = s.song_view.tool.clone();
+                match tool {
+                    SongTool::Draw => {
+                        if track_idx < s.tracks.len() {
+                            let id = s.next_id();
+                            let track_id = s.tracks[track_idx].id;
+                            let color = s.tracks[track_idx].color;
+                            s.tracks[track_idx].clips.push(Clip {
+                                id, track_id,
+                                name: format!("Clip {}", id),
+                                start_beat: snapped,
+                                length_beats: snap * 4.0,
+                                color, notes: Vec::new(),
+                            });
+                            self.song_drag_clip_id = Some(id);
+                            self.song_drag_offset = 0.0;
+                        }
+                    }
+                    SongTool::Select => {
+                        if track_idx < s.tracks.len() {
+                            let found = s.tracks[track_idx].clips.iter()
+                                .find(|c| beat >= c.start_beat && beat < c.start_beat + c.length_beats)
+                                .map(|c| (c.id, c.start_beat));
+                            if let Some((cid, cstart)) = found {
+                                self.song_drag_clip_id = Some(cid);
+                                self.song_drag_offset = beat - cstart;
+                                s.selected_clip_id = Some(cid);
+                            }
+                        }
+                    }
+                    SongTool::Erase => {
+                        if track_idx < s.tracks.len() {
+                            s.tracks[track_idx].clips.retain(|c| {
+                                !(beat >= c.start_beat && beat < c.start_beat + c.length_beats)
+                            });
+                        }
+                    }
+                }
+            }
+            Message::SongCanvasDrag { beat, track_idx: _ } => {
+                if let Some(clip_id) = self.song_drag_clip_id {
+                    let mut s = self.state.lock().unwrap();
+                    let snap = s.song_view.snap_beats;
+                    let new_start = ((beat - self.song_drag_offset) / snap).floor() * snap;
+                    if let Some(clip) = s.find_clip_mut(clip_id) {
+                        clip.start_beat = new_start.max(0.0);
+                    }
+                }
+            }
+            Message::SongCanvasRelease => { self.song_drag_clip_id = None; }
+            Message::OpenPianoRoll { clip_id, track_id } => {
+                let mut s = self.state.lock().unwrap();
+                s.piano_roll.open_clip_id = Some(clip_id);
+                s.piano_roll.open_track_id = Some(track_id);
+                s.active_view = ActiveView::PianoRoll;
+            }
+            Message::DeleteClip(id) => {
+                let mut s = self.state.lock().unwrap();
+                for track in &mut s.tracks { track.clips.retain(|c| c.id != id); }
+            }
+            Message::SetSongTool(t) => { self.state.lock().unwrap().song_view.tool = t; }
+            Message::SetSongSnap(sn) => { self.state.lock().unwrap().song_view.snap_beats = sn; }
+
+            // ── Piano Roll interactions ───────────────────────────────────
+            Message::PianoRollClick { beat, pitch } => {
+                let mut s = self.state.lock().unwrap();
+                let snap = s.piano_roll.snap_beats;
+                let len  = s.piano_roll.default_note_len;
+                let tool = s.piano_roll.tool.clone();
+                let snapped = (beat / snap).floor() * snap;
+                match tool {
+                    PianoRollTool::Draw => {
+                        if let Some(clip_id) = s.piano_roll.open_clip_id {
+                            let note_id = s.next_id();
+                            if let Some(clip) = s.find_clip_mut(clip_id) {
+                                clip.notes.push(MidiNote {
+                                    id: note_id, pitch,
+                                    beat: snapped, duration: len, velocity: 100,
+                                });
+                            }
+                            self.pr_drag_note_id = Some(note_id);
+                            self.pr_drag_start_beat = snapped;
+                            self.pr_drag_start_pitch = pitch;
+                        }
+                        if let Some(track_id) = s.piano_roll.open_track_id {
+                            let track_idx = s.tracks.iter().position(|t| t.id == track_id).unwrap_or(0);
+                            s.midi_queue.push(crate::app_state::PendingMidi {
+                                track_idx, event: MidiEvent::NoteOn { pitch, velocity: 100 },
+                            });
+                            s.flush_midi();
+                        }
+                    }
+                    PianoRollTool::Select => {
+                        if let Some(clip_id) = s.piano_roll.open_clip_id {
+                            let found = s.find_clip(clip_id).and_then(|clip| {
+                                clip.notes.iter().find(|n| {
+                                    n.pitch == pitch && beat >= n.beat && beat < n.beat + n.duration
+                                }).map(|n| n.id)
+                            });
+                            if let Some(nid) = found {
+                                s.piano_roll.selected_note_ids = vec![nid];
+                                self.pr_drag_note_id = Some(nid);
+                                self.pr_drag_start_beat = beat;
+                                self.pr_drag_start_pitch = pitch;
+                            }
+                        }
+                    }
+                    PianoRollTool::Erase => {
+                        if let Some(clip_id) = s.piano_roll.open_clip_id {
+                            if let Some(clip) = s.find_clip_mut(clip_id) {
+                                clip.notes.retain(|n| {
+                                    !(n.pitch == pitch && beat >= n.beat && beat < n.beat + n.duration)
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            Message::PianoRollDrag { beat, pitch } => {
+                if let Some(note_id) = self.pr_drag_note_id {
+                    let mut s = self.state.lock().unwrap();
+                    let snap = s.piano_roll.snap_beats;
+                    let tool = s.piano_roll.tool.clone();
+                    if let Some(clip_id) = s.piano_roll.open_clip_id {
+                        match tool {
+                            PianoRollTool::Draw => {
+                                let start = self.pr_drag_start_beat;
+                                let new_end = ((beat / snap).ceil() * snap).max(start + snap);
+                                if let Some(clip) = s.find_clip_mut(clip_id) {
+                                    if let Some(note) = clip.notes.iter_mut().find(|n| n.id == note_id) {
+                                        note.duration = (new_end - start).max(snap);
+                                    }
+                                }
+                            }
+                            PianoRollTool::Select => {
+                                let db = beat - self.pr_drag_start_beat;
+                                let dp = pitch as i16 - self.pr_drag_start_pitch as i16;
+                                if let Some(clip) = s.find_clip_mut(clip_id) {
+                                    if let Some(note) = clip.notes.iter_mut().find(|n| n.id == note_id) {
+                                        note.beat  = ((note.beat + db).max(0.0) / snap).floor() * snap;
+                                        note.pitch = (note.pitch as i16 + dp).clamp(0, 127) as u8;
+                                    }
+                                }
+                                self.pr_drag_start_beat  = beat;
+                                self.pr_drag_start_pitch = pitch;
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+            Message::PianoRollRelease => {
+                if let Some(note_id) = self.pr_drag_note_id {
+                    let mut s = self.state.lock().unwrap();
+                    if let Some(track_id) = s.piano_roll.open_track_id {
+                        let track_idx = s.tracks.iter().position(|t| t.id == track_id).unwrap_or(0);
+                        let pitch = s.piano_roll.open_clip_id
+                            .and_then(|cid| s.find_clip(cid))
+                            .and_then(|clip| clip.notes.iter().find(|n| n.id == note_id))
+                            .map(|n| n.pitch)
+                            .unwrap_or(self.pr_drag_start_pitch);
+                        s.midi_queue.push(crate::app_state::PendingMidi {
+                            track_idx, event: MidiEvent::NoteOff { pitch },
+                        });
+                        s.flush_midi();
+                    }
+                }
+                self.pr_drag_note_id = None;
+            }
+            Message::DeleteNote(id) => {
+                let mut s = self.state.lock().unwrap();
+                if let Some(clip_id) = s.piano_roll.open_clip_id {
+                    if let Some(clip) = s.find_clip_mut(clip_id) {
+                        clip.notes.retain(|n| n.id != id);
+                    }
+                }
+            }
+            Message::SetPianoTool(t) => { self.state.lock().unwrap().piano_roll.tool = t; }
+            Message::SetPianoSnap(sn) => { self.state.lock().unwrap().piano_roll.snap_beats = sn; }
+            Message::PianoKeyPress(pitch) => {
+                let mut s = self.state.lock().unwrap();
+                if let Some(track_id) = s.piano_roll.open_track_id {
+                    let track_idx = s.tracks.iter().position(|t| t.id == track_id).unwrap_or(0);
+                    s.midi_queue.push(crate::app_state::PendingMidi {
+                        track_idx, event: MidiEvent::NoteOn { pitch, velocity: 100 },
+                    });
+                    s.flush_midi();
+                }
+            }
+            Message::PianoKeyRelease(pitch) => {
+                let mut s = self.state.lock().unwrap();
+                if let Some(track_id) = s.piano_roll.open_track_id {
+                    let track_idx = s.tracks.iter().position(|t| t.id == track_id).unwrap_or(0);
+                    s.midi_queue.push(crate::app_state::PendingMidi {
+                        track_idx, event: MidiEvent::NoteOff { pitch },
+                    });
+                    s.flush_midi();
+                }
+            }
+            Message::ClosePianoRoll => {
+                let mut s = self.state.lock().unwrap();
+                s.piano_roll.open_clip_id = None;
+                s.active_view = ActiveView::Song;
+            }
+
+            // ── Mixer ─────────────────────────────────────────────────────
+            Message::SetTrackVolume { track_idx, volume } => {
+                let mut s = self.state.lock().unwrap();
+                if track_idx < s.tracks.len() {
+                    s.tracks[track_idx].volume = volume;
+                    let sched_arc = s.scheduler.clone();
+                    if let Ok(mut sched) = sched_arc.try_lock() {
+                        if let Some(ref mut engine) = s.master_engine {
+                            if let Some(slot) = engine.tracks.get_mut(track_idx) {
+                                if let Some(ref mut te) = slot {
+                                    te.set_volume(&mut sched, volume);
+                                }
+                            }
+                        }
+                    };
+                }
+            }
+            Message::SetTrackMute { track_idx } => {
+                let mut s = self.state.lock().unwrap();
+                if track_idx < s.tracks.len() {
+                    s.tracks[track_idx].muted = !s.tracks[track_idx].muted;
+                    let muted = s.tracks[track_idx].muted;
+                    if muted {
+                        s.midi_queue.push(crate::app_state::PendingMidi {
+                            track_idx, event: MidiEvent::AllNotesOff,
+                        });
+                        s.flush_midi();
+                    }
+                }
+            }
+            Message::SetTrackSolo { track_idx } => {
+                let mut s = self.state.lock().unwrap();
+                if track_idx < s.tracks.len() {
+                    let was = s.tracks[track_idx].solo;
+                    for t in &mut s.tracks { t.solo = false; }
+                    if !was { s.tracks[track_idx].solo = true; }
                 }
             }
         }
@@ -49,109 +375,175 @@ impl DawApp {
     }
 
     pub fn view(&self) -> Element<Message> {
-        let state = self.state.lock().unwrap();
-        let active = state.active_view;
-        let transport = state.transport.clone();
-        let tracks = state.tracks.clone();
-        let channels = state.channels.clone();
-        let engine_ok = state.engine_status == crate::app_state::EngineStatus::Running;
-        drop(state);
+        let s = self.state.lock().unwrap();
+        let active    = s.active_view;
+        let transport = s.transport.clone();
+        let tracks    = s.tracks.clone();
+        let engine_ok = s.engine_status == crate::app_state::EngineStatus::Running;
+        let song_st   = s.song_view.clone();
+        let pr_st     = s.piano_roll.clone();
+        let open_clip = pr_st.open_clip_id.and_then(|id| s.find_clip(id)).cloned();
+        drop(s);
 
-        let views = [
-            ("≡ Song", ActiveView::Song),
-            ("♩ Piano Roll", ActiveView::PianoRoll),
-            ("⊟ Mixer", ActiveView::Mixer),
-            ("⬡ Patcher", ActiveView::Patcher),
-            ("🎚 Perform", ActiveView::Perform),
-        ];
-
-        let tabs = views.iter().fold(
-            row![].spacing(2),
-            |r, (label, view)| {
-                let is_active = active == *view;
-                let msg = Message::SetView(*view);
-                let lbl = label.to_string();
-                r.push(
-                    button(text(lbl).size(12))
-                        .on_press(msg)
-                        .style(move |_, _| tab_style(is_active))
-                )
-            }
-        );
-
-        let is_playing = transport.is_playing;
-        let is_recording = transport.is_recording;
-        let bpm = transport.bpm;
-
-        let top_bar = container(
-            row![
-                text("Aether Studio").size(15).color(Color::from_rgb(0.3, 0.72, 1.0)),
-                tabs,
-                button(text("■").size(12)).on_press(Message::Stop).style(|_,_| btn_style(false, false)),
-                button(text(if is_playing {"▶ Playing"} else {"▶ Play"}).size(12)).on_press(Message::Play).style(move |_,_| btn_style(is_playing, false)),
-                button(text("● Rec").size(12)).on_press(Message::ToggleRecord).style(move |_,_| btn_style(is_recording, true)),
-                text(format!("BPM {:.0}", bpm)).size(12).color(Color::WHITE),
-                iced::widget::horizontal_space(),
-                text(if engine_ok {"● Live"} else {"● Offline"}).size(11)
-                    .color(if engine_ok {Color::from_rgb(0.0,0.9,0.63)} else {Color::from_rgb(0.94,0.33,0.31)}),
-            ]
-            .spacing(8)
-            .align_y(Alignment::Center)
-            .padding(8),
-        )
-        .width(Length::Fill)
-        .style(|_| container::Style {
-            background: Some(iced::Background::Color(Color::from_rgb(0.04,0.07,0.13))),
-            border: iced::Border { color: Color::from_rgb(0.06,0.12,0.18), width: 1.0, radius: 0.0.into() },
-            ..Default::default()
-        });
-
+        let top_bar = build_top_bar(active, &transport, engine_ok);
         let workspace: Element<Message> = match active {
-            ActiveView::Song => song_view_el(tracks, transport),
-            ActiveView::Mixer => mixer_view_el(channels),
-            _ => placeholder_view(match active {
-                ActiveView::PianoRoll => "Piano Roll — double-click a clip in Song view",
-                ActiveView::Patcher   => "Patcher — node graph (GPU rendering)",
-                ActiveView::Perform   => "Perform — live mixer",
-                _ => "",
-            }),
+            ActiveView::Song      => song_view_el(tracks, transport, song_st),
+            ActiveView::PianoRoll => piano_roll_el(open_clip, pr_st),
+            ActiveView::Mixer     => mixer_view_el(tracks),
+            _ => placeholder_view("Coming soon"),
         };
-
         column![top_bar, workspace].into()
     }
 }
 
-// ── Song view ─────────────────────────────────────────────────────────────────
+// ── Top bar ───────────────────────────────────────────────────────────────────
 
-fn song_view_el(tracks: Vec<crate::app_state::Track>, transport: crate::app_state::Transport) -> Element<'static, Message> {
-    let toolbar = container(
+fn build_top_bar(
+    active: ActiveView,
+    transport: &crate::app_state::Transport,
+    engine_ok: bool,
+) -> Element<'static, Message> {
+    let views = [
+        ("Song",       ActiveView::Song),
+        ("Piano Roll", ActiveView::PianoRoll),
+        ("Mixer",      ActiveView::Mixer),
+        ("Patcher",    ActiveView::Patcher),
+        ("Perform",    ActiveView::Perform),
+    ];
+
+    let tabs = views.iter().fold(row![].spacing(2), |r, (label, view)| {
+        let is_active = active == *view;
+        let msg = Message::SetView(*view);
+        let lbl = label.to_string();
+        r.push(
+            button(text(lbl).size(12))
+                .on_press(msg)
+                .style(move |_, _| tab_style(is_active))
+        )
+    });
+
+    let is_playing   = transport.is_playing;
+    let is_recording = transport.is_recording;
+    let bpm          = transport.bpm;
+    let beat         = transport.playhead_beat;
+
+    container(
         row![
-            button(text("+ Instrument").size(11)).on_press(Message::AddTrack).style(|_,_| btn_style(false, false)),
-            button(text("+ Audio").size(11)).style(|_,_| btn_style(false, false)),
-        ].spacing(6).padding(6),
+            text("Aether Studio").size(14).color(Color::from_rgb(0.3, 0.72, 1.0)),
+            tabs,
+            button(text("■").size(12)).on_press(Message::Stop)
+                .style(|_,_| btn_style(false, false)),
+            button(text(if is_playing { "▶ Playing" } else { "▶ Play" }).size(12))
+                .on_press(Message::Play)
+                .style(move |_,_| btn_style(is_playing, false)),
+            button(text("● Rec").size(12)).on_press(Message::ToggleRecord)
+                .style(move |_,_| btn_style(is_recording, true)),
+            text(format!("BPM {:.0}", bpm)).size(12).color(Color::WHITE),
+            text(format!("{:.2}", beat)).size(11).color(Color::from_rgb(0.28,0.4,0.52)),
+            iced::widget::horizontal_space(),
+            text(if engine_ok { "● Live" } else { "● Offline" }).size(11)
+                .color(if engine_ok {
+                    Color::from_rgb(0.0, 0.9, 0.63)
+                } else {
+                    Color::from_rgb(0.94, 0.33, 0.31)
+                }),
+        ]
+        .spacing(8)
+        .align_y(Alignment::Center)
+        .padding(8),
     )
     .width(Length::Fill)
     .style(|_| container::Style {
-        background: Some(iced::Background::Color(Color::from_rgb(0.03,0.06,0.1))),
+        background: Some(iced::Background::Color(Color::from_rgb(0.04, 0.07, 0.13))),
+        border: iced::Border {
+            color: Color::from_rgb(0.06, 0.12, 0.18),
+            width: 1.0,
+            radius: 0.0.into(),
+        },
+        ..Default::default()
+    })
+    .into()
+}
+
+// ── Song view ─────────────────────────────────────────────────────────────────
+
+fn song_view_el(
+    tracks: Vec<crate::app_state::Track>,
+    transport: crate::app_state::Transport,
+    sv: crate::app_state::SongViewState,
+) -> Element<'static, Message> {
+    let snap_options: Vec<(&str, f64)> = vec![
+        ("1 bar", 1.0), ("1/2", 0.5), ("1/4", 0.25), ("1/8", 0.125),
+    ];
+    let snap_row = snap_options.iter().fold(row![].spacing(4), |r, (label, val)| {
+        let active = (sv.snap_beats - val).abs() < 0.001;
+        let v = *val;
+        r.push(
+            button(text(*label).size(10))
+                .on_press(Message::SetSongSnap(v))
+                .style(move |_,_| tab_style(active))
+        )
+    });
+
+    let tool_row = {
+        let draw_active   = sv.tool == SongTool::Draw;
+        let select_active = sv.tool == SongTool::Select;
+        let erase_active  = sv.tool == SongTool::Erase;
+        row![
+            button(text("✏ Draw").size(10)).on_press(Message::SetSongTool(SongTool::Draw))
+                .style(move |_,_| tab_style(draw_active)),
+            button(text("↖ Select").size(10)).on_press(Message::SetSongTool(SongTool::Select))
+                .style(move |_,_| tab_style(select_active)),
+            button(text("✕ Erase").size(10)).on_press(Message::SetSongTool(SongTool::Erase))
+                .style(move |_,_| tab_style(erase_active)),
+        ].spacing(4)
+    };
+
+    let toolbar = container(
+        row![
+            button(text("+ Track").size(11)).on_press(Message::AddTrack)
+                .style(|_,_| btn_style(false, false)),
+            tool_row,
+            snap_row,
+        ].spacing(8).padding(6),
+    )
+    .width(Length::Fill)
+    .style(|_| container::Style {
+        background: Some(iced::Background::Color(Color::from_rgb(0.03, 0.06, 0.1))),
         border: iced::Border { color: Color::from_rgb(0.06,0.12,0.18), width: 1.0, radius: 0.0.into() },
         ..Default::default()
     });
 
-    let headers: Vec<Element<Message>> = tracks.iter().map(|t| {
-        let c = color_from_u32(t.color);
+    // Track headers
+    let headers: Vec<Element<Message>> = tracks.iter().enumerate().map(|(i, t)| {
+        let c    = color_from_u32(t.color);
         let name = t.name.clone();
-        let vol = (t.volume * 100.0) as u32;
+        let vol  = (t.volume * 100.0) as u32;
+        let muted = t.muted;
+        let solo  = t.solo;
         container(
             row![
-                container(iced::widget::vertical_space()).width(3).height(Length::Fill)
-                    .style(move |_| container::Style { background: Some(iced::Background::Color(c)), ..Default::default() }),
+                container(iced::widget::vertical_space())
+                    .width(3).height(Length::Fill)
+                    .style(move |_| container::Style {
+                        background: Some(iced::Background::Color(c)),
+                        ..Default::default()
+                    }),
                 column![
                     text(name).size(11).color(Color::WHITE),
                     text(format!("{}%", vol)).size(9).color(Color::from_rgb(0.28,0.4,0.52)),
-                ].spacing(2).padding([4,8]),
+                    row![
+                        button(text("M").size(9))
+                            .on_press(Message::SetTrackMute { track_idx: i })
+                            .style(move |_,_| btn_style(muted, true)),
+                        button(text("S").size(9))
+                            .on_press(Message::SetTrackSolo { track_idx: i })
+                            .style(move |_,_| btn_style(solo, false)),
+                    ].spacing(3),
+                ].spacing(2).padding([4, 8]),
             ].height(Length::Fixed(72.0)),
         )
-        .width(Length::Fixed(200.0))
+        .width(Length::Fixed(180.0))
         .style(|_| container::Style {
             background: Some(iced::Background::Color(Color::from_rgb(0.03,0.06,0.1))),
             border: iced::Border { color: Color::from_rgb(0.06,0.12,0.18), width: 1.0, radius: 0.0.into() },
@@ -161,83 +553,341 @@ fn song_view_el(tracks: Vec<crate::app_state::Track>, transport: crate::app_stat
     }).collect();
 
     let header_col: Element<Message> = if headers.is_empty() {
-        container(text("No tracks").size(12).color(Color::from_rgb(0.28,0.4,0.52)))
-            .width(Length::Fixed(200.0)).height(Length::Fill).into()
+        container(text("No tracks — click + Track").size(11).color(Color::from_rgb(0.28,0.4,0.52)))
+            .width(Length::Fixed(180.0)).height(Length::Fill).into()
     } else {
         scrollable(column(headers).spacing(1)).height(Length::Fill).into()
     };
 
-    let time_sig = transport.time_sig_num;
-    let playhead = transport.playhead_beat;
-    let bpm = transport.bpm;
-
-    let timeline: Element<Message> = canvas::Canvas::new(TimelineCanvas { tracks, playhead_beat: playhead, bpm, time_sig })
-        .width(Length::Fill).height(Length::Fill).into();
+    let timeline: Element<Message> = canvas::Canvas::new(TimelineCanvas {
+        tracks,
+        playhead_beat: transport.playhead_beat,
+        bpm: transport.bpm,
+        time_sig: transport.time_sig_num,
+        zoom_x: sv.zoom_x,
+        snap_beats: sv.snap_beats,
+    })
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .into();
 
     let main = row![header_col, timeline].height(Length::Fill);
     column![toolbar, main].height(Length::Fill).into()
 }
+
+// ── Timeline canvas ───────────────────────────────────────────────────────────
 
 struct TimelineCanvas {
     tracks: Vec<crate::app_state::Track>,
     playhead_beat: f64,
     bpm: f32,
     time_sig: u8,
+    zoom_x: f32,
+    snap_beats: f64,
 }
 
 impl<Message> canvas::Program<Message> for TimelineCanvas {
     type State = ();
-    fn draw(&self, _: &(), renderer: &iced::Renderer, _: &Theme, bounds: iced::Rectangle, _: iced::mouse::Cursor) -> Vec<canvas::Geometry> {
+    fn draw(
+        &self, _: &(), renderer: &iced::Renderer, _: &Theme,
+        bounds: iced::Rectangle, _: iced::mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
         let mut frame = canvas::Frame::new(renderer, bounds.size());
-        let beat_w = 32.0f32;
-        let ruler_h = 28.0f32;
-        let total_beats = 128usize;
+        let bw       = self.zoom_x;
+        let ruler_h  = 28.0f32;
+        let total    = 256usize;
 
+        // Background
         frame.fill_rectangle(iced::Point::ORIGIN, bounds.size(), Color::from_rgb(0.04,0.08,0.13));
-        frame.fill_rectangle(iced::Point::ORIGIN, iced::Size::new(bounds.width, ruler_h), Color::from_rgb(0.03,0.06,0.1));
+        // Ruler
+        frame.fill_rectangle(iced::Point::ORIGIN, iced::Size::new(bounds.width, ruler_h),
+            Color::from_rgb(0.03,0.06,0.1));
 
-        for i in 0..total_beats {
+        // Beat/bar lines + numbers
+        for i in 0..total {
             let is_bar = i % self.time_sig as usize == 0;
-            let x = i as f32 * beat_w;
-            let lh = if is_bar { ruler_h } else { ruler_h * 0.45 };
-            frame.fill_rectangle(iced::Point::new(x, ruler_h - lh), iced::Size::new(1.0, lh),
-                if is_bar { Color::from_rgb(0.12,0.23,0.37) } else { Color::from_rgb(0.04,0.08,0.13) });
+            let x = i as f32 * bw;
+            if x > bounds.width { break; }
+            let lh = if is_bar { ruler_h } else { ruler_h * 0.4 };
+            frame.fill_rectangle(
+                iced::Point::new(x, ruler_h - lh),
+                iced::Size::new(1.0, lh),
+                if is_bar { Color::from_rgb(0.15,0.28,0.45) } else { Color::from_rgb(0.06,0.1,0.16) },
+            );
             if is_bar {
                 frame.fill_text(canvas::Text {
                     content: (i / self.time_sig as usize + 1).to_string(),
                     position: iced::Point::new(x + 3.0, 4.0),
-                    color: Color::from_rgb(0.3,0.72,1.0),
+                    color: Color::from_rgb(0.3, 0.72, 1.0),
                     size: iced::Pixels(9.0),
                     ..Default::default()
                 });
             }
         }
 
+        // Tracks
         let mut ty = ruler_h;
         for track in &self.tracks {
             let th = track.height;
             let tc = color_from_u32(track.color);
-            frame.fill_rectangle(iced::Point::new(0.0, ty), iced::Size::new(bounds.width, th), Color::from_rgb(0.04,0.08,0.13));
-            for i in 0..total_beats {
+
+            // Track row background
+            frame.fill_rectangle(iced::Point::new(0.0, ty), iced::Size::new(bounds.width, th),
+                Color::from_rgb(0.04,0.08,0.13));
+
+            // Grid lines
+            for i in 0..total {
+                let x = i as f32 * bw;
+                if x > bounds.width { break; }
                 let is_bar = i % self.time_sig as usize == 0;
-                frame.fill_rectangle(iced::Point::new(i as f32 * beat_w, ty), iced::Size::new(1.0, th),
-                    if is_bar { Color::from_rgb(0.06,0.12,0.18) } else { Color::from_rgb(0.03,0.06,0.1) });
+                frame.fill_rectangle(iced::Point::new(x, ty), iced::Size::new(1.0, th),
+                    if is_bar { Color::from_rgb(0.07,0.14,0.22) } else { Color::from_rgb(0.04,0.08,0.13) });
             }
+
+            // Clips
             for clip in &track.clips {
-                let cx = clip.start_beat as f32 * beat_w + 1.0;
-                let cw = (clip.length_beats as f32 * beat_w - 2.0).max(8.0);
-                frame.fill_rectangle(iced::Point::new(cx, ty+4.0), iced::Size::new(cw, th-8.0), Color { a: 0.15, ..tc });
-                let stroke = canvas::Stroke::default().with_color(Color { a: 0.5, ..tc }).with_width(1.0);
-                frame.stroke(&canvas::Path::rectangle(iced::Point::new(cx, ty+4.0), iced::Size::new(cw, th-8.0)), stroke);
+                let cx = clip.start_beat as f32 * bw + 1.0;
+                let cw = (clip.length_beats as f32 * bw - 2.0).max(8.0);
+                // Fill
+                frame.fill_rectangle(
+                    iced::Point::new(cx, ty + 4.0),
+                    iced::Size::new(cw, th - 8.0),
+                    Color { a: 0.18, ..tc },
+                );
+                // Border
+                let stroke = canvas::Stroke::default()
+                    .with_color(Color { a: 0.7, ..tc })
+                    .with_width(1.0);
+                frame.stroke(
+                    &canvas::Path::rectangle(iced::Point::new(cx, ty + 4.0), iced::Size::new(cw, th - 8.0)),
+                    stroke,
+                );
+                // Clip name
+                frame.fill_text(canvas::Text {
+                    content: clip.name.clone(),
+                    position: iced::Point::new(cx + 4.0, ty + 8.0),
+                    color: Color { a: 0.9, ..tc },
+                    size: iced::Pixels(9.0),
+                    ..Default::default()
+                });
+                // Mini note preview inside clip
+                if !clip.notes.is_empty() {
+                    let note_area_h = th - 16.0;
+                    for note in &clip.notes {
+                        let nx = cx + note.beat as f32 * bw;
+                        let nw = (note.duration as f32 * bw).max(2.0);
+                        let ny = ty + 8.0 + (1.0 - note.pitch as f32 / 127.0) * note_area_h;
+                        frame.fill_rectangle(
+                            iced::Point::new(nx, ny),
+                            iced::Size::new(nw, 2.0),
+                            Color { a: 0.8, ..tc },
+                        );
+                    }
+                }
             }
-            frame.fill_rectangle(iced::Point::new(0.0, ty+th-1.0), iced::Size::new(bounds.width, 1.0), Color::from_rgb(0.06,0.12,0.18));
+
+            // Track separator
+            frame.fill_rectangle(
+                iced::Point::new(0.0, ty + th - 1.0),
+                iced::Size::new(bounds.width, 1.0),
+                Color::from_rgb(0.06, 0.12, 0.18),
+            );
             ty += th;
         }
 
-        let phx = self.playhead_beat as f32 * beat_w;
-        frame.fill_rectangle(iced::Point::new(phx, 0.0), iced::Size::new(1.0, bounds.height), Color::from_rgb(0.3,0.72,1.0));
-        let tri = canvas::Path::new(|p| { p.move_to(iced::Point::new(phx-5.0,0.0)); p.line_to(iced::Point::new(phx+5.0,0.0)); p.line_to(iced::Point::new(phx,10.0)); p.close(); });
-        frame.fill(&tri, Color::from_rgb(0.3,0.72,1.0));
+        // Playhead
+        let phx = self.playhead_beat as f32 * bw;
+        frame.fill_rectangle(
+            iced::Point::new(phx, 0.0),
+            iced::Size::new(2.0, bounds.height),
+            Color::from_rgba(0.3, 0.72, 1.0, 0.9),
+        );
+        let tri = canvas::Path::new(|p| {
+            p.move_to(iced::Point::new(phx - 5.0, 0.0));
+            p.line_to(iced::Point::new(phx + 5.0, 0.0));
+            p.line_to(iced::Point::new(phx, 10.0));
+            p.close();
+        });
+        frame.fill(&tri, Color::from_rgb(0.3, 0.72, 1.0));
+
+        vec![frame.into_geometry()]
+    }
+}
+
+// ── Piano Roll ────────────────────────────────────────────────────────────────
+
+fn piano_roll_el(
+    clip: Option<Clip>,
+    pr: crate::app_state::PianoRollState,
+) -> Element<'static, Message> {
+    let tool_row = {
+        let draw_active   = pr.tool == PianoRollTool::Draw;
+        let select_active = pr.tool == PianoRollTool::Select;
+        let erase_active  = pr.tool == PianoRollTool::Erase;
+        row![
+            button(text("✏ Draw").size(10)).on_press(Message::SetPianoTool(PianoRollTool::Draw))
+                .style(move |_,_| tab_style(draw_active)),
+            button(text("↖ Select").size(10)).on_press(Message::SetPianoTool(PianoRollTool::Select))
+                .style(move |_,_| tab_style(select_active)),
+            button(text("✕ Erase").size(10)).on_press(Message::SetPianoTool(PianoRollTool::Erase))
+                .style(move |_,_| tab_style(erase_active)),
+        ].spacing(4)
+    };
+
+    let snap_options: Vec<(&str, f64)> = vec![
+        ("1/4", 0.25), ("1/8", 0.125), ("1/16", 0.0625), ("1/32", 0.03125),
+    ];
+    let snap_row = snap_options.iter().fold(row![].spacing(4), |r, (label, val)| {
+        let active = (pr.snap_beats - val).abs() < 0.001;
+        let v = *val;
+        r.push(
+            button(text(*label).size(10))
+                .on_press(Message::SetPianoSnap(v))
+                .style(move |_,_| tab_style(active))
+        )
+    });
+
+    let toolbar = container(
+        row![
+            button(text("← Back").size(11)).on_press(Message::ClosePianoRoll)
+                .style(|_,_| btn_style(false, false)),
+            text(clip.as_ref().map(|c| c.name.clone()).unwrap_or_else(|| "No clip".to_string())).size(12)
+                .color(Color::WHITE),
+            tool_row,
+            snap_row,
+        ].spacing(8).padding(6),
+    )
+    .width(Length::Fill)
+    .style(|_| container::Style {
+        background: Some(iced::Background::Color(Color::from_rgb(0.03,0.06,0.1))),
+        border: iced::Border { color: Color::from_rgb(0.06,0.12,0.18), width: 1.0, radius: 0.0.into() },
+        ..Default::default()
+    });
+
+    // Piano keyboard on the left
+    let keys: Vec<Element<Message>> = (0..88u8).rev().map(|k| {
+        let midi = k + 21; // A0 = 21
+        let is_black = matches!(midi % 12, 1 | 3 | 6 | 8 | 10);
+        let h = pr.zoom_y;
+        let bg = if is_black {
+            Color::from_rgb(0.08, 0.08, 0.1)
+        } else {
+            Color::from_rgb(0.85, 0.87, 0.9)
+        };
+        let pitch = midi;
+        container(
+            button(iced::widget::horizontal_space())
+                .on_press(Message::PianoKeyPress(pitch))
+                .style(move |_, _| iced::widget::button::Style {
+                    background: Some(iced::Background::Color(bg)),
+                    border: iced::Border { color: Color::from_rgb(0.1,0.1,0.15), width: 0.5, radius: 0.0.into() },
+                    ..Default::default()
+                })
+                .width(Length::Fixed(40.0))
+                .height(Length::Fixed(h))
+        ).into()
+    }).collect();
+
+    let key_col: Element<Message> = scrollable(column(keys).spacing(0))
+        .height(Length::Fill)
+        .into();
+
+    // Note grid canvas
+    let notes = clip.as_ref().map(|c| c.notes.clone()).unwrap_or_default();
+    let clip_id = clip.as_ref().map(|c| c.id);
+    let note_canvas: Element<Message> = canvas::Canvas::new(PianoRollCanvas {
+        notes,
+        zoom_x: pr.zoom_x,
+        zoom_y: pr.zoom_y,
+        snap_beats: pr.snap_beats,
+        scroll_y: pr.scroll_y,
+        selected_ids: pr.selected_note_ids.clone(),
+    })
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .into();
+
+    let grid_row = row![key_col, note_canvas].height(Length::Fill);
+    column![toolbar, grid_row].height(Length::Fill).into()
+}
+
+struct PianoRollCanvas {
+    notes: Vec<MidiNote>,
+    zoom_x: f32,
+    zoom_y: f32,
+    snap_beats: f64,
+    scroll_y: f32,
+    selected_ids: Vec<u64>,
+}
+
+impl<Message> canvas::Program<Message> for PianoRollCanvas {
+    type State = ();
+    fn draw(
+        &self, _: &(), renderer: &iced::Renderer, _: &Theme,
+        bounds: iced::Rectangle, _: iced::mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+        let bw = self.zoom_x;
+        let kh = self.zoom_y;
+        let total_keys = 128;
+
+        // Background
+        frame.fill_rectangle(iced::Point::ORIGIN, bounds.size(), Color::from_rgb(0.04,0.08,0.13));
+
+        // Horizontal key rows
+        for k in 0..total_keys {
+            let midi = total_keys - 1 - k;
+            let is_black = matches!(midi % 12, 1 | 3 | 6 | 8 | 10);
+            let y = k as f32 * kh;
+            if y > bounds.height { break; }
+            let bg = if is_black {
+                Color::from_rgb(0.035, 0.07, 0.11)
+            } else {
+                Color::from_rgb(0.045, 0.09, 0.14)
+            };
+            frame.fill_rectangle(iced::Point::new(0.0, y), iced::Size::new(bounds.width, kh), bg);
+            // Row separator
+            frame.fill_rectangle(iced::Point::new(0.0, y + kh - 0.5), iced::Size::new(bounds.width, 0.5),
+                Color::from_rgb(0.06,0.1,0.16));
+        }
+
+        // Vertical beat lines
+        let total_beats = 64;
+        for i in 0..total_beats {
+            let x = i as f32 * bw;
+            if x > bounds.width { break; }
+            let is_bar = i % 4 == 0;
+            frame.fill_rectangle(iced::Point::new(x, 0.0), iced::Size::new(1.0, bounds.height),
+                if is_bar { Color::from_rgb(0.1,0.2,0.32) } else { Color::from_rgb(0.06,0.1,0.16) });
+        }
+
+        // Notes
+        for note in &self.notes {
+            let x  = note.beat as f32 * bw;
+            let y  = (total_keys - 1 - note.pitch as usize) as f32 * kh;
+            let nw = (note.duration as f32 * bw).max(4.0);
+            let selected = self.selected_ids.contains(&note.id);
+
+            let fill_color = if selected {
+                Color::from_rgb(0.0, 0.9, 0.63)
+            } else {
+                Color::from_rgb(0.3, 0.72, 1.0)
+            };
+
+            frame.fill_rectangle(
+                iced::Point::new(x + 1.0, y + 1.0),
+                iced::Size::new(nw - 2.0, kh - 2.0),
+                fill_color,
+            );
+            // Note border
+            let stroke = canvas::Stroke::default()
+                .with_color(Color::from_rgba(1.0, 1.0, 1.0, 0.3))
+                .with_width(0.5);
+            frame.stroke(
+                &canvas::Path::rectangle(iced::Point::new(x + 1.0, y + 1.0), iced::Size::new(nw - 2.0, kh - 2.0)),
+                stroke,
+            );
+        }
 
         vec![frame.into_geometry()]
     }
@@ -245,45 +895,98 @@ impl<Message> canvas::Program<Message> for TimelineCanvas {
 
 // ── Mixer view ────────────────────────────────────────────────────────────────
 
-fn mixer_view_el(channels: Vec<crate::app_state::MixerChannel>) -> Element<'static, Message> {
-    let strips: Vec<Element<Message>> = channels.iter().map(|ch| {
-        let c = color_from_u32(ch.color);
-        let name = ch.name.clone();
-        let vol = (ch.volume * 100.0) as u32;
+fn mixer_view_el(tracks: Vec<crate::app_state::Track>) -> Element<'static, Message> {
+    let strips: Vec<Element<Message>> = tracks.iter().enumerate().map(|(i, t)| {
+        let c     = color_from_u32(t.color);
+        let name  = t.name.clone();
+        let vol   = t.volume;
+        let muted = t.muted;
+        let solo  = t.solo;
+        let vol_pct = (vol * 100.0) as u32;
+
         container(
             column![
-                text(name).size(9).color(c),
-                container(iced::widget::vertical_space()).width(Length::Fixed(48.0)).height(Length::Fixed(60.0))
-                    .style(|_| container::Style { background: Some(iced::Background::Color(Color::from_rgb(0.04,0.08,0.13))), border: iced::Border { color: Color::from_rgb(0.06,0.12,0.18), width: 1.0, radius: 3.0.into() }, ..Default::default() }),
-                container(iced::widget::vertical_space()).width(Length::Fixed(20.0)).height(Length::Fixed(100.0))
-                    .style(|_| container::Style { background: Some(iced::Background::Color(Color::from_rgb(0.04,0.08,0.13))), border: iced::Border { color: Color::from_rgb(0.06,0.12,0.18), width: 1.0, radius: 3.0.into() }, ..Default::default() }),
-                text(format!("{}%", vol)).size(8).color(Color::from_rgb(0.28,0.4,0.52)),
-            ].spacing(4).align_x(Alignment::Center).padding(6),
+                // Color bar at top
+                container(iced::widget::horizontal_space())
+                    .width(Length::Fill).height(Length::Fixed(4.0))
+                    .style(move |_| container::Style {
+                        background: Some(iced::Background::Color(c)),
+                        ..Default::default()
+                    }),
+                // Track name
+                text(name).size(10).color(c),
+                // VU meter placeholder
+                container(iced::widget::vertical_space())
+                    .width(Length::Fixed(48.0)).height(Length::Fixed(80.0))
+                    .style(|_| container::Style {
+                        background: Some(iced::Background::Color(Color::from_rgb(0.04,0.08,0.13))),
+                        border: iced::Border { color: Color::from_rgb(0.06,0.12,0.18), width: 1.0, radius: 3.0.into() },
+                        ..Default::default()
+                    }),
+                // Fader
+                container(iced::widget::vertical_space())
+                    .width(Length::Fixed(20.0)).height(Length::Fixed(120.0))
+                    .style(move |_| container::Style {
+                        background: Some(iced::Background::Color(Color::from_rgb(0.04,0.08,0.13))),
+                        border: iced::Border { color: Color::from_rgba(c.r, c.g, c.b, 0.4), width: 1.0, radius: 3.0.into() },
+                        ..Default::default()
+                    }),
+                text(format!("{}%", vol_pct)).size(9).color(Color::from_rgb(0.28,0.4,0.52)),
+                // Mute / Solo
+                row![
+                    button(text("M").size(9))
+                        .on_press(Message::SetTrackMute { track_idx: i })
+                        .style(move |_,_| btn_style(muted, true)),
+                    button(text("S").size(9))
+                        .on_press(Message::SetTrackSolo { track_idx: i })
+                        .style(move |_,_| btn_style(solo, false)),
+                ].spacing(3),
+            ]
+            .spacing(4)
+            .align_x(Alignment::Center)
+            .padding(6),
         )
-        .width(Length::Fixed(64.0))
-        .style(|_| container::Style { background: Some(iced::Background::Color(Color::from_rgb(0.03,0.06,0.1))), border: iced::Border { color: Color::from_rgb(0.06,0.12,0.18), width: 1.0, radius: 6.0.into() }, ..Default::default() })
+        .width(Length::Fixed(72.0))
+        .style(|_| container::Style {
+            background: Some(iced::Background::Color(Color::from_rgb(0.03,0.06,0.1))),
+            border: iced::Border { color: Color::from_rgb(0.06,0.12,0.18), width: 1.0, radius: 6.0.into() },
+            ..Default::default()
+        })
         .into()
     }).collect();
 
-    container(scrollable(row(strips).spacing(4).padding(12)).direction(scrollable::Direction::Horizontal(scrollable::Scrollbar::default())))
-        .width(Length::Fill).height(Length::Fill)
-        .style(|_| container::Style { background: Some(iced::Background::Color(Color::from_rgb(0.02,0.05,0.08))), ..Default::default() })
-        .into()
+    container(
+        scrollable(row(strips).spacing(6).padding(12))
+            .direction(scrollable::Direction::Horizontal(scrollable::Scrollbar::default()))
+    )
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .style(|_| container::Style {
+        background: Some(iced::Background::Color(Color::from_rgb(0.02,0.05,0.08))),
+        ..Default::default()
+    })
+    .into()
 }
 
 fn placeholder_view(msg: &str) -> Element<'static, Message> {
     let msg = msg.to_string();
     container(text(msg).size(14).color(Color::from_rgb(0.28,0.4,0.52)))
-        .width(Length::Fill).height(Length::Fill).center_x(Length::Fill).center_y(Length::Fill)
-        .style(|_| container::Style { background: Some(iced::Background::Color(Color::from_rgb(0.02,0.05,0.08))), ..Default::default() })
+        .width(Length::Fill).height(Length::Fill)
+        .center_x(Length::Fill).center_y(Length::Fill)
+        .style(|_| container::Style {
+            background: Some(iced::Background::Color(Color::from_rgb(0.02,0.05,0.08))),
+            ..Default::default()
+        })
         .into()
 }
+
+// ── Style helpers ─────────────────────────────────────────────────────────────
 
 fn tab_style(active: bool) -> iced::widget::button::Style {
     if active {
         iced::widget::button::Style {
-            background: Some(iced::Background::Color(Color::from_rgba(0.3,0.72,1.0,0.1))),
-            border: iced::Border { color: Color::from_rgba(0.3,0.72,1.0,0.25), width: 1.0, radius: 5.0.into() },
+            background: Some(iced::Background::Color(Color::from_rgba(0.3,0.72,1.0,0.12))),
+            border: iced::Border { color: Color::from_rgba(0.3,0.72,1.0,0.3), width: 1.0, radius: 5.0.into() },
             text_color: Color::from_rgb(0.3,0.72,1.0),
             ..Default::default()
         }
@@ -305,9 +1008,19 @@ fn btn_style(active: bool, danger: bool) -> iced::widget::button::Style {
     } else {
         (Color::TRANSPARENT, Color::TRANSPARENT, Color::from_rgb(0.28,0.4,0.52))
     };
-    iced::widget::button::Style { background: Some(iced::Background::Color(bg)), border: iced::Border { color: border, width: 1.0, radius: 5.0.into() }, text_color: tc, ..Default::default() }
+    iced::widget::button::Style {
+        background: Some(iced::Background::Color(bg)),
+        border: iced::Border { color: border, width: 1.0, radius: 5.0.into() },
+        text_color: tc,
+        ..Default::default()
+    }
 }
 
 fn color_from_u32(c: u32) -> Color {
-    Color::from_rgba(((c>>24)&0xff) as f32/255.0, ((c>>16)&0xff) as f32/255.0, ((c>>8)&0xff) as f32/255.0, (c&0xff) as f32/255.0)
+    Color::from_rgba(
+        ((c >> 24) & 0xff) as f32 / 255.0,
+        ((c >> 16) & 0xff) as f32 / 255.0,
+        ((c >>  8) & 0xff) as f32 / 255.0,
+        ( c        & 0xff) as f32 / 255.0,
+    )
 }

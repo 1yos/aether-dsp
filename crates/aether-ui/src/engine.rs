@@ -1,9 +1,10 @@
-//! Engine integration — starts the CPAL audio stream in the same process.
+//! Engine integration — starts the CPAL audio stream and builds the DSP graph.
 
 use std::sync::{Arc, Mutex};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use aether_core::{scheduler::Scheduler, BUFFER_SIZE};
 use crate::app_state::AppState;
+use crate::instrument::MasterEngine;
 
 pub fn start(state: AppState) {
     std::thread::spawn(move || {
@@ -14,21 +15,30 @@ pub fn start(state: AppState) {
 }
 
 fn run_audio(state: AppState) -> Result<(), Box<dyn std::error::Error>> {
-    let host = cpal::default_host();
-    let device = host.default_output_device()
-        .ok_or("No audio output device")?;
+    let host   = cpal::default_host();
+    let device = host.default_output_device().ok_or("No audio output device")?;
     let config = device.default_output_config()?;
     let sample_rate = config.sample_rate().0 as f32;
 
+    // Build the DSP graph with instruments for all current tracks
     {
-        let mut s = state.lock().unwrap();
-        *s.scheduler.lock().unwrap() = Scheduler::new(sample_rate);
-        s.engine_status = crate::app_state::EngineStatus::Running;
+        let new_sched = Scheduler::new(sample_rate);
+        *state.lock().unwrap().scheduler.lock().unwrap() = new_sched;
+    }
+
+    let track_count = state.lock().unwrap().tracks.len();
+
+    {
+        let mut s_state = state.lock().unwrap();
+        let mut sched = s_state.scheduler.lock().unwrap();
+        let master = MasterEngine::build(&mut sched, track_count);
+        drop(sched);
+        s_state.master_engine = master;
+        s_state.engine_status = crate::app_state::EngineStatus::Running;
     }
 
     let scheduler: Arc<Mutex<Scheduler>> = {
-        let s = state.lock().unwrap();
-        Arc::clone(&s.scheduler)
+        state.lock().unwrap().scheduler.clone()
     };
 
     let channels = config.channels() as usize;
@@ -51,8 +61,11 @@ fn run_audio(state: AppState) -> Result<(), Box<dyn std::error::Error>> {
                     }
                     Err(_) => {
                         contention_count += 1;
-                        let fade = if contention_count <= 8 { 1.0 } else { (1.0 - ((contention_count - 8) as f32 / 8.0)).max(0.0) };
-                        for (i, s) in fallback_buf[..chunk * 2].iter().enumerate() { f32_buf[i] = s * fade; }
+                        let fade = if contention_count <= 8 { 1.0 }
+                                   else { (1.0 - ((contention_count - 8) as f32 / 8.0)).max(0.0) };
+                        for (i, s) in fallback_buf[..chunk * 2].iter().enumerate() {
+                            f32_buf[i] = s * fade;
+                        }
                     }
                 }
                 for i in 0..chunk {
@@ -60,7 +73,9 @@ fn run_audio(state: AppState) -> Result<(), Box<dyn std::error::Error>> {
                     let ch1 = f32_buf[i * 2 + 1];
                     for ch in 0..channels {
                         let idx = (offset + i) * channels + ch;
-                        if idx < data.len() { data[idx] = if ch == 0 { ch0 } else { ch1 }; }
+                        if idx < data.len() {
+                            data[idx] = if ch == 0 { ch0 } else { ch1 };
+                        }
                     }
                 }
                 offset += chunk;
