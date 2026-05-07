@@ -295,9 +295,7 @@ Every push runs on **Windows, macOS, and Linux**:
 - `cargo check --workspace`
 - `cargo test --lib` (core crates)
 - `cargo clippy -- -D warnings`
-- Benchmark regression check
-- TypeScript check + Vite build
-- Tauri standalone app build (Linux, produces `.deb`, `.rpm`, `.AppImage`)
+- Benchmark regression check (Linux, main branch only)
 
 ---
 

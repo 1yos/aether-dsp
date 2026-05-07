@@ -16,7 +16,7 @@ thiserror = { workspace = true }
 anyhow = "1"
 # reqwest and tokio are OPTIONAL — only compiled when the "download" feature is enabled.
 # The workspace build (cargo check --workspace) does NOT enable this feature.
-# The Tauri app enables it explicitly: aether-samples = { features = ["download"] }
+# Enable explicitly if needed: aether-samples = { features = ["download"] }
 reqwest = { version = "0.12", features = ["blocking", "json", "stream"], default-features = false, optional = true }
 tokio = { version = "1", features = ["full"], optional = true }
 sha2 = "0.10"
@@ -29,7 +29,7 @@ dirs = "5"
 
 [features]
 # Default is empty — no network deps in the workspace build.
-# Enable "download" explicitly in the Tauri app Cargo.toml.
+# Enable "download" explicitly if needed.
 default = []
 download = ["dep:reqwest", "dep:tokio"]
 

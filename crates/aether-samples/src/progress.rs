@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Real-time progress for a pack download.
-/// Sent to the UI via Tauri events.
+/// Sent to the UI via events or callbacks.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DownloadProgress {
     /// Pack ID being downloaded.
