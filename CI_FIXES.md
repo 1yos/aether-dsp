@@ -92,15 +92,24 @@ Caused by: path segment contains separator `:`
 This occurs when `LD_LIBRARY_PATH` is empty or contains malformed entries (extra colons).
 
 **Solution:**
-Added environment variable initialization before Rust installation:
+Added proper conditional logic before Rust installation:
 
 ```yaml
 - name: Set LD_LIBRARY_PATH safely
   if: runner.os == 'Linux'
-  run: echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-/usr/local/lib}" >> $GITHUB_ENV
+  run: |
+    if [ -z "${LD_LIBRARY_PATH}" ]; then
+      echo "LD_LIBRARY_PATH=/usr/local/lib" >> $GITHUB_ENV
+    else
+      echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib" >> $GITHUB_ENV
+    fi
 ```
 
-This ensures `LD_LIBRARY_PATH` is never empty and has a valid default value.
+This ensures:
+
+- If empty: Set to `/usr/local/lib`
+- If has value: Append `:/usr/local/lib`
+- No empty segments or malformed paths
 
 ---
 
@@ -116,13 +125,15 @@ Caused by: path segment contains separator `:`
 Similar to the Linux issue, but specific to macOS dynamic linker environment variables.
 
 **Solution:**
-Added environment variable clearing before Rust installation:
+Added environment variable clearing as the **first step** after checkout:
 
 ```yaml
 - name: Workaround DYLD_FALLBACK_LIBRARY_PATH issue
   if: runner.os == 'macOS'
   run: echo "DYLD_FALLBACK_LIBRARY_PATH=" >> $GITHUB_ENV
 ```
+
+**Critical**: This must be the first step after checkout, before any Rust commands run.
 
 This clears any inherited malformed values that could confuse Rust tooling.
 
