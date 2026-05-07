@@ -5,15 +5,16 @@
 [target.x86_64-pc-windows-msvc]
 rustflags = ["-C", "target-cpu=native"]
 
-# Windows GNU (MinGW fallback - with linker workarounds)
-[target.x86_64-pc-windows-gnu]
-linker = "C:\\msys64\\mingw64\\bin\\gcc.exe"
-ar = "C:\\msys64\\mingw64\\bin\\ar.exe"
-rustflags = [
-    "-C", "target-cpu=native",
-    "-C", "link-arg=-Wl,--allow-multiple-definition",
-    "-C", "link-arg=-Wl,--gc-sections",
-]
+# Windows GNU (MinGW fallback - DISABLED for Iced UI compatibility)
+# The Iced UI requires MSVC toolchain due to linker command-line length limitations
+# [target.x86_64-pc-windows-gnu]
+# linker = "C:\\msys64\\mingw64\\bin\\gcc.exe"
+# ar = "C:\\msys64\\mingw64\\bin\\ar.exe"
+# rustflags = [
+#     "-C", "target-cpu=native",
+#     "-C", "link-arg=-Wl,--allow-multiple-definition",
+#     "-C", "link-arg=-Wl,--gc-sections",
+# ]
 
 # macOS (Apple Silicon)
 [target.aarch64-apple-darwin]
@@ -27,13 +28,13 @@ rustflags = ["-C", "target-cpu=native"]
 [target.x86_64-unknown-linux-gnu]
 rustflags = ["-C", "target-cpu=native"]
 
-[build]
-# Put the build artifacts in a path with no spaces
-# Windows: Use C:\aether-target to avoid spaces in "D:\Audio kernel\"
-# Unix: Will use default target/ directory
-target-dir = "C:\\aether-target"
+# [build]
+# Build artifacts location
+# Windows MSVC: Use C:\aether-target to avoid spaces in "D:\Audio kernel\"
+# Linux/WSL: Use default target/ directory (this section is commented out)
+# target-dir = "C:\\aether-target"
 
-# Note: On Unix systems, you may want to override this with:
-# export CARGO_TARGET_DIR=./target
-# or remove this section entirely for Unix builds
+# Note: The target-dir is commented out so it works on both Windows and Linux.
+# On Windows with MSVC, you can uncomment it if needed.
+# On Linux/WSL, it will use the default ./target directory.
 

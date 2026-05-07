@@ -1,5 +1,6 @@
 # Rust build artifacts
 target/
+*aether-target/
 Cargo.lock
 
 # Proptest regression files (auto-generated, not needed in VCS)
@@ -26,3 +27,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Temporary build/debug files
+clippy_*.txt
+*.tmp
