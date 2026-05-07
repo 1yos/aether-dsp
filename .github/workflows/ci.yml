@@ -27,15 +27,20 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # Fix DYLD_FALLBACK_LIBRARY_PATH issue on macOS
+      # Fix DYLD_FALLBACK_LIBRARY_PATH issue on macOS - MUST be first
       - name: Workaround DYLD_FALLBACK_LIBRARY_PATH issue
         if: runner.os == 'macOS'
         run: echo "DYLD_FALLBACK_LIBRARY_PATH=" >> $GITHUB_ENV
 
-      # Fix LD_LIBRARY_PATH issue on Linux
+      # Fix LD_LIBRARY_PATH issue on Linux - MUST be before Rust install
       - name: Set LD_LIBRARY_PATH safely
         if: runner.os == 'Linux'
-        run: echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-/usr/local/lib}" >> $GITHUB_ENV
+        run: |
+          if [ -z "${LD_LIBRARY_PATH}" ]; then
+            echo "LD_LIBRARY_PATH=/usr/local/lib" >> $GITHUB_ENV
+          else
+            echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib" >> $GITHUB_ENV
+          fi
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable

@@ -39,14 +39,19 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # Fix environment variables
+      # Fix environment variables - MUST be first, before any Rust commands
       - name: Workaround DYLD_FALLBACK_LIBRARY_PATH issue
         if: runner.os == 'macOS'
         run: echo "DYLD_FALLBACK_LIBRARY_PATH=" >> $GITHUB_ENV
 
       - name: Set LD_LIBRARY_PATH safely
         if: runner.os == 'Linux'
-        run: echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-/usr/local/lib}" >> $GITHUB_ENV
+        run: |
+          if [ -z "${LD_LIBRARY_PATH}" ]; then
+            echo "LD_LIBRARY_PATH=/usr/local/lib" >> $GITHUB_ENV
+          else
+            echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib" >> $GITHUB_ENV
+          fi
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
