@@ -46,25 +46,78 @@ pub struct InstrumentPreset {
 }
 
 impl InstrumentPreset {
+    /// Kick drum - Uses sine wave with very low filter for sub-bass punch.
+    /// NOTE: For realistic kick, this needs pitch envelope (150Hz → 50Hz over 80ms).
+    /// Current implementation uses fixed pitch, so it sounds more like a bass tone.
+    /// TODO: Add pitch envelope support to oscillator for proper kick synthesis.
     pub fn kick() -> Self {
-        Self { waveform: 0.0, attack: 0.001, decay: 0.18, sustain: 0.0, release: 0.05,
-               cutoff: 200.0, resonance: 0.7, gain: 0.9 }
+        Self { 
+            waveform: 0.0,      // Sine wave for clean sub-bass
+            attack: 0.001,      // Instant attack (1ms)
+            decay: 0.15,        // Short decay (150ms) 
+            sustain: 0.0,       // No sustain (one-shot)
+            release: 0.05,      // Quick release (50ms)
+            cutoff: 120.0,      // Very low cutoff for sub-bass
+            resonance: 1.5,     // Boost sub frequencies
+            gain: 1.0           // Full gain for punch
+        }
     }
+    
+    /// Bass - Sawtooth wave with moderate filter, classic analog bass sound.
     pub fn bass() -> Self {
-        Self { waveform: 1.0, attack: 0.005, decay: 0.3, sustain: 0.6, release: 0.15,
-               cutoff: 800.0, resonance: 1.2, gain: 0.75 }
+        Self { 
+            waveform: 1.0,      // Sawtooth for rich harmonics
+            attack: 0.005,      // Quick attack (5ms)
+            decay: 0.3,         // Medium decay (300ms)
+            sustain: 0.6,       // 60% sustain level
+            release: 0.15,      // Short release (150ms)
+            cutoff: 800.0,      // Low-mid filter for warmth
+            resonance: 1.2,     // Slight resonance for character
+            gain: 0.75          // Moderate gain
+        }
     }
+    
+    /// Lead - Square wave with bright filter, cutting through the mix.
     pub fn lead() -> Self {
-        Self { waveform: 2.0, attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.2,
-               cutoff: 3000.0, resonance: 1.5, gain: 0.65 }
+        Self { 
+            waveform: 2.0,      // Square wave for hollow, bright tone
+            attack: 0.01,       // Quick attack (10ms)
+            decay: 0.08,        // Short decay (80ms)
+            sustain: 0.75,      // High sustain (75%)
+            release: 0.2,       // Medium release (200ms)
+            cutoff: 4000.0,     // Bright filter for presence
+            resonance: 2.0,     // Strong resonance for character
+            gain: 0.7           // Moderate gain
+        }
     }
+    
+    /// Pad - Triangle wave with slow attack, smooth and atmospheric.
+    /// NOTE: Sounds thin without unison/detuning. Consider adding chorus effect.
     pub fn pad() -> Self {
-        Self { waveform: 3.0, attack: 0.3, decay: 0.5, sustain: 0.8, release: 0.8,
-               cutoff: 2000.0, resonance: 0.8, gain: 0.55 }
+        Self { 
+            waveform: 3.0,      // Triangle for smooth, mellow tone
+            attack: 0.4,        // Slow attack for pad swell (400ms)
+            decay: 0.6,         // Long decay (600ms)
+            sustain: 0.85,      // High sustain (85%)
+            release: 1.2,       // Long release for tail (1.2s)
+            cutoff: 2500.0,     // Mid-bright filter
+            resonance: 1.2,     // Moderate resonance for warmth
+            gain: 0.6           // Lower gain (pads sit in background)
+        }
     }
+    
+    /// Default instrument - Balanced sawtooth synth, good starting point.
     pub fn default_instrument() -> Self {
-        Self { waveform: 1.0, attack: 0.01, decay: 0.2, sustain: 0.5, release: 0.3,
-               cutoff: 2000.0, resonance: 1.0, gain: 0.7 }
+        Self { 
+            waveform: 1.0,      // Sawtooth
+            attack: 0.01,       // Quick attack
+            decay: 0.2,         // Medium decay
+            sustain: 0.5,       // 50% sustain
+            release: 0.3,       // Medium release
+            cutoff: 2000.0,     // Mid-range filter
+            resonance: 1.0,     // Neutral resonance
+            gain: 0.7           // Moderate gain
+        }
     }
 }
 
