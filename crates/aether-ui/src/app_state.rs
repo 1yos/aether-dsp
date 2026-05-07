@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use aether_core::scheduler::Scheduler;
 use crate::instrument::{MasterEngine, MidiEvent, InstrumentPreset};
+use serde::{Serialize, Deserialize};
 
 // ── Transport ─────────────────────────────────────────────────────────────────
 
@@ -295,6 +296,98 @@ pub struct TapTempo {
     pub taps: Vec<Instant>,
 }
 
+// ── Project File (Serializable) ───────────────────────────────────────────────
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ProjectFile {
+    pub version: String,
+    pub bpm: f32,
+    pub time_signature: (u8, u8),
+    pub loop_start: f64,
+    pub loop_end: f64,
+    pub loop_enabled: bool,
+    pub tracks: Vec<TrackData>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct TrackData {
+    pub id: u64,
+    pub name: String,
+    pub track_type: String,  // "Instrument", "Audio", "Bus", "Master"
+    pub color: u32,
+    pub volume: f32,
+    pub pan: f32,
+    pub muted: bool,
+    pub solo: bool,
+    pub clips: Vec<ClipData>,
+    pub instrument: InstrumentPresetData,
+    pub effects: Vec<EffectData>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ClipData {
+    pub id: u64,
+    pub name: String,
+    pub start_beat: f64,
+    pub length_beats: f64,
+    pub notes: Vec<NoteData>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct NoteData {
+    pub pitch: u8,
+    pub beat: f64,
+    pub duration: f64,
+    pub velocity: u8,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct InstrumentPresetData {
+    pub waveform: f32,
+    pub attack: f32,
+    pub decay: f32,
+    pub sustain: f32,
+    pub release: f32,
+    pub cutoff: f32,
+    pub resonance: f32,
+    pub gain: f32,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct EffectData {
+    pub id: u64,
+    pub effect_type: String,
+    pub enabled: bool,
+    pub params: EffectParamsData,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct EffectParamsData {
+    // EQ
+    pub eq_low_gain: f32,
+    pub eq_mid_gain: f32,
+    pub eq_high_gain: f32,
+    pub eq_mid_freq: f32,
+    // Compressor
+    pub comp_threshold: f32,
+    pub comp_ratio: f32,
+    pub comp_attack: f32,
+    pub comp_release: f32,
+    pub comp_makeup: f32,
+    // Reverb
+    pub reverb_room: f32,
+    pub reverb_damp: f32,
+    pub reverb_wet: f32,
+    // Delay
+    pub delay_time: f32,
+    pub delay_feedback: f32,
+    pub delay_wet: f32,
+    // Filter
+    pub filter_cutoff: f32,
+    pub filter_resonance: f32,
+    pub filter_mode: u8,
+}
+
 impl TapTempo {
     pub fn new() -> Self { Self { taps: Vec::new() } }
 
@@ -358,6 +451,8 @@ pub struct AppStateInner {
     pub properties_height: f32,
     // Which track's instrument panel is open
     pub instrument_panel_track: Option<u64>,
+    // Metronome
+    pub metronome_enabled: bool,
 
     next_id: u64,
 }
@@ -636,6 +731,316 @@ impl AppStateInner {
 
         self.flush_midi();
     }
+
+    // ── Save/Load Project ─────────────────────────────────────────────────────
+
+    /// Export project to WAV file (offline rendering)
+    pub fn export_wav(&self, path: &str, duration_beats: f64) -> Result<(), Box<dyn std::error::Error>> {
+        use hound::{WavWriter, WavSpec, SampleFormat};
+        
+        const SAMPLE_RATE: u32 = 48000;
+        const BUFFER_SIZE: usize = 64;
+        
+        // Calculate duration
+        let duration_secs = (duration_beats / self.transport.bpm as f64) * 60.0;
+        let total_samples = (duration_secs * SAMPLE_RATE as f64) as usize;
+        let num_buffers = (total_samples + BUFFER_SIZE - 1) / BUFFER_SIZE;
+        
+        // Setup WAV writer
+        let spec = WavSpec {
+            channels: 2,
+            sample_rate: SAMPLE_RATE,
+            bits_per_sample: 16,
+            sample_format: SampleFormat::Int,
+        };
+        let mut writer = WavWriter::create(path, spec)?;
+        
+        // Offline render loop
+        let sched_arc = self.scheduler.clone();
+        if let Ok(mut sched) = sched_arc.try_lock() {
+            let mut output_buf = vec![0.0f32; BUFFER_SIZE];
+            
+            for _ in 0..num_buffers {
+                // Process one block
+                sched.process_block_simple(&mut output_buf);
+                
+                // Write samples (mono → stereo)
+                for i in 0..BUFFER_SIZE {
+                    let sample = output_buf[i].clamp(-1.0, 1.0);
+                    let amplitude = (sample * i16::MAX as f32) as i16;
+                    writer.write_sample(amplitude)?;  // L
+                    writer.write_sample(amplitude)?;  // R
+                }
+            }
+        }
+        
+        writer.finalize()?;
+        Ok(())
+    }
+
+    /// Convert current state to serializable ProjectFile
+    pub fn to_project_file(&self) -> ProjectFile {
+        ProjectFile {
+            version: "1.0".to_string(),
+            bpm: self.transport.bpm,
+            time_signature: (self.transport.time_sig_num, self.transport.time_sig_den),
+            loop_start: self.transport.loop_start,
+            loop_end: self.transport.loop_end,
+            loop_enabled: self.transport.loop_enabled,
+            tracks: self.tracks.iter().map(|t| TrackData {
+                id: t.id,
+                name: t.name.clone(),
+                track_type: match t.track_type {
+                    TrackType::Instrument => "Instrument".to_string(),
+                    TrackType::Audio => "Audio".to_string(),
+                    TrackType::Bus => "Bus".to_string(),
+                    TrackType::Master => "Master".to_string(),
+                },
+                color: t.color,
+                volume: t.volume,
+                pan: t.pan,
+                muted: t.muted,
+                solo: t.solo,
+                clips: t.clips.iter().map(|c| ClipData {
+                    id: c.id,
+                    name: c.name.clone(),
+                    start_beat: c.start_beat,
+                    length_beats: c.length_beats,
+                    notes: c.notes.iter().map(|n| NoteData {
+                        pitch: n.pitch,
+                        beat: n.beat,
+                        duration: n.duration,
+                        velocity: n.velocity,
+                    }).collect(),
+                }).collect(),
+                instrument: InstrumentPresetData {
+                    waveform: t.instrument.waveform,
+                    attack: t.instrument.attack,
+                    decay: t.instrument.decay,
+                    sustain: t.instrument.sustain,
+                    release: t.instrument.release,
+                    cutoff: t.instrument.cutoff,
+                    resonance: t.instrument.resonance,
+                    gain: t.instrument.gain,
+                },
+                effects: t.effects.iter().map(|e| EffectData {
+                    id: e.id,
+                    effect_type: e.effect_type.label().to_string(),
+                    enabled: e.enabled,
+                    params: EffectParamsData {
+                        eq_low_gain: e.params.eq_low_gain,
+                        eq_mid_gain: e.params.eq_mid_gain,
+                        eq_high_gain: e.params.eq_high_gain,
+                        eq_mid_freq: e.params.eq_mid_freq,
+                        comp_threshold: e.params.comp_threshold,
+                        comp_ratio: e.params.comp_ratio,
+                        comp_attack: e.params.comp_attack,
+                        comp_release: e.params.comp_release,
+                        comp_makeup: e.params.comp_makeup,
+                        reverb_room: e.params.reverb_room,
+                        reverb_damp: e.params.reverb_damp,
+                        reverb_wet: e.params.reverb_wet,
+                        delay_time: e.params.delay_time,
+                        delay_feedback: e.params.delay_feedback,
+                        delay_wet: e.params.delay_wet,
+                        filter_cutoff: e.params.filter_cutoff,
+                        filter_resonance: e.params.filter_resonance,
+                        filter_mode: e.params.filter_mode,
+                    },
+                }).collect(),
+            }).collect(),
+        }
+    }
+
+    /// Save project to file (atomic write)
+    pub fn save_to_file(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let project = self.to_project_file();
+        let json = serde_json::to_string_pretty(&project)?;
+        
+        // Atomic write: temp file + rename
+        let temp_path = format!("{}.tmp", path);
+        std::fs::write(&temp_path, json)?;
+        std::fs::rename(&temp_path, path)?;
+        
+        Ok(())
+    }
+
+    /// Load project from file and restore state
+    pub fn load_from_file(&mut self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let json = std::fs::read_to_string(path)?;
+        let project: ProjectFile = serde_json::from_str(&json)?;
+        
+        // Validate version
+        if project.version != "1.0" {
+            return Err(format!("Unsupported project version: {}", project.version).into());
+        }
+        
+        // Restore transport
+        self.transport.bpm = project.bpm;
+        self.transport.time_sig_num = project.time_signature.0;
+        self.transport.time_sig_den = project.time_signature.1;
+        self.transport.loop_start = project.loop_start;
+        self.transport.loop_end = project.loop_end;
+        self.transport.loop_enabled = project.loop_enabled;
+        self.transport.playhead_beat = 0.0;
+        self.transport.is_playing = false;
+        
+        // Clear current state
+        self.tracks.clear();
+        self.channels.clear();
+        self.selected_track_id = None;
+        self.selected_clip_id = None;
+        self.piano_roll.open_clip_id = None;
+        self.piano_roll.open_track_id = None;
+        
+        // Restore tracks
+        for td in project.tracks {
+            let track_type = match td.track_type.as_str() {
+                "Instrument" => TrackType::Instrument,
+                "Audio" => TrackType::Audio,
+                "Bus" => TrackType::Bus,
+                "Master" => TrackType::Master,
+                _ => TrackType::Instrument,
+            };
+            
+            let mut clips = Vec::new();
+            for cd in td.clips {
+                let mut notes = Vec::new();
+                for nd in cd.notes {
+                    notes.push(MidiNote {
+                        id: self.next_id(),
+                        pitch: nd.pitch,
+                        beat: nd.beat,
+                        duration: nd.duration,
+                        velocity: nd.velocity,
+                    });
+                }
+                
+                clips.push(Clip {
+                    id: cd.id,
+                    track_id: td.id,
+                    name: cd.name,
+                    start_beat: cd.start_beat,
+                    length_beats: cd.length_beats,
+                    color: td.color,
+                    notes,
+                });
+            }
+            
+            let effects: Vec<TrackEffect> = td.effects.iter().map(|ed| {
+                let effect_type = match ed.effect_type.as_str() {
+                    "EQ" => EffectType::Eq,
+                    "Comp" => EffectType::Compressor,
+                    "Reverb" => EffectType::Reverb,
+                    "Delay" => EffectType::Delay,
+                    "Filter" => EffectType::Filter,
+                    _ => EffectType::Compressor,
+                };
+                
+                TrackEffect {
+                    id: ed.id,
+                    effect_type,
+                    enabled: ed.enabled,
+                    params: EffectParams {
+                        eq_low_gain: ed.params.eq_low_gain,
+                        eq_mid_gain: ed.params.eq_mid_gain,
+                        eq_high_gain: ed.params.eq_high_gain,
+                        eq_mid_freq: ed.params.eq_mid_freq,
+                        comp_threshold: ed.params.comp_threshold,
+                        comp_ratio: ed.params.comp_ratio,
+                        comp_attack: ed.params.comp_attack,
+                        comp_release: ed.params.comp_release,
+                        comp_makeup: ed.params.comp_makeup,
+                        reverb_room: ed.params.reverb_room,
+                        reverb_damp: ed.params.reverb_damp,
+                        reverb_wet: ed.params.reverb_wet,
+                        delay_time: ed.params.delay_time,
+                        delay_feedback: ed.params.delay_feedback,
+                        delay_wet: ed.params.delay_wet,
+                        filter_cutoff: ed.params.filter_cutoff,
+                        filter_resonance: ed.params.filter_resonance,
+                        filter_mode: ed.params.filter_mode,
+                    },
+                }
+            }).collect();
+            
+            self.tracks.push(Track {
+                id: td.id,
+                name: td.name.clone(),
+                track_type,
+                color: td.color,
+                volume: td.volume,
+                pan: td.pan,
+                muted: td.muted,
+                solo: td.solo,
+                armed: false,
+                height: 72.0,
+                clips,
+                effects,
+                instrument: InstrumentPreset {
+                    waveform: td.instrument.waveform,
+                    attack: td.instrument.attack,
+                    decay: td.instrument.decay,
+                    sustain: td.instrument.sustain,
+                    release: td.instrument.release,
+                    cutoff: td.instrument.cutoff,
+                    resonance: td.instrument.resonance,
+                    gain: td.instrument.gain,
+                },
+            });
+            
+            // Restore mixer channel
+            let channel_id = self.next_id();
+            self.channels.push(MixerChannel {
+                id: channel_id,
+                name: td.name,
+                color: td.color,
+                volume: td.volume,
+                pan: td.pan,
+                muted: td.muted,
+                solo: td.solo,
+            });
+        }
+        
+        // Rebuild audio graph
+        self.rebuild_audio_graph();
+        
+        Ok(())
+    }
+
+    /// Rebuild audio graph after loading project
+    fn rebuild_audio_graph(&mut self) {
+        use crate::instrument::{MasterEngine, EffectType as InstrumentEffectType};
+        
+        let sched_arc = self.scheduler.clone();
+        if let Ok(mut sched) = sched_arc.try_lock() {
+            // Rebuild master engine with loaded track count
+            self.master_engine = MasterEngine::build(&mut sched, self.tracks.len());
+            
+            // Restore instrument presets and effects for each track
+            for (i, track) in self.tracks.iter().enumerate() {
+                if let Some(ref mut engine) = self.master_engine {
+                    if let Some(Some(ref mut te)) = engine.tracks.get_mut(i) {
+                        // Restore instrument preset
+                        te.update_preset(&mut sched, track.instrument.clone());
+                        
+                        // Restore effects chain
+                        for effect in &track.effects {
+                            // Convert app_state::EffectType to instrument::EffectType
+                            let instrument_effect_type = match effect.effect_type {
+                                EffectType::Eq => InstrumentEffectType::Eq,
+                                EffectType::Compressor => InstrumentEffectType::Compressor,
+                                EffectType::Reverb => InstrumentEffectType::Reverb,
+                                EffectType::Delay => InstrumentEffectType::Delay,
+                                EffectType::Filter => InstrumentEffectType::Filter,
+                            };
+                            te.add_effect(&mut sched, instrument_effect_type, effect.id);
+                        }
+                    }
+                }
+            }
+        }; // Add semicolon to drop the lock before the function ends
+    }
 }
 
 pub type AppState = Arc<Mutex<AppStateInner>>;
@@ -703,6 +1108,7 @@ pub fn create_app_state() -> AppState {
         properties_open: false,
         properties_height: 180.0,
         instrument_panel_track: None,
+        metronome_enabled: false,
         next_id,
     }))
 }

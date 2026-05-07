@@ -6,12 +6,10 @@
 //! The `TrackEngine` manages a pool of polyphonic voices (up to 8) and
 //! handles note-on / note-off events from the UI or the step sequencer.
 
-use std::sync::{Arc, Mutex};
 use aether_core::{
     arena::NodeId,
-    param::Param,
+    node::DspNode,
     scheduler::Scheduler,
-    BUFFER_SIZE, MAX_INPUTS,
 };
 use aether_nodes::{
     oscillator::Oscillator,
@@ -19,6 +17,9 @@ use aether_nodes::{
     filter::StateVariableFilter,
     gain::Gain,
     mixer::Mixer,
+    compressor::Compressor,
+    reverb::Reverb,
+    delay::DelayLine,
 };
 
 // ── MIDI event ────────────────────────────────────────────────────────────────
@@ -79,16 +80,38 @@ pub struct Voice {
     pub active:  bool,
 }
 
+// ── Effect node ───────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EffectType {
+    Compressor,
+    Reverb,
+    Delay,
+    Filter,
+    Eq,
+}
+
+#[derive(Debug, Clone)]
+pub struct EffectNode {
+    pub id: u64,
+    pub node_id: NodeId,
+    pub effect_type: EffectType,
+    pub enabled: bool,
+}
+
 // ── Track engine ──────────────────────────────────────────────────────────────
 
 pub struct TrackEngine {
     pub voices:    Vec<Voice>,
     pub mixer_id:  NodeId,
+    pub effects:   Vec<EffectNode>,
     pub preset:    InstrumentPreset,
     pub volume:    f32,
     pub pan:       f32,
     pub muted:     bool,
     voice_cursor:  usize,
+    master_mixer_id: NodeId,
+    master_slot: usize,
 }
 
 const MAX_VOICES: usize = 8;
@@ -137,12 +160,137 @@ impl TrackEngine {
         Some(Self {
             voices,
             mixer_id,
+            effects: Vec::new(),
             preset,
             volume: 0.8,
             pan: 0.0,
             muted: false,
             voice_cursor: 0,
+            master_mixer_id,
+            master_slot,
         })
+    }
+
+    /// Add an effect to the track's effects chain
+    pub fn add_effect(&mut self, sched: &mut Scheduler, effect_type: EffectType, effect_id: u64) -> Option<()> {
+        // Create the effect node
+        let sample_rate = 48000.0; // TODO: Get from scheduler
+        let node: Box<dyn DspNode> = match effect_type {
+            EffectType::Compressor => Box::new(Compressor::new()),
+            EffectType::Reverb => Box::new(Reverb::new(sample_rate)),
+            EffectType::Delay => Box::new(DelayLine::new()),
+            EffectType::Filter => Box::new(StateVariableFilter::new()),
+            EffectType::Eq => Box::new(StateVariableFilter::new()), // Placeholder - use filter for now
+        };
+        
+        let node_id = sched.graph.add_node(node)?;
+        
+        // Rewire the audio chain
+        if self.effects.is_empty() {
+            // First effect: disconnect mixer → master, insert effect
+            sched.graph.disconnect(self.master_mixer_id, self.master_slot);
+            sched.graph.connect(self.mixer_id, node_id, 0);
+            sched.graph.connect(node_id, self.master_mixer_id, self.master_slot);
+        } else {
+            // Insert at end of chain
+            let last_effect = self.effects.last().unwrap();
+            sched.graph.disconnect(self.master_mixer_id, self.master_slot);
+            sched.graph.connect(last_effect.node_id, node_id, 0);
+            sched.graph.connect(node_id, self.master_mixer_id, self.master_slot);
+        }
+        
+        // Set default parameters
+        match effect_type {
+            EffectType::Compressor => {
+                set_param(sched, node_id, 0, -20.0); // threshold
+                set_param(sched, node_id, 1, 4.0);   // ratio
+                set_param(sched, node_id, 2, 0.01);  // attack
+                set_param(sched, node_id, 3, 0.1);   // release
+            }
+            EffectType::Reverb => {
+                set_param(sched, node_id, 0, 0.5);   // room size
+                set_param(sched, node_id, 1, 0.5);   // damping
+                set_param(sched, node_id, 2, 0.3);   // wet
+            }
+            EffectType::Delay => {
+                set_param(sched, node_id, 0, 0.5);   // time
+                set_param(sched, node_id, 1, 0.4);   // feedback
+                set_param(sched, node_id, 2, 0.3);   // wet
+            }
+            EffectType::Filter => {
+                set_param(sched, node_id, 0, 2000.0); // cutoff
+                set_param(sched, node_id, 1, 1.0);    // resonance
+                set_param(sched, node_id, 2, 0.0);    // mode (LP)
+            }
+            EffectType::Eq => {
+                set_param(sched, node_id, 0, 1000.0); // cutoff
+                set_param(sched, node_id, 1, 0.7);    // resonance
+                set_param(sched, node_id, 2, 2.0);    // mode (BP)
+            }
+        }
+        
+        self.effects.push(EffectNode {
+            id: effect_id,
+            node_id,
+            effect_type,
+            enabled: true,
+        });
+        
+        Some(())
+    }
+    
+    /// Remove an effect from the chain
+    pub fn remove_effect(&mut self, sched: &mut Scheduler, effect_id: u64) -> Option<()> {
+        let idx = self.effects.iter().position(|e| e.id == effect_id)?;
+        let effect = self.effects.remove(idx);
+        
+        // Rewire around the removed effect
+        if self.effects.is_empty() {
+            // Last effect removed: reconnect mixer directly to master
+            sched.graph.disconnect(self.master_mixer_id, self.master_slot);
+            sched.graph.connect(self.mixer_id, self.master_mixer_id, self.master_slot);
+        } else if idx == 0 {
+            // First effect removed
+            sched.graph.disconnect(effect.node_id, 0);
+            sched.graph.disconnect(self.effects[0].node_id, 0);
+            sched.graph.connect(self.mixer_id, self.effects[0].node_id, 0);
+        } else if idx == self.effects.len() {
+            // Last effect removed (but not the only one)
+            let prev = &self.effects[idx - 1];
+            sched.graph.disconnect(effect.node_id, 0);
+            sched.graph.disconnect(self.master_mixer_id, self.master_slot);
+            sched.graph.connect(prev.node_id, self.master_mixer_id, self.master_slot);
+        } else {
+            // Middle effect removed
+            let prev = &self.effects[idx - 1];
+            let next = &self.effects[idx];
+            sched.graph.disconnect(effect.node_id, 0);
+            sched.graph.disconnect(next.node_id, 0);
+            sched.graph.connect(prev.node_id, next.node_id, 0);
+        }
+        
+        // Remove the node from the graph
+        sched.graph.remove_node(effect.node_id);
+        
+        Some(())
+    }
+    
+    /// Toggle effect bypass
+    pub fn toggle_effect(&mut self, sched: &mut Scheduler, effect_id: u64) -> Option<()> {
+        let effect = self.effects.iter_mut().find(|e| e.id == effect_id)?;
+        effect.enabled = !effect.enabled;
+        
+        // Set bypass parameter (most effects use param index 10 for bypass)
+        set_param(sched, effect.node_id, 10, if effect.enabled { 0.0 } else { 1.0 });
+        
+        Some(())
+    }
+    
+    /// Set effect parameter
+    pub fn set_effect_param(&mut self, sched: &mut Scheduler, effect_id: u64, param_idx: usize, value: f32) -> Option<()> {
+        let effect = self.effects.iter().find(|e| e.id == effect_id)?;
+        set_param(sched, effect.node_id, param_idx, value);
+        Some(())
     }
 
     fn apply_preset_to_voice(
@@ -243,6 +391,7 @@ impl TrackEngine {
 pub struct MasterEngine {
     pub tracks:    Vec<Option<TrackEngine>>,
     pub master_id: NodeId,
+    pub metronome: Option<Metronome>,
 }
 
 impl MasterEngine {
@@ -264,7 +413,10 @@ impl MasterEngine {
             tracks.push(engine);
         }
 
-        Some(Self { tracks, master_id })
+        // Build metronome
+        let metronome = Metronome::build(sched, master_id);
+
+        Some(Self { tracks, master_id, metronome })
     }
 
     pub fn send_event(&mut self, sched: &mut Scheduler, track_idx: usize, event: MidiEvent) {
@@ -310,4 +462,66 @@ fn set_param(sched: &mut Scheduler, node_id: NodeId, param_idx: usize, value: f3
 
 pub fn midi_to_hz(note: u8) -> f32 {
     440.0 * 2.0f32.powf((note as f32 - 69.0) / 12.0)
+}
+
+// ── Metronome ─────────────────────────────────────────────────────────────────
+
+/// Metronome click generator
+pub struct Metronome {
+    pub click_osc_id: NodeId,
+    pub click_env_id: NodeId,
+    pub last_beat: f64,
+}
+
+impl Metronome {
+    /// Build a metronome click generator
+    pub fn build(sched: &mut Scheduler, master_id: NodeId) -> Option<Self> {
+        // Create oscillator and envelope nodes
+        let osc_id = sched.graph.add_node(Box::new(Oscillator::new()))?;
+        let env_id = sched.graph.add_node(Box::new(AdsrEnvelope::new()))?;
+
+        // Connect: osc → env → master (slot 15 - dedicated metronome slot)
+        sched.graph.connect(osc_id, env_id, 0);
+        sched.graph.connect(env_id, master_id, 15);
+
+        // Configure click sound
+        set_param(sched, osc_id, 0, 1000.0);  // freq (will be changed per click)
+        set_param(sched, osc_id, 1, 0.3);     // amp
+        set_param(sched, osc_id, 2, 0.0);     // waveform (sine)
+        set_param(sched, osc_id, 3, -1.0);    // midi_note (-1 = use freq)
+
+        // Configure envelope (short click)
+        set_param(sched, env_id, 0, 0.001);   // attack (1ms)
+        set_param(sched, env_id, 1, 0.030);   // decay (30ms)
+        set_param(sched, env_id, 2, 0.0);     // sustain (0%)
+        set_param(sched, env_id, 3, 0.010);   // release (10ms)
+        set_param(sched, env_id, 4, 0.0);     // gate (off initially)
+
+        Some(Self {
+            click_osc_id: osc_id,
+            click_env_id: env_id,
+            last_beat: -1.0,
+        })
+    }
+
+    /// Tick the metronome - call every frame when playing
+    pub fn tick(&mut self, sched: &mut Scheduler, current_beat: f64, time_sig_num: u8) {
+        let beat_floor = current_beat.floor();
+        
+        // Detect beat boundary crossing
+        if beat_floor > self.last_beat.floor() {
+            // Determine if this is a downbeat
+            let beat_in_bar = (beat_floor as i32) % (time_sig_num as i32);
+            let is_downbeat = beat_in_bar == 0;
+            
+            // Set frequency (1200Hz for downbeat, 1000Hz for regular beat)
+            let freq = if is_downbeat { 1200.0 } else { 1000.0 };
+            set_param(sched, self.click_osc_id, 0, freq);
+            
+            // Trigger gate
+            set_param(sched, self.click_env_id, 4, 1.0);
+            
+            self.last_beat = beat_floor;
+        }
+    }
 }

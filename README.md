@@ -32,23 +32,24 @@ AetherDSP is two things at once: a production-grade audio engine library for Rus
 | [`aetherdsp-manifest`](https://crates.io/crates/aetherdsp-manifest)   | 0.1.1   | Node package manifest format                                                                             |
 | [`aetherdsp-registry`](https://crates.io/crates/aetherdsp-registry)   | 0.1.1   | Runtime node type registry                                                                               |
 | `aether-samples`                                                      | 0.1.1   | On-demand sample pack download and management                                                            |
+| `aether-ui`                                                           | 0.1.1   | Native GPU-accelerated DAW (Iced + wgpu) — not published                                                 |
 
-### The Studio (Aether Studio v0.2)
+### The Studio (Aether Studio v0.3)
 
-A 4-mode music production interface built with React + Tauri:
+A professional DAW built with **Iced** (GPU-accelerated native UI using wgpu):
 
-- **Explore** — World map with 57 instruments from 8 regions. Click a region, browse its instruments, try them with your PC keyboard before adding to your project.
-- **Create** — Modular node graph with a custom WebGL renderer. Connect oscillators, filters, reverb, LFO, granular synthesis, compressor, waveshaper, chorus, and more. Wire modulations between any node's output and any parameter via the Modulation Matrix.
-- **Arrange** — Non-Western piano roll with 13 rhythmic systems (Teentaal, Maqsum, Gamelan Lancaran, and more) and 14 scale systems (Ethiopian Tizita/Bati/Ambassel, Arabic Maqam Rast/Bayati/Hijaz, Indian Raga Yaman/Bhairav, Gamelan Slendro/Pelog). Beat name headers, accent highlighting, and microtonal cent-deviation bars on every key.
-- **Perform** — Clip launcher for live performance.
+- **Song View** — Multi-track timeline with clip-based arrangement. Drag, resize, split, and color-code clips. Snap to grid with configurable quantization.
+- **Piano Roll** — MIDI note editor with velocity lanes, quantization, transposition, and scale highlighting. Full keyboard input support.
+- **Mixer** — Per-track volume, pan, mute, solo, and arm controls. VU meters with peak hold. Insert effects chain (EQ, Compressor, Reverb, Delay).
+- **Transport** — Play, stop, record, loop, metronome with downbeat accent. Dual time display (bars:beats + mm:ss.cs). BPM control with tap tempo.
 
-**Instrument presets:** 57 `.aether-instrument` files ship with the studio — one per instrument. Each loads a complete node graph with correct tuning, envelope, and effects for that instrument.
+**Project Management:** Save/load complete projects with all tracks, clips, MIDI notes, mixer settings, and effect chains. Atomic file writes prevent corruption.
 
-**Instrument Recorder:** Record your own instrument samples directly from a microphone. The recorder prompts note-by-note, auto-detects pitch via autocorrelation, and exports a `.aether-instrument` file ready to load into any SamplerNode.
+**Audio Export:** Offline WAV rendering (48kHz, 16-bit stereo) with progress tracking. Export entire project or loop region.
 
-**Patch sharing:** Share your node graph with anyone via a single URL. Patches are uploaded as GitHub Gists and auto-loaded from the `?patch=` URL parameter.
+**Metronome:** DSP-based click generator with downbeat accent (1200Hz) and beat clicks (800Hz). Tempo-synced to project BPM.
 
-**Plugin export:** Builds as both a `.clap` and `.vst3` plugin for use in any compatible DAW.
+**Cross-Platform:** Runs on Windows (MSVC), macOS, and Linux. GPU-accelerated rendering via wgpu (Metal/Vulkan/DirectX 12).
 
 ---
 
@@ -183,51 +184,63 @@ impl DspProcess for Tremolo {
 
 ## Running Aether Studio
 
-### Development mode
-
-```powershell
-# Terminal 1 — audio engine (Windows: use C:\aether-dsp to avoid path spaces)
-$env:PATH = "C:\msys64\mingw64\bin;" + $env:PATH
-Set-Location C:\aether-dsp
-cargo run -p aether-host --release
-
-# Terminal 2 — UI
-Set-Location C:\aether-dsp\ui
-npm run dev
-# Open http://localhost:5173
-```
-
-### Standalone app (Tauri)
-
-```powershell
-# Dev window (native desktop app with hot reload)
-Set-Location C:\aether-dsp\ui
-npm run tauri dev
-
-# Production installer
-Set-Location C:\aether-dsp
-.\scripts\build_tauri.ps1
-# Output: ui\src-tauri\target\release\bundle\
-```
-
 ### Prerequisites
 
-| Tool              | Version | Notes                                     |
-| ----------------- | ------- | ----------------------------------------- |
-| Rust              | 1.78+   | `stable-x86_64-pc-windows-gnu` on Windows |
-| MSYS2 MinGW64 GCC | 13+     | Required linker on Windows                |
-| Node.js           | 20+ LTS | For the UI                                |
+| Tool          | Version | Notes                                                                   |
+| ------------- | ------- | ----------------------------------------------------------------------- |
+| Rust          | 1.78+   | `stable-x86_64-pc-windows-msvc` (Windows) or default stable (Mac/Linux) |
+| Visual Studio | 2022+   | Windows only: Build Tools with C++ workload                             |
+| Xcode         | Latest  | macOS only: Command Line Tools                                          |
 
-**Windows setup:**
+**Windows setup (MSVC toolchain recommended):**
 
 ```powershell
+# Install Rust
 winget install Rustlang.Rustup
-rustup default stable-x86_64-pc-windows-gnu
-winget install MSYS2.MSYS2
-C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-gcc"
-# Create junction to avoid spaces in path
-New-Item -ItemType Junction -Path "C:\aether-dsp" -Target "D:\path\to\aether-dsp"
+rustup default stable-x86_64-pc-windows-msvc
+
+# Install Visual Studio Build Tools
+winget install Microsoft.VisualStudio.2022.BuildTools
+# During installation, select "Desktop development with C++"
 ```
+
+**macOS setup:**
+
+```bash
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Install Xcode Command Line Tools
+xcode-select --install
+```
+
+**Linux setup:**
+
+```bash
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Install dependencies (Ubuntu/Debian)
+sudo apt install build-essential pkg-config libasound2-dev
+```
+
+### Build and Run
+
+```bash
+# Build the DAW
+cargo build --release -p aether-ui
+
+# Run the DAW
+cargo run --release -p aether-ui
+# Or directly:
+./target/release/aether-studio
+```
+
+### Known Issues
+
+**Windows MinGW:** The GUI application cannot be built with MinGW due to linker command-line length limitations. Use the MSVC toolchain instead (see prerequisites above).
+
+For detailed build instructions and troubleshooting, see [`BUILD_GUIDE.md`](BUILD_GUIDE.md).
 
 ---
 
@@ -246,17 +259,10 @@ aether-dsp/
 │   ├── aether-ndk-macro/   # #[aether_node] proc-macro
 │   ├── aether-manifest/    # Node package manifest format
 │   ├── aether-registry/    # Runtime node registry
+│   ├── aether-ui/          # Native GPU DAW (Iced + wgpu) — not published
 │   ├── aether-host/        # CPAL audio host + WebSocket bridge (not published)
 │   ├── aether-plugin/      # CLAP + VST3 plugin (not published)
 │   └── aether-cli/         # Developer CLI (not published)
-├── ui/                     # React + Tauri studio interface
-│   ├── src/
-│   │   ├── modes/          # Explore, Create, Arrange, Perform
-│   │   ├── components/     # TopBar, KeyboardPlayer, ModulationMatrix, InstrumentRecorder
-│   │   ├── catalog/        # 57-instrument world music catalog
-│   │   ├── hooks/          # usePatchShare, useSampleLibrary, useInstrumentEngine
-│   │   └── studio/         # WebGL node graph, engine store, WebSocket
-│   └── src-tauri/          # Tauri standalone app wrapper
 ├── assets/
 │   ├── instruments/        # Drum kit and instrument definitions
 │   └── presets/            # World music presets (Krar, etc.)
@@ -266,9 +272,9 @@ aether-dsp/
 
 ---
 
-## WebSocket Protocol
+## WebSocket Protocol (aether-host)
 
-Connect to `ws://127.0.0.1:9001` (started by `aether-host`).
+The `aether-host` crate provides a WebSocket bridge for external control. Connect to `ws://127.0.0.1:9001`.
 
 ```json
 { "type": "add_node", "node_type": "Oscillator" }
@@ -297,12 +303,13 @@ Every push runs on **Windows, macOS, and Linux**:
 
 ## Roadmap
 
-| Version | Milestone                                                                                                                                   |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| v0.1    | RT engine + UI + WebSocket + 9 crates on crates.io                                                                                          |
-| v0.2    | 15 DSP nodes, modulation matrix, WebGL canvas, non-Western piano roll, VST3/CLAP export, sample library, patch sharing, instrument recorder |
-| v0.3    | SIMD optimization, AI timbre transfer, mobile support                                                                                       |
-| v1.0    | Stable public release                                                                                                                       |
+| Version | Milestone                                                                                    |
+| ------- | -------------------------------------------------------------------------------------------- |
+| v0.1    | RT engine + WebSocket bridge + 9 crates on crates.io                                         |
+| v0.2    | 15 DSP nodes, modulation matrix, sample library, VST3/CLAP export                            |
+| v0.3    | Native GPU DAW (Iced): Song view, Piano roll, Mixer, Transport, Save/Load, Export, Metronome |
+| v0.4    | SIMD optimization, world music instruments, tuning systems                                   |
+| v1.0    | Stable public release                                                                        |
 
 ---
 

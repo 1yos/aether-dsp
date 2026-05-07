@@ -109,6 +109,11 @@ pub enum Message {
     Undo, Redo,
     Copy, Paste, Duplicate, Cut,
     DeleteSelected, SelectAll,
+
+    // Project save/load
+    SaveProject,
+    LoadProject,
+    ExportWav,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -256,6 +261,7 @@ pub struct DawApp {
 
     // VU meter levels (updated from audio thread via shared state)
     vu_levels: Vec<f32>,
+    vu_peaks: Vec<(f32, Instant)>,  // (peak_level, timestamp) for peak hold
 
     // Metronome
     metronome_on: bool,
@@ -283,9 +289,26 @@ impl DawApp {
             renaming_track_id: None,
             rename_value: String::new(),
             vu_levels: vec![0.0; track_count],
+            vu_peaks: vec![(0.0, Instant::now()); track_count],
             metronome_on: false,
         };
         (app, Task::none())
+    }
+
+    // ── Time formatting helpers ───────────────────────────────────────────────
+
+    fn format_beat(beat: f64, time_sig: u8) -> String {
+        let bar = (beat / time_sig as f64).floor() as usize + 1;
+        let beat_in_bar = (beat % time_sig as f64) + 1.0;
+        format!("{:03}:{:.2}", bar, beat_in_bar)
+    }
+
+    fn format_time(beat: f64, bpm: f32) -> String {
+        let seconds = (beat / bpm as f64) * 60.0;
+        let mins = (seconds / 60.0) as u32;
+        let secs = (seconds % 60.0) as u32;
+        let centisecs = ((seconds % 1.0) * 100.0) as u32;
+        format!("{:02}:{:02}.{:02}", mins, secs, centisecs)
     }
 
     pub fn subscription(&self) -> iced::Subscription<Message> {
@@ -326,7 +349,47 @@ impl DawApp {
             Message::Tick(now) => {
                 let delta = now.duration_since(self.last_tick).as_secs_f64();
                 self.last_tick = now;
-                self.state.lock().unwrap().tick_transport(delta);
+                
+                {
+                    let mut s = self.state.lock().unwrap();
+                    s.tick_transport(delta);
+                }
+                
+                // Update VU peak hold
+                for (i, &level) in self.vu_levels.iter().enumerate() {
+                    if let Some((peak, time)) = self.vu_peaks.get_mut(i) {
+                        if level > *peak {
+                            // New peak
+                            *peak = level;
+                            *time = Instant::now();
+                        } else if time.elapsed().as_secs_f32() > 2.0 {
+                            // Peak expired after 2 seconds, reset
+                            *peak = level;
+                            *time = Instant::now();
+                        }
+                    }
+                }
+                
+                // Tick metronome if enabled and playing
+                if self.metronome_on {
+                    let s = self.state.lock().unwrap();
+                    let should_tick = s.transport.is_playing;
+                    let current_beat = s.transport.playhead_beat;
+                    let time_sig_num = s.transport.time_sig_num;
+                    let sched_arc = s.scheduler.clone();
+                    drop(s);
+                    
+                    if should_tick {
+                        if let Ok(mut sched) = sched_arc.try_lock() {
+                            let mut s = self.state.lock().unwrap();
+                            if let Some(ref mut engine) = s.master_engine {
+                                if let Some(ref mut metronome) = engine.metronome {
+                                    metronome.tick(&mut sched, current_beat, time_sig_num);
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             // ── Transport ─────────────────────────────────────────────────
@@ -1246,6 +1309,27 @@ impl DawApp {
                 if track_idx < s.tracks.len() {
                     s.push_undo("Add Effect");
                     let id = s.next_id();
+                    
+                    // Convert app_state::EffectType to instrument::EffectType
+                    let inst_effect_type = match effect_type {
+                        crate::app_state::EffectType::Eq => crate::instrument::EffectType::Eq,
+                        crate::app_state::EffectType::Compressor => crate::instrument::EffectType::Compressor,
+                        crate::app_state::EffectType::Reverb => crate::instrument::EffectType::Reverb,
+                        crate::app_state::EffectType::Delay => crate::instrument::EffectType::Delay,
+                        crate::app_state::EffectType::Filter => crate::instrument::EffectType::Filter,
+                    };
+                    
+                    // Wire effect to audio graph
+                    let sched_arc = s.scheduler.clone();
+                    if let Ok(mut sched) = sched_arc.try_lock() {
+                        if let Some(ref mut engine) = s.master_engine {
+                            if let Some(Some(ref mut track_engine)) = engine.tracks.get_mut(track_idx) {
+                                track_engine.add_effect(&mut sched, inst_effect_type, id);
+                            }
+                        }
+                    }
+                    
+                    // Add to state
                     s.tracks[track_idx].effects.push(crate::app_state::TrackEffect {
                         id, effect_type, enabled: true,
                         params: crate::app_state::EffectParams::default(),
@@ -1256,6 +1340,18 @@ impl DawApp {
                 let mut s = self.state.lock().unwrap();
                 if track_idx < s.tracks.len() {
                     s.push_undo("Remove Effect");
+                    
+                    // Remove from audio graph
+                    let sched_arc = s.scheduler.clone();
+                    if let Ok(mut sched) = sched_arc.try_lock() {
+                        if let Some(ref mut engine) = s.master_engine {
+                            if let Some(Some(ref mut track_engine)) = engine.tracks.get_mut(track_idx) {
+                                track_engine.remove_effect(&mut sched, effect_id);
+                            }
+                        }
+                    }
+                    
+                    // Remove from state
                     s.tracks[track_idx].effects.retain(|e| e.id != effect_id);
                 }
             }
@@ -1266,26 +1362,65 @@ impl DawApp {
                         fx.enabled = !fx.enabled;
                     }
                 }
+                let sched_arc = s.scheduler.clone();
+                
+                // Toggle in audio graph
+                if let Ok(mut sched) = sched_arc.try_lock() {
+                    if let Some(ref mut engine) = s.master_engine {
+                        if let Some(Some(ref mut track_engine)) = engine.tracks.get_mut(track_idx) {
+                            track_engine.toggle_effect(&mut sched, effect_id);
+                        }
+                    }
+                };
             }
             Message::SetEffectParam { track_idx, effect_id, param } => {
                 let mut s = self.state.lock().unwrap();
-                if track_idx < s.tracks.len() {
-                    if let Some(fx) = s.tracks[track_idx].effects.iter_mut().find(|e| e.id == effect_id) {
-                        match param {
-                            EffectParam::ReverbRoom(v)      => fx.params.reverb_room = v,
-                            EffectParam::ReverbDamp(v)      => fx.params.reverb_damp = v,
-                            EffectParam::ReverbWet(v)       => fx.params.reverb_wet = v,
-                            EffectParam::DelayTime(v)       => fx.params.delay_time = v,
-                            EffectParam::DelayFeedback(v)   => fx.params.delay_feedback = v,
-                            EffectParam::DelayWet(v)        => fx.params.delay_wet = v,
-                            EffectParam::CompThreshold(v)   => fx.params.comp_threshold = v,
-                            EffectParam::CompRatio(v)       => fx.params.comp_ratio = v,
-                            EffectParam::FilterCutoff(v)    => fx.params.filter_cutoff = v,
-                            EffectParam::FilterResonance(v) => fx.params.filter_resonance = v,
-                            _ => {}
+                if track_idx >= s.tracks.len() { return Task::none(); }
+                
+                let fx = match s.tracks[track_idx].effects.iter_mut().find(|e| e.id == effect_id) {
+                    Some(fx) => fx,
+                    None => return Task::none(),
+                };
+                
+                // Update state
+                match param {
+                    EffectParam::ReverbRoom(v)      => fx.params.reverb_room = v,
+                    EffectParam::ReverbDamp(v)      => fx.params.reverb_damp = v,
+                    EffectParam::ReverbWet(v)       => fx.params.reverb_wet = v,
+                    EffectParam::DelayTime(v)       => fx.params.delay_time = v,
+                    EffectParam::DelayFeedback(v)   => fx.params.delay_feedback = v,
+                    EffectParam::DelayWet(v)        => fx.params.delay_wet = v,
+                    EffectParam::CompThreshold(v)   => fx.params.comp_threshold = v,
+                    EffectParam::CompRatio(v)       => fx.params.comp_ratio = v,
+                    EffectParam::FilterCutoff(v)    => fx.params.filter_cutoff = v,
+                    EffectParam::FilterResonance(v) => fx.params.filter_resonance = v,
+                    _ => {}
+                }
+                
+                // Update audio graph parameter
+                let (param_idx, value) = match param {
+                    EffectParam::ReverbRoom(v)      => (0, v),
+                    EffectParam::ReverbDamp(v)      => (1, v),
+                    EffectParam::ReverbWet(v)       => (2, v),
+                    EffectParam::DelayTime(v)       => (0, v),
+                    EffectParam::DelayFeedback(v)   => (1, v),
+                    EffectParam::DelayWet(v)        => (2, v),
+                    EffectParam::CompThreshold(v)   => (0, v),
+                    EffectParam::CompRatio(v)       => (1, v),
+                    EffectParam::FilterCutoff(v)    => (0, v),
+                    EffectParam::FilterResonance(v) => (1, v),
+                    _ => return Task::none(),
+                };
+                
+                let sched_arc = s.scheduler.clone();
+                
+                if let Ok(mut sched) = sched_arc.try_lock() {
+                    if let Some(ref mut engine) = s.master_engine {
+                        if let Some(Some(ref mut track_engine)) = engine.tracks.get_mut(track_idx) {
+                            track_engine.set_effect_param(&mut sched, effect_id, param_idx, value);
                         }
                     }
-                }
+                };
             }
 
             // ── Keyboard shortcuts ────────────────────────────────────────
@@ -1345,6 +1480,72 @@ impl DawApp {
                     ActiveView::Song      => s.select_all_clips(),
                     ActiveView::PianoRoll => s.select_all_notes(),
                     _ => {}
+                }
+            }
+
+            // ── Project save/load ─────────────────────────────────────────
+            Message::SaveProject => {
+                // TODO: Use rfd file dialog when MinGW linker issues are resolved
+                // For now, save to a default location
+                let path = "project.aether";
+                let s = self.state.lock().unwrap();
+                match s.save_to_file(path) {
+                    Ok(_) => {
+                        tracing::info!("Project saved to {}", path);
+                        // TODO: Show success notification in UI
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to save project: {}", e);
+                        // TODO: Show error dialog in UI
+                    }
+                }
+            }
+
+            Message::LoadProject => {
+                // TODO: Use rfd file dialog when MinGW linker issues are resolved
+                // For now, load from default location
+                let path = "project.aether";
+                let mut s = self.state.lock().unwrap();
+                match s.load_from_file(path) {
+                    Ok(_) => {
+                        tracing::info!("Project loaded from {}", path);
+                        // TODO: Show success notification in UI
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to load project: {}", e);
+                        // TODO: Show error dialog in UI
+                    }
+                }
+            }
+
+            Message::ExportWav => {
+                // TODO: Use rfd file dialog when MinGW linker issues are resolved
+                // For now, export to a default location
+                let path = "export.wav";
+                let s = self.state.lock().unwrap();
+                
+                // Calculate export duration (longest clip + 4 beats for tail)
+                let mut max_end_beat = 16.0; // Default minimum
+                for track in &s.tracks {
+                    for clip in &track.clips {
+                        let clip_end = clip.start_beat + clip.length_beats;
+                        if clip_end > max_end_beat {
+                            max_end_beat = clip_end;
+                        }
+                    }
+                }
+                let duration_beats = max_end_beat + 4.0; // Add 4 beats for reverb/delay tail
+                
+                match s.export_wav(path, duration_beats) {
+                    Ok(_) => {
+                        tracing::info!("WAV exported to {} ({:.1} beats, {:.1}s)", 
+                            path, duration_beats, (duration_beats / s.transport.bpm as f64) * 60.0);
+                        // TODO: Show success notification in UI
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to export WAV: {}", e);
+                        // TODO: Show error dialog in UI
+                    }
                 }
             }
         }
@@ -1467,9 +1668,11 @@ impl DawApp {
         let bpm          = transport.bpm;
         let beat         = transport.playhead_beat;
         let loop_on      = transport.loop_enabled;
-        let bar          = (beat / transport.time_sig_num as f64) as u32 + 1;
-        let beat_in_bar  = (beat % transport.time_sig_num as f64) as u32 + 1;
         let metronome_on = self.metronome_on;
+        
+        // Format time displays
+        let beat_display = Self::format_beat(beat, transport.time_sig_num);
+        let time_display = Self::format_time(beat, bpm);
 
         container(
             row![
@@ -1485,14 +1688,24 @@ impl DawApp {
                 text(format!("{:.0}", bpm)).size(13).color(Color::WHITE),
                 button(text("TAP").size(9)).on_press(Message::TapTempoClick)
                     .style(|_,_| btn_style(false, false)),
-                // Position
-                text(format!("{:3}:{}", bar, beat_in_bar)).size(11)
+                // Position (dual display: bars:beats | mm:ss.cs)
+                text(beat_display).size(11)
+                    .color(Color::from_rgb(0.3, 0.72, 1.0)),
+                text("|").size(11).color(Color::from_rgb(0.2, 0.2, 0.2)),
+                text(time_display).size(11)
                     .color(Color::from_rgb(0.3, 0.72, 1.0)),
                 // Loop + metronome
                 button(text("⟳").size(11)).on_press(Message::ToggleLoop)
                     .style(move |_,_| tab_style(loop_on)),
                 button(text("♩").size(11)).on_press(Message::ToggleMetronome)
                     .style(move |_,_| tab_style(metronome_on)),
+                // Save/Load/Export
+                button(text("💾").size(11)).on_press(Message::SaveProject)
+                    .style(|_,_| btn_style(false, false)),
+                button(text("📁").size(11)).on_press(Message::LoadProject)
+                    .style(|_,_| btn_style(false, false)),
+                button(text("📤").size(11)).on_press(Message::ExportWav)
+                    .style(|_,_| btn_style(false, false)),
                 iced::widget::horizontal_space(),
                 text(if engine_ok { "● Live" } else { "● Offline" }).size(10)
                     .color(if engine_ok { Color::from_rgb(0.0,0.9,0.63) } else { Color::from_rgb(0.94,0.33,0.31) }),

@@ -32,6 +32,13 @@ ringbuf  = { workspace = true }
 serde    = { workspace = true }
 serde_json = { workspace = true }
 
+# WAV export
+hound = "3.5"
+
+# File dialogs - commented out due to MinGW linker issues
+# rfd = "0.14"
+# TODO: Re-enable when switching to MSVC toolchain or use alternative
+
 # Async runtime
 tokio = { version = "1", features = ["full"] }
 

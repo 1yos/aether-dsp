@@ -5,10 +5,8 @@ Cargo.lock
 # Proptest regression files (auto-generated, not needed in VCS)
 proptest-regressions/
 
-# Node / UI
-ui/node_modules/
-ui/dist/
-ui/.vite/
+# React UI prototype (deprecated - use crates/aether-ui instead)
+ui/
 
 # IDE
 .vscode/settings.json
@@ -21,10 +19,6 @@ Thumbs.db
 
 # Kiro internal
 .kiro/
-
-# Compiled JS (generated from TS)
-ui/src/**/*.js
-ui/src/**/*.js.map
 
 # Env / secrets
 .env
