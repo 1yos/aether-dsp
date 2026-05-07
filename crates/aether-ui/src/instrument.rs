@@ -21,6 +21,9 @@ use aether_nodes::{
     reverb::Reverb,
     delay::DelayLine,
 };
+use aether_sampler::{SamplerNode, instrument::LoadedInstrument};
+use std::sync::{Arc, Mutex};
+use std::path::Path;
 
 // ── MIDI event ────────────────────────────────────────────────────────────────
 
@@ -152,17 +155,31 @@ pub struct EffectNode {
     pub enabled: bool,
 }
 
+// ── Instrument Type ───────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum InstrumentType {
+    Synth,
+    Sampler,
+}
+
 // ── Track engine ──────────────────────────────────────────────────────────────
 
 pub struct TrackEngine {
+    pub instrument_type: InstrumentType,
+    // Synth fields
     pub voices:    Vec<Voice>,
+    pub preset:    InstrumentPreset,
+    voice_cursor:  usize,
+    // Sampler fields
+    pub sampler_node_id: Option<NodeId>,
+    pub sampler_midi_queue: Option<Arc<Mutex<Vec<aether_midi::event::MidiEvent>>>>,
+    // Common fields
     pub mixer_id:  NodeId,
     pub effects:   Vec<EffectNode>,
-    pub preset:    InstrumentPreset,
     pub volume:    f32,
     pub pan:       f32,
     pub muted:     bool,
-    voice_cursor:  usize,
     master_mixer_id: NodeId,
     master_slot: usize,
 }
@@ -170,6 +187,47 @@ pub struct TrackEngine {
 const MAX_VOICES: usize = 8;
 
 impl TrackEngine {
+    /// Build a sampler-based track engine.
+    pub fn build_sampler(
+        sched: &mut Scheduler,
+        loaded_instrument: LoadedInstrument,
+        master_mixer_id: NodeId,
+        master_slot: usize,
+    ) -> Option<Self> {
+        // Create sampler node
+        let sampler_node = SamplerNode::new(48000.0);
+        let midi_queue = sampler_node.midi_queue();
+        let instrument_slot = sampler_node.instrument_slot();
+        
+        // Store the loaded instrument in the sampler
+        instrument_slot.store(Arc::new(Some(loaded_instrument)));
+        
+        let sampler_id = sched.graph.add_node(Box::new(sampler_node))?;
+        
+        // Create per-track mixer
+        let mixer_id = sched.graph.add_node(Box::new(Mixer))?;
+        
+        // Wire: sampler → mixer → master
+        sched.graph.connect(sampler_id, mixer_id, 0);
+        sched.graph.connect(mixer_id, master_mixer_id, master_slot);
+        
+        Some(Self {
+            instrument_type: InstrumentType::Sampler,
+            voices: Vec::new(),
+            preset: InstrumentPreset::default_instrument(),
+            voice_cursor: 0,
+            sampler_node_id: Some(sampler_id),
+            sampler_midi_queue: Some(midi_queue),
+            mixer_id,
+            effects: Vec::new(),
+            volume: 0.8,
+            pan: 0.0,
+            muted: false,
+            master_mixer_id,
+            master_slot,
+        })
+    }
+
     /// Build a full polyphonic instrument chain in the scheduler's graph.
     /// Returns None if the graph is full.
     pub fn build(
@@ -211,14 +269,17 @@ impl TrackEngine {
         sched.graph.connect(mixer_id, master_mixer_id, master_slot);
 
         Some(Self {
+            instrument_type: InstrumentType::Synth,
             voices,
+            preset,
+            voice_cursor: 0,
+            sampler_node_id: None,
+            sampler_midi_queue: None,
             mixer_id,
             effects: Vec::new(),
-            preset,
             volume: 0.8,
             pan: 0.0,
             muted: false,
-            voice_cursor: 0,
             master_mixer_id,
             master_slot,
         })
@@ -376,42 +437,88 @@ impl TrackEngine {
     pub fn note_on(&mut self, sched: &mut Scheduler, pitch: u8, velocity: u8) {
         if self.muted { return; }
 
-        // Steal oldest voice if all busy
-        let v = self.voice_cursor % MAX_VOICES;
-        self.voice_cursor += 1;
+        match self.instrument_type {
+            InstrumentType::Sampler => {
+                // Send MIDI event to sampler
+                if let Some(ref queue) = self.sampler_midi_queue {
+                    if let Ok(mut q) = queue.lock() {
+                        q.push(aether_midi::event::MidiEvent {
+                            timestamp: 0,
+                            channel: 0,
+                            kind: aether_midi::event::MidiEventKind::NoteOn { note: pitch, velocity },
+                        });
+                    }
+                }
+            }
+            InstrumentType::Synth => {
+                // Steal oldest voice if all busy
+                let v = self.voice_cursor % MAX_VOICES;
+                self.voice_cursor += 1;
 
-        let freq = midi_to_hz(pitch);
-        let vel  = velocity as f32 / 127.0;
-        let voice = &self.voices[v];
+                let freq = midi_to_hz(pitch);
+                let vel  = velocity as f32 / 127.0;
+                let voice = &self.voices[v];
 
-        Self::apply_preset_to_voice(
-            sched, voice.osc_id, voice.env_id, voice.filt_id, voice.gain_id,
-            &self.preset, freq,
-        );
-        set_param(sched, voice.gain_id, 0, self.preset.gain * vel * self.volume);
-        // Trigger gate
-        set_param(sched, voice.env_id, 4, 1.0);
+                Self::apply_preset_to_voice(
+                    sched, voice.osc_id, voice.env_id, voice.filt_id, voice.gain_id,
+                    &self.preset, freq,
+                );
+                set_param(sched, voice.gain_id, 0, self.preset.gain * vel * self.volume);
+                // Trigger gate
+                set_param(sched, voice.env_id, 4, 1.0);
 
-        let voice = &mut self.voices[v];
-        voice.pitch  = Some(pitch);
-        voice.active = true;
+                let voice = &mut self.voices[v];
+                voice.pitch  = Some(pitch);
+                voice.active = true;
+            }
+        }
     }
 
     pub fn note_off(&mut self, sched: &mut Scheduler, pitch: u8) {
-        for voice in &mut self.voices {
-            if voice.pitch == Some(pitch) && voice.active {
-                set_param(sched, voice.env_id, 4, 0.0);
-                voice.active = false;
-                voice.pitch  = None;
+        match self.instrument_type {
+            InstrumentType::Sampler => {
+                if let Some(ref queue) = self.sampler_midi_queue {
+                    if let Ok(mut q) = queue.lock() {
+                        q.push(aether_midi::event::MidiEvent {
+                            timestamp: 0,
+                            channel: 0,
+                            kind: aether_midi::event::MidiEventKind::NoteOff { note: pitch, velocity: 0 },
+                        });
+                    }
+                }
+            }
+            InstrumentType::Synth => {
+                for voice in &mut self.voices {
+                    if voice.pitch == Some(pitch) && voice.active {
+                        set_param(sched, voice.env_id, 4, 0.0);
+                        voice.active = false;
+                        voice.pitch  = None;
+                    }
+                }
             }
         }
     }
 
     pub fn all_notes_off(&mut self, sched: &mut Scheduler) {
-        for voice in &mut self.voices {
-            set_param(sched, voice.env_id, 4, 0.0);
-            voice.active = false;
-            voice.pitch  = None;
+        match self.instrument_type {
+            InstrumentType::Sampler => {
+                if let Some(ref queue) = self.sampler_midi_queue {
+                    if let Ok(mut q) = queue.lock() {
+                        q.push(aether_midi::event::MidiEvent {
+                            timestamp: 0,
+                            channel: 0,
+                            kind: aether_midi::event::MidiEventKind::AllNotesOff,
+                        });
+                    }
+                }
+            }
+            InstrumentType::Synth => {
+                for voice in &mut self.voices {
+                    set_param(sched, voice.env_id, 4, 0.0);
+                    voice.active = false;
+                    voice.pitch  = None;
+                }
+            }
         }
     }
 
@@ -453,15 +560,28 @@ impl MasterEngine {
         sched.graph.set_output_node(master_id);
 
         let mut tracks = Vec::with_capacity(track_count);
+        
+        // Try to load drum sampler for first track
+        let drum_engine = Self::try_load_drums(sched, master_id, 0);
+        
+        if drum_engine.is_some() {
+            tracks.push(drum_engine);
+        } else {
+            // Fallback to synth
+            let preset = InstrumentPreset::kick();
+            let engine = TrackEngine::build(sched, preset, master_id, 0);
+            tracks.push(engine);
+        }
+        
+        // Rest of tracks use synth presets
         let presets = [
-            InstrumentPreset::kick(),
             InstrumentPreset::bass(),
             InstrumentPreset::lead(),
             InstrumentPreset::pad(),
         ];
 
-        for i in 0..track_count {
-            let preset = presets.get(i).cloned().unwrap_or_else(InstrumentPreset::default_instrument);
+        for i in 1..track_count {
+            let preset = presets.get(i - 1).cloned().unwrap_or_else(InstrumentPreset::default_instrument);
             let engine = TrackEngine::build(sched, preset, master_id, i);
             tracks.push(engine);
         }
@@ -470,6 +590,23 @@ impl MasterEngine {
         let metronome = Metronome::build(sched, master_id);
 
         Some(Self { tracks, master_id, metronome })
+    }
+    
+    /// Try to load drum sampler from assets/instruments/drums-studio.json
+    fn try_load_drums(sched: &mut Scheduler, master_id: NodeId, slot: usize) -> Option<TrackEngine> {
+        use aether_sampler::instrument::SamplerInstrument;
+        
+        let instrument_path = Path::new("assets/instruments/drums-studio.json");
+        let samples_base = Path::new("assets/samples");
+        
+        // Load instrument definition
+        let instrument = SamplerInstrument::load(instrument_path).ok()?;
+        
+        // Load samples
+        let loaded = LoadedInstrument::load(instrument, samples_base).ok()?;
+        
+        // Build sampler track
+        TrackEngine::build_sampler(sched, loaded, master_id, slot)
     }
 
     pub fn send_event(&mut self, sched: &mut Scheduler, track_idx: usize, event: MidiEvent) {
