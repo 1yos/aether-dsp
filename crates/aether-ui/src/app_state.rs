@@ -292,6 +292,7 @@ pub enum Clipboard {
 
 // ── Tap tempo ─────────────────────────────────────────────────────────────────
 
+#[derive(Default)]
 pub struct TapTempo {
     pub taps: Vec<Instant>,
 }
@@ -389,7 +390,7 @@ pub struct EffectParamsData {
 }
 
 impl TapTempo {
-    pub fn new() -> Self { Self { taps: Vec::new() } }
+    pub fn new() -> Self { Self::default() }
 
     pub fn tap(&mut self) -> Option<f32> {
         let now = Instant::now();
@@ -744,7 +745,7 @@ impl AppStateInner {
         // Calculate duration
         let duration_secs = (duration_beats / self.transport.bpm as f64) * 60.0;
         let total_samples = (duration_secs * SAMPLE_RATE as f64) as usize;
-        let num_buffers = (total_samples + BUFFER_SIZE - 1) / BUFFER_SIZE;
+        let num_buffers = total_samples.div_ceil(BUFFER_SIZE);
         
         // Setup WAV writer
         let spec = WavSpec {
@@ -765,8 +766,8 @@ impl AppStateInner {
                 sched.process_block_simple(&mut output_buf);
                 
                 // Write samples (mono → stereo)
-                for i in 0..BUFFER_SIZE {
-                    let sample = output_buf[i].clamp(-1.0, 1.0);
+                for &sample in &output_buf {
+                    let sample = sample.clamp(-1.0, 1.0);
                     let amplitude = (sample * i16::MAX as f32) as i16;
                     writer.write_sample(amplitude)?;  // L
                     writer.write_sample(amplitude)?;  // R

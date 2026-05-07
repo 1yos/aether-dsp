@@ -225,8 +225,8 @@ enum PrDragMode {
 
 #[derive(Debug, Clone)]
 struct ContextMenu {
-    x: f32,
-    y: f32,
+    _x: f32,
+    _y: f32,
     kind: ContextMenuKind,
 }
 
@@ -450,7 +450,7 @@ impl DawApp {
                 drop(s);
 
                 let ruler_h = 28.0f32;
-                let header_w = 180.0f32;
+                let _header_w = 180.0f32;
                 let bw = self.song_zoom_x;
 
                 // Click on ruler = seek
@@ -478,7 +478,7 @@ impl DawApp {
                         } else {
                             ContextMenuKind::Timeline { beat, track_idx: idx }
                         };
-                        self.context_menu = Some(ContextMenu { x, y, kind });
+                        self.context_menu = Some(ContextMenu { _x: x, _y: y, kind });
                     }
                     return Task::none();
                 }
@@ -576,7 +576,7 @@ impl DawApp {
                     SongDragMode::SeekingPlayhead => {
                         self.state.lock().unwrap().transport.playhead_beat = beat.max(0.0);
                     }
-                    SongDragMode::CreatingClip { clip_id, track_idx } => {
+                    SongDragMode::CreatingClip { clip_id, track_idx: _ } => {
                         let cid = *clip_id;
                         let mut s = self.state.lock().unwrap();
                         if let Some(clip) = s.find_clip_mut(cid) {
@@ -783,11 +783,9 @@ impl DawApp {
                 if track_idx < s.tracks.len() {
                     s.tracks[track_idx].volume = volume;
                     let sched_arc = s.scheduler.clone();
-                    if let Ok(mut sched) = sched_arc.try_lock() {
-                        if let Some(ref mut engine) = s.master_engine {
-                            if let Some(slot) = engine.tracks.get_mut(track_idx) {
-                                if let Some(ref mut te) = slot { te.set_volume(&mut sched, volume); }
-                            }
+                    if let (Ok(mut sched), Some(ref mut engine)) = (sched_arc.try_lock(), &mut s.master_engine) {
+                        if let Some(Some(ref mut te)) = engine.tracks.get_mut(track_idx) {
+                            te.set_volume(&mut sched, volume);
                         }
                     };
                 }
@@ -826,7 +824,7 @@ impl DawApp {
 
             // ── Context menu ──────────────────────────────────────────────
             Message::ShowContextMenu { x, y, kind } => {
-                self.context_menu = Some(ContextMenu { x, y, kind });
+                self.context_menu = Some(ContextMenu { _x: x, _y: y, kind });
             }
             Message::HideContextMenu => { self.context_menu = None; }
             Message::ContextAction(action) => {
@@ -843,7 +841,7 @@ impl DawApp {
                     ContextAction::SplitClip { clip_id, at_beat } => {
                         return self.update(Message::SplitClip { clip_id, at_beat });
                     }
-                    ContextAction::RenameClip(id) => {
+                    ContextAction::RenameClip(_id) => {
                         // TODO: inline rename
                     }
                     ContextAction::OpenPianoRoll { clip_id, track_id } => {
@@ -947,7 +945,7 @@ impl DawApp {
                                     })
                                 };
 
-                                if let Some((nid, nbeat)) = existing {
+                                if let Some((nid, _nbeat)) = existing {
                                     self.pr_drag = PrDragMode::MovingNote {
                                         note_id: nid, start_beat: beat, start_pitch: pitch,
                                     };
@@ -1293,11 +1291,9 @@ impl DawApp {
                     }
                     let preset = s.tracks[track_idx].instrument.clone();
                     let sched_arc = s.scheduler.clone();
-                    if let Ok(mut sched) = sched_arc.try_lock() {
-                        if let Some(ref mut engine) = s.master_engine {
-                            if let Some(slot) = engine.tracks.get_mut(track_idx) {
-                                if let Some(ref mut te) = slot { te.update_preset(&mut sched, preset); }
-                            }
+                    if let (Ok(mut sched), Some(ref mut engine)) = (sched_arc.try_lock(), &mut s.master_engine) {
+                        if let Some(Some(ref mut te)) = engine.tracks.get_mut(track_idx) {
+                            te.update_preset(&mut sched, preset);
                         }
                     };
                 }
@@ -1562,7 +1558,7 @@ impl DawApp {
         None
     }
 
-    pub fn view(&self) -> Element<Message> {
+    pub fn view(&self) -> Element<'_, Message> {
         let s = self.state.lock().unwrap();
         let active        = s.active_view;
         let transport     = s.transport.clone();
@@ -1608,7 +1604,7 @@ impl DawApp {
         };
 
         // Rename input overlay
-        let rename_overlay: Option<Element<Message>> = self.renaming_track_id.map(|_| {
+        let _rename_overlay: Option<Element<Message>> = self.renaming_track_id.map(|_| {
             container(
                 row![
                     text_input("Track name...", &self.rename_value)
@@ -1817,7 +1813,7 @@ impl DawApp {
             .height(Length::Fill).into();
 
         let playhead = transport.playhead_beat;
-        let bpm = transport.bpm;
+        let _bpm = transport.bpm;
         let time_sig = transport.time_sig_num;
         let loop_start = transport.loop_start;
         let loop_end = transport.loop_end;
@@ -1936,7 +1932,7 @@ impl DawApp {
             zoom_y: self.pr_zoom_y,
             scroll_x: self.pr_scroll_x,
             scroll_y: self.pr_scroll_y,
-            snap_beats: pr.snap_beats,
+            _snap_beats: pr.snap_beats,
             selected_ids: selected_ids.clone(),
             scale,
         })
@@ -2060,7 +2056,7 @@ impl DawApp {
                 ]
             }
             ContextMenuKind::Timeline { beat, track_idx } => {
-                let b = *beat;
+                let _b = *beat;
                 let _ti = *track_idx;
                 vec![
                     ctx_item("+ Instrument Track", Message::ContextAction(ContextAction::AddInstrumentTrack)),
@@ -2318,7 +2314,7 @@ struct PianoRollCanvas {
     zoom_y: f32,
     scroll_x: f32,
     scroll_y: f32,
-    snap_beats: f64,
+    _snap_beats: f64,
     selected_ids: Vec<u64>,
     scale: Scale,
 }
@@ -2387,7 +2383,7 @@ impl canvas::Program<Message> for PianoRollCanvas {
             frame.fill_rectangle(iced::Point::new(0.0, y + kh - 0.5), iced::Size::new(bounds.width, 0.5),
                 Color::from_rgb(0.06,0.1,0.16));
             // C note highlight
-            if midi % 12 == 0 {
+            if midi.is_multiple_of(12) {
                 frame.fill_rectangle(iced::Point::new(0.0, y), iced::Size::new(bounds.width, 1.0),
                     Color::from_rgba(0.3,0.72,1.0,0.15));
             }
@@ -2529,13 +2525,13 @@ fn instrument_panel_el(track: &crate::app_state::Track, track_idx: usize) -> Ele
     });
 
     let knobs = row![
-        synth_knob("ATK",  p.attack,   0.001, 4.0,  track_idx, |v| InstrumentParam::Attack(v)),
-        synth_knob("DEC",  p.decay,    0.001, 4.0,  track_idx, |v| InstrumentParam::Decay(v)),
-        synth_knob("SUS",  p.sustain,  0.0,   1.0,  track_idx, |v| InstrumentParam::Sustain(v)),
-        synth_knob("REL",  p.release,  0.001, 4.0,  track_idx, |v| InstrumentParam::Release(v)),
+        synth_knob("ATK",  p.attack,   0.001, 4.0,  track_idx, InstrumentParam::Attack),
+        synth_knob("DEC",  p.decay,    0.001, 4.0,  track_idx, InstrumentParam::Decay),
+        synth_knob("SUS",  p.sustain,  0.0,   1.0,  track_idx, InstrumentParam::Sustain),
+        synth_knob("REL",  p.release,  0.001, 4.0,  track_idx, InstrumentParam::Release),
         synth_knob("CUT",  p.cutoff / 20000.0, 0.0, 1.0, track_idx, |v| InstrumentParam::Cutoff(v * 20000.0)),
         synth_knob("RES",  p.resonance / 4.0, 0.0, 1.0, track_idx, |v| InstrumentParam::Resonance(v * 4.0)),
-        synth_knob("GAIN", p.gain,     0.0,   1.0,  track_idx, |v| InstrumentParam::Gain(v)),
+        synth_knob("GAIN", p.gain,     0.0,   1.0,  track_idx, InstrumentParam::Gain),
     ].spacing(10);
 
     container(
