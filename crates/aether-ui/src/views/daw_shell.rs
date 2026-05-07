@@ -194,7 +194,7 @@ impl DawShell {
                             .items_center()
                             .rounded(px(Theme::RADIUS_SM))
                             .bg(if is_recording { rgba(0xef53501a) } else { Rgba::transparent_black() })
-                            .text_color(if is_recording { Theme::ERROR } else { Theme::TEXT_DIM })
+                            .text_color(if is_recording { Theme::ERROR_COLOR } else { Theme::TEXT_DIM })
                             .text_size(px(12.0))
                             .cursor_pointer()
                             .child("● Rec")
@@ -237,7 +237,7 @@ impl DawShell {
                             .w(px(7.0))
                             .h(px(7.0))
                             .rounded_full()
-                            .bg(if engine_ok { Theme::SUCCESS } else { Theme::ERROR })
+                            .bg(if engine_ok { Theme::SUCCESS } else { Theme::ERROR_COLOR })
                     )
                     .child(
                         div()

@@ -31,7 +31,7 @@ impl Render for VuMeter {
                 let threshold = i as f32 / segments as f32;
                 let active = level > threshold;
                 let color = if i >= segments - 2 {
-                    Theme::ERROR
+                    Theme::ERROR_COLOR
                 } else if i >= segments - 4 {
                     Theme::WARNING
                 } else {

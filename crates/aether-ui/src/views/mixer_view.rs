@@ -80,7 +80,7 @@ impl MixerView {
                             let threshold = i as f32 / VU_SEGMENTS as f32;
                             let active = level > threshold;
                             let seg_color = if i >= VU_SEGMENTS - 2 {
-                                Theme::ERROR
+                                Theme::ERROR_COLOR
                             } else if i >= VU_SEGMENTS - 4 {
                                 Theme::WARNING
                             } else {
@@ -194,7 +194,7 @@ impl MixerView {
                             .bg(if muted { rgba(0xef53501a) } else { Rgba::transparent_black() })
                             .border_1()
                             .border_color(if muted { rgba(0xef535050) } else { Theme::BORDER })
-                            .text_color(if muted { Theme::ERROR } else { Theme::TEXT_DIM })
+                            .text_color(if muted { Theme::ERROR_COLOR } else { Theme::TEXT_DIM })
                             .text_size(px(8.0))
                             .cursor_pointer()
                             .on_mouse_down(MouseButton::Left, {
