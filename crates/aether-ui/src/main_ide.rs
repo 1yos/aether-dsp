@@ -31,7 +31,7 @@ fn main() -> iced::Result {
         .run()
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct AetherStudio {
     workspace: Workspace,
     ide: AetherIDE,
@@ -50,6 +50,20 @@ enum Message {
     Graph(GraphMessage),
     Terminal(TerminalMessage),
     Toolbar(ToolbarMessage),
+}
+
+impl Default for AetherStudio {
+    fn default() -> Self {
+        Self {
+            workspace: Workspace::new(),
+            ide: AetherIDE::new(),
+            project_explorer: ProjectExplorer::new(),
+            code_editor: CodeEditorView::new(),
+            graph_view: GraphView::new(),
+            terminal: Terminal::new(),
+            toolbar: Toolbar::new(),
+        }
+    }
 }
 
 impl AetherStudio {
@@ -125,7 +139,7 @@ impl AetherStudio {
         Task::none()
     }
 
-    fn view(&self) -> Element<'_, Message> {
+    fn view(&self) -> Element<Message> {
         match self.workspace.active_mode {
             WorkspaceMode::Welcome => WelcomeScreen::view().map(Message::Welcome),
             WorkspaceMode::DspGraph => self.view_ide(),
@@ -134,7 +148,7 @@ impl AetherStudio {
         }
     }
 
-    fn view_ide(&self) -> Element<'_, Message> {
+    fn view_ide(&self) -> Element<Message> {
         let toolbar = self.toolbar.view().map(Message::Toolbar);
         
         let explorer = self.project_explorer.view().map(Message::Explorer);
@@ -177,7 +191,7 @@ impl AetherStudio {
             .into()
     }
 
-    fn view_empty_editor(&self) -> Element<'_, Message> {
+    fn view_empty_editor(&self) -> Element<Message> {
         use iced::widget::text;
         
         let content = column![
@@ -206,7 +220,7 @@ impl AetherStudio {
             .into()
     }
 
-    fn view_gui_designer(&self) -> Element<'_, Message> {
+    fn view_gui_designer(&self) -> Element<Message> {
         use iced::widget::text;
         
         let content = column![
@@ -228,7 +242,7 @@ impl AetherStudio {
             .into()
     }
 
-    fn view_project_settings(&self) -> Element<'_, Message> {
+    fn view_project_settings(&self) -> Element<Message> {
         use iced::widget::text;
         
         let content = column![
