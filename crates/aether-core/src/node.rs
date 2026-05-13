@@ -86,7 +86,7 @@ pub trait DspNode: Send {
     /// # Arguments
     ///
     /// * `inputs` - Array of optional input buffers. `None` means no connection (silence).
-    ///              Index corresponds to input slot (0 to MAX_INPUTS-1).
+    ///   Index corresponds to input slot (0 to MAX_INPUTS-1).
     /// * `output` - Output buffer to fill with processed audio (64 samples).
     /// * `params` - Parameter block for this node (smoothed parameters).
     /// * `sample_rate` - Current sample rate in Hz (e.g., 48000.0).
