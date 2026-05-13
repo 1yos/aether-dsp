@@ -370,10 +370,22 @@ A: See [CONTRIBUTING.md](../../CONTRIBUTING.md) for guidelines. PRs welcome!
 
 ## Resources
 
-- **Documentation:** https://docs.rs/aetherdsp-core
+### Documentation
+
+- **API Documentation:** https://docs.rs/aetherdsp-core
 - **Examples:** [examples/](examples/)
 - **Migration Guide:** [MIGRATION.md](MIGRATION.md)
 - **Benchmarks:** `cargo bench -p aetherdsp-core`
+
+### Tutorials
+
+- **[Building Your First Synthesizer](../../docs/tutorials/first-synth.md)** - Complete beginner guide
+- **[Creating Custom DSP Nodes](../../docs/tutorials/custom-nodes.md)** - Build your own effects
+- **[Microtonal Music with Tuning Systems](../../docs/tutorials/tuning-systems.md)** - Explore world music
+- **[Tutorial Index](../../docs/tutorials/README.md)** - All tutorials
+
+### Community
+
 - **Issues:** https://github.com/1yos/aether-dsp/issues
 - **Discussions:** https://github.com/1yos/aether-dsp/discussions
 

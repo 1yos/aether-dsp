@@ -138,6 +138,16 @@ AetherDSP treats tuning as a first-class feature. Every instrument loads with it
 
 ## Quick Start
 
+### Tutorials
+
+New to AetherDSP? Start with our step-by-step tutorials:
+
+- **[Building Your First Synthesizer](docs/tutorials/first-synth.md)** - Learn the basics (30-45 min)
+- **[Creating Custom DSP Nodes](docs/tutorials/custom-nodes.md)** - Build your own effects (20-30 min)
+- **[Microtonal Music with Tuning Systems](docs/tutorials/tuning-systems.md)** - Explore world music scales (20-30 min)
+
+See the complete [Tutorial Index](docs/tutorials/README.md) for more.
+
 ### Use the engine in your project
 
 ```toml
