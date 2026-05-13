@@ -6,13 +6,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.1.3] - 2026-05-13
+
+### Added
+
+- Comprehensive inline API documentation for all 35 critical APIs
+- 53 working doc test examples demonstrating API usage
+- Detailed documentation for:
+  - Scheduler module (4 APIs)
+  - DspGraph module (7 APIs)
+  - DspNode trait (4 APIs)
+  - Param module (9 APIs)
+  - Arena module (7 APIs)
+  - BufferPool module (4 APIs)
+  - Command enum (all 8 variants)
+  - NodeRecord struct
+- Real-time safety notes for all RT-critical functions
+- Performance characteristics documentation
+- Cross-references between related APIs
+
+### Improved
+
+- docs.rs appearance with comprehensive examples
+- API discoverability for new users
+- Onboarding experience with working code samples
+
 ## [0.1.2] - 2026-05-12
 
 ### Added
+
 - Comprehensive CHANGELOG.md with full version history
 - Working examples demonstrating real-world usage
 - Improved documentation for better discoverability
-
 
 ## [0.1.1] - 2026-05-12
 
@@ -52,6 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Arena insert/remove ×1000: < 5 µs
 - Scheduler (1000 noop nodes): < 100 µs
 
-[Unreleased]: https://github.com/1yos/aether-dsp/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/1yos/aether-dsp/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/1yos/aether-dsp/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/1yos/aether-dsp/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/1yos/aether-dsp/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/1yos/aether-dsp/releases/tag/v0.1.0
