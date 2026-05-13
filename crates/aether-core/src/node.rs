@@ -170,12 +170,12 @@ pub trait DspNode: Send {
     ///
     ///     fn capture_state(&self) -> StateBlob {
     ///         // Preserve phase to avoid clicks
-    ///         StateBlob::from_f32(self.phase)
+    ///         StateBlob::from_value(&self.phase)
     ///     }
     ///
     ///     fn restore_state(&mut self, state: StateBlob) {
-    ///         if let Some(phase) = state.as_f32() {
-    ///             self.phase = phase;
+    ///         if state.len == std::mem::size_of::<f32>() {
+    ///             self.phase = state.to_value::<f32>();
     ///         }
     ///     }
     ///
@@ -245,6 +245,72 @@ pub trait DspNode: Send {
 }
 
 /// Graph-level node record. Stored in the arena.
+///
+/// Each node in the DSP graph is represented by a `NodeRecord` stored in the
+/// arena. The record contains the DSP processor, input connections, output
+/// buffer, and parameters.
+///
+/// # Structure
+///
+/// - **processor:** The DSP implementation (boxed trait object)
+/// - **inputs:** Array of input connections (NodeId or None)
+/// - **output_buffer:** Buffer ID where this node writes output
+/// - **params:** Parameter block for smoothed parameter automation
+///
+/// # Memory Layout
+///
+/// The processor is heap-allocated (Box) at node creation time, not during
+/// audio processing. All other fields are inline in the arena slot.
+///
+/// # Example
+///
+/// ```
+/// use aether_core::node::{NodeRecord, DspNode};
+/// use aether_core::buffer_pool::{BufferPool, BufferId};
+/// use aether_core::param::ParamBlock;
+/// use aether_core::{BUFFER_SIZE, MAX_INPUTS};
+///
+/// // Custom node implementation
+/// struct Gain { gain: f32 }
+///
+/// impl DspNode for Gain {
+///     fn process(
+///         &mut self,
+///         inputs: &[Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS],
+///         output: &mut [f32; BUFFER_SIZE],
+///         _params: &mut ParamBlock,
+///         _sample_rate: f32,
+///     ) {
+///         if let Some(input) = inputs[0] {
+///             for (i, out) in output.iter_mut().enumerate() {
+///                 *out = input[i] * self.gain;
+///             }
+///         }
+///     }
+///
+///     fn type_name(&self) -> &'static str {
+///         "Gain"
+///     }
+/// }
+///
+/// // Create node record
+/// let mut pool = BufferPool::new(10);
+/// let buffer = pool.acquire().unwrap();
+/// let processor = Box::new(Gain { gain: 0.5 });
+/// let record = NodeRecord::new(processor, buffer);
+/// ```
+///
+/// # Lifecycle
+///
+/// 1. **Creation:** Allocated in arena when `AddNode` command is processed
+/// 2. **Processing:** `processor.process()` called each audio block
+/// 3. **Removal:** Dropped when `RemoveNode` command is processed
+///
+/// # See Also
+///
+/// * [`DspNode`] - The processing trait
+/// * [`Arena`](crate::arena::Arena) - Storage for node records
+/// * [`Scheduler`](crate::scheduler::Scheduler) - Processes nodes in order
 pub struct NodeRecord {
     /// The DSP implementation (boxed, allocated at node creation time — not in RT).
     pub processor: Box<dyn DspNode>,

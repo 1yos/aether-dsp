@@ -158,7 +158,7 @@ impl Scheduler {
     /// ```no_run
     /// use aether_core::scheduler::Scheduler;
     /// use aether_core::command::Command;
-    /// use ringbuf::HeapRb;
+    /// use ringbuf::{HeapRb, traits::Split};
     ///
     /// let mut sched = Scheduler::new(48_000.0);
     /// let (mut producer, mut consumer) = HeapRb::<Command>::new(1024).split();

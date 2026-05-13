@@ -3,8 +3,8 @@
 //! Hard real-time modular DSP engine — lock-free graph scheduler,
 //! generational arena, and zero-allocation buffer pool.
 //!
-//! ```
-//! 64-sample buffer · 48 kHz · ≤1.33 ms deadline · Zero allocations · Lock-free
+//! ```text
+//! 64-sample buffer | 48 kHz | ≤1.33 ms deadline | Zero allocations | Lock-free
 //! ```
 //!
 //! ## Architecture
