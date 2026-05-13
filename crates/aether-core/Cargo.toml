@@ -15,6 +15,12 @@ categories = ["multimedia::audio", "no-std"]
 [lib]
 name = "aether_core"
 
+[features]
+default = ["std", "parallel", "serde"]
+std = []
+parallel = ["rayon"]
+serde = ["dep:serde", "dep:serde_json"]
+
 [[bench]]
 name = "rt_bench"
 harness = false
@@ -29,7 +35,7 @@ ctrlc = "3.4"
 crossbeam = { workspace = true }
 ringbuf = { workspace = true }
 arc-swap = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-rayon = { workspace = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+rayon = { workspace = true, optional = true }
 thiserror = { workspace = true }

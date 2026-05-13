@@ -15,6 +15,45 @@ categories = ["multimedia::audio"]
 [lib]
 name = "aether_nodes"
 
+[features]
+default = ["all-nodes"]
+all-nodes = [
+    "oscillator",
+    "filter",
+    "reverb",
+    "delay",
+    "compressor",
+    "envelope",
+    "lfo",
+    "gain",
+    "mixer",
+    "moog-ladder",
+    "formant",
+    "granular",
+    "karplus-strong",
+    "waveshaper",
+    "chorus",
+    "record",
+    "scope",
+]
+oscillator = []
+filter = []
+reverb = []
+delay = []
+compressor = []
+envelope = []
+lfo = []
+gain = []
+mixer = []
+moog-ladder = []
+formant = []
+granular = []
+karplus-strong = []
+waveshaper = []
+chorus = []
+record = []
+scope = []
+
 [dev-dependencies]
 proptest = "1"
 hound = "3"

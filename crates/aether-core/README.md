@@ -33,6 +33,39 @@ Hard real-time modular DSP engine for Rust.
 | Bounded execution               | Flat topo-sorted array, ≤32 commands/tick  |
 | No recursion                    | Iterative Kahn's sort, iterative execution |
 
+## Feature flags
+
+This crate supports optional features to reduce compile times and binary size:
+
+```toml
+[dependencies]
+aetherdsp-core = { version = "0.1", default-features = false, features = ["std"] }
+```
+
+| Feature    | Default | Description                               |
+| ---------- | ------- | ----------------------------------------- |
+| `std`      | ✅      | Standard library support (required)       |
+| `parallel` | ✅      | Parallel node execution via Rayon         |
+| `serde`    | ✅      | Serialization support for graph snapshots |
+
+**Examples:**
+
+```toml
+# Minimal build (no parallel, no serde)
+aetherdsp-core = { version = "0.1", default-features = false, features = ["std"] }
+
+# Parallel execution only
+aetherdsp-core = { version = "0.1", default-features = false, features = ["std", "parallel"] }
+
+# All features (default)
+aetherdsp-core = "0.1"
+```
+
+**Performance impact:**
+
+- Disabling `parallel` falls back to sequential node execution (slower for large graphs)
+- Disabling `serde` removes graph snapshot serialization (smaller binary)
+
 ## Quick start
 
 ```rust

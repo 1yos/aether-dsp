@@ -1,58 +1,105 @@
 # aether-nodes
 
-[![crates.io](https://img.shields.io/crates/v/aether-nodes.svg)](https://crates.io/crates/aether-nodes)
-[![docs.rs](https://docs.rs/aether-nodes/badge.svg)](https://docs.rs/aether-nodes)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![crates.io](https://img.shields.io/crates/v/aetherdsp-nodes.svg)](https://crates.io/crates/aetherdsp-nodes)
+[![docs.rs](https://docs.rs/aetherdsp-nodes/badge.svg)](https://docs.rs/aetherdsp-nodes)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 
-Built-in DSP nodes for the [AetherDSP](https://crates.io/crates/aetherdsp-core) engine.
+Built-in DSP nodes for AetherDSP — oscillators, filters, effects, and more.
 
-## Nodes
+## Available Nodes
 
-| Node                  | Description                                                                |
-| --------------------- | -------------------------------------------------------------------------- |
-| `OscillatorNode`      | BLEP anti-aliased sawtooth/square/triangle/sine, tuning table support      |
-| `StateVariableFilter` | LP/HP/BP/Notch simultaneously (Cytomic SVF)                                |
-| `MoogLadder`          | Huovilainen model, self-oscillation, audio-rate modulation                 |
-| `FormantFilter`       | Vowel shaping A/E/I/O/U morph — essential for wind instruments             |
-| `AdsrEnvelope`        | Sample-accurate ADSR with gate                                             |
-| `Lfo`                 | 5 waveforms: sine, triangle, square, S&H, random-smooth                    |
-| `Reverb`              | Freeverb (8 comb + 4 allpass filters)                                      |
-| `DelayLine`           | Feedback delay with tempo sync                                             |
-| `KarplusStrong`       | Physically accurate plucked string synthesis                               |
-| `Granular`            | Grain size, density, pitch scatter, position — world music textures        |
-| `Compressor`          | RMS-based dynamic range compression with soft-knee curve                   |
-| `Waveshaper`          | 5 distortion modes: tanh, hard-clip, fold-back, bit-crush, tube saturation |
-| `Chorus`              | BBD-style modulated delay for thickening and stereo widening               |
-| `GainNode`            | Smoothed gain/volume control                                               |
-| `MixerNode`           | N-input summing mixer with per-channel gain · SIMD FMA-optimized           |
-| `ScopeNode`           | Oscilloscope — writes to a shared ring buffer for UI                       |
-| `RecordNode`          | Captures audio to a WAV file via `hound`                                   |
+| Node             | Description                                  |
+| ---------------- | -------------------------------------------- |
+| `oscillator`     | Sine, saw, square, triangle waveforms        |
+| `filter`         | Biquad filters (lowpass, highpass, bandpass) |
+| `moog-ladder`    | Classic Moog ladder filter                   |
+| `reverb`         | Schroeder reverb with configurable room size |
+| `delay`          | Delay line with feedback                     |
+| `compressor`     | Dynamic range compressor                     |
+| `envelope`       | ADSR envelope generator                      |
+| `lfo`            | Low-frequency oscillator                     |
+| `gain`           | Simple gain/volume control                   |
+| `mixer`          | Multi-channel mixer                          |
+| `formant`        | Formant filter for vocal synthesis           |
+| `granular`       | Granular synthesis engine                    |
+| `karplus-strong` | Physical modeling string synthesis           |
+| `waveshaper`     | Waveshaping distortion                       |
+| `chorus`         | Chorus effect                                |
+| `record`         | Record audio to buffer                       |
+| `scope`          | Oscilloscope for visualization               |
 
-## Usage
+## Feature Flags
 
-```rust
-use aether_nodes::oscillator::OscillatorNode;
-use aether_nodes::filter::FilterNode;
-use aether_nodes::compressor::CompressorNode;
-use aether_nodes::chorus::ChorusNode;
-use aether_core::node::DspNode;
+All nodes are enabled by default. You can opt-in to specific nodes to reduce compile times and binary size:
 
-let osc = OscillatorNode::default();    // 440 Hz sine
-let filt = FilterNode::default();       // LP @ 1 kHz
-let comp = CompressorNode::default();   // -12 dB threshold, 4:1 ratio
-let chorus = ChorusNode::default();     // 0.5 Hz rate, 7 ms depth
+```toml
+[dependencies]
+aetherdsp-nodes = { version = "0.2", default-features = false, features = ["oscillator", "filter"] }
 ```
 
-All nodes implement `aether_core::node::DspNode` and are safe to use in the RT thread — no allocation, no locks, no I/O.
+| Feature          | Default | Description              |
+| ---------------- | ------- | ------------------------ |
+| `all-nodes`      | ✅      | Enable all nodes         |
+| `oscillator`     | ✅      | Oscillator node          |
+| `filter`         | ✅      | Biquad filter node       |
+| `moog-ladder`    | ✅      | Moog ladder filter       |
+| `reverb`         | ✅      | Reverb effect            |
+| `delay`          | ✅      | Delay line               |
+| `compressor`     | ✅      | Compressor               |
+| `envelope`       | ✅      | ADSR envelope            |
+| `lfo`            | ✅      | LFO                      |
+| `gain`           | ✅      | Gain control             |
+| `mixer`          | ✅      | Mixer                    |
+| `formant`        | ✅      | Formant filter           |
+| `granular`       | ✅      | Granular synthesis       |
+| `karplus-strong` | ✅      | Karplus-Strong synthesis |
+| `waveshaper`     | ✅      | Waveshaper               |
+| `chorus`         | ✅      | Chorus effect            |
+| `record`         | ✅      | Record node              |
+| `scope`          | ✅      | Oscilloscope             |
 
-## RT Safety
+**Examples:**
 
-Every node in this crate follows the AetherDSP real-time rules:
+```toml
+# Minimal synth (oscillator + filter + envelope)
+aetherdsp-nodes = { version = "0.2", default-features = false, features = ["oscillator", "filter", "envelope"] }
 
-- No heap allocation during `process()`
-- No mutex or lock usage
-- No I/O or system calls
-- Bounded execution time per block
+# Effects only
+aetherdsp-nodes = { version = "0.2", default-features = false, features = ["reverb", "delay", "chorus"] }
+
+# All nodes (default)
+aetherdsp-nodes = "0.2"
+```
+
+## Quick Start
+
+```rust
+use aether_core::scheduler::Scheduler;
+use aether_nodes::oscillator::Oscillator;
+
+let mut sched = Scheduler::new(48_000.0);
+let osc = Box::new(Oscillator::new(440.0));
+let id = sched.graph.add_node(osc).unwrap();
+sched.graph.set_output_node(id);
+
+// Process audio
+let mut output = vec![0.0f32; 128];
+sched.process_block_simple(&mut output);
+```
+
+## Examples
+
+See the [examples](examples/) directory for complete working examples:
+
+- `filter_sweep.rs` - Animate filter cutoff frequency
+- `envelope_test.rs` - Trigger ADSR envelope
+- `reverb_demo.rs` - Reverb with different room sizes
+
+Run with:
+
+```bash
+cargo run --example filter_sweep -p aetherdsp-nodes
+```
 
 ## License
 

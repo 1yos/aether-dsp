@@ -279,27 +279,47 @@ impl Scheduler {
                 // SAFETY: each element of `tasks` points to disjoint memory.
                 // We pass a raw pointer per task so each closure captures a
                 // distinct non-aliasing pointer.
-                rayon::scope(|s| {
+                #[cfg(feature = "parallel")]
+                {
+                    rayon::scope(|s| {
+                        for task in tasks.iter_mut() {
+                            // Capture the raw pointer value (usize) to avoid the
+                            // borrow checker complaining about &mut Vec element borrows.
+                            let ptr = task as *mut NodeTask as usize;
+                            s.spawn(move |_| {
+                                // SAFETY: ptr is a valid, exclusively-owned NodeTask.
+                                let t: &mut NodeTask = unsafe { &mut *(ptr as *mut NodeTask) };
+                                let inputs: [Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS] =
+                                    t.inputs.map(|p| p.map(|raw| unsafe { &*raw }));
+                                unsafe {
+                                    (*t.processor_ptr).process(
+                                        &inputs,
+                                        &mut *t.output_buf_ptr,
+                                        &mut *t.params_ptr,
+                                        sr,
+                                    );
+                                }
+                            });
+                        }
+                    });
+                }
+
+                // Sequential fallback when parallel feature is disabled
+                #[cfg(not(feature = "parallel"))]
+                {
                     for task in tasks.iter_mut() {
-                        // Capture the raw pointer value (usize) to avoid the
-                        // borrow checker complaining about &mut Vec element borrows.
-                        let ptr = task as *mut NodeTask as usize;
-                        s.spawn(move |_| {
-                            // SAFETY: ptr is a valid, exclusively-owned NodeTask.
-                            let t: &mut NodeTask = unsafe { &mut *(ptr as *mut NodeTask) };
-                            let inputs: [Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS] =
-                                t.inputs.map(|p| p.map(|raw| unsafe { &*raw }));
-                            unsafe {
-                                (*t.processor_ptr).process(
-                                    &inputs,
-                                    &mut *t.output_buf_ptr,
-                                    &mut *t.params_ptr,
-                                    sr,
-                                );
-                            }
-                        });
+                        let inputs: [Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS] =
+                            task.inputs.map(|p| p.map(|raw| unsafe { &*raw }));
+                        unsafe {
+                            (*task.processor_ptr).process(
+                                &inputs,
+                                &mut *task.output_buf_ptr,
+                                &mut *task.params_ptr,
+                                sr,
+                            );
+                        }
                     }
-                });
+                }
             }
         }
 

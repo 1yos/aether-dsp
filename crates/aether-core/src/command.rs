@@ -4,6 +4,8 @@
 //! MAX_COMMANDS_PER_TICK per callback, bounding mutation cost.
 
 use crate::{arena::NodeId, param::Param};
+
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 /// All mutations the control thread can request.
@@ -240,13 +242,15 @@ pub enum Command {
 }
 
 /// Serializable graph description for UI ↔ host communication.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone)]
 pub struct GraphSnapshot {
     pub nodes: Vec<NodeSnapshot>,
     pub edges: Vec<EdgeSnapshot>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone)]
 pub struct NodeSnapshot {
     pub id: u32,
     pub generation: u32,
@@ -254,7 +258,8 @@ pub struct NodeSnapshot {
     pub params: Vec<f32>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone)]
 pub struct EdgeSnapshot {
     pub src_id: u32,
     pub dst_id: u32,
