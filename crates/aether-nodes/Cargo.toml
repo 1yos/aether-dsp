@@ -17,6 +17,8 @@ name = "aether_nodes"
 
 [dev-dependencies]
 proptest = "1"
+hound = "3"
+ringbuf = { workspace = true }
 
 [dependencies]
 aetherdsp-core = { version = "0.1", path = "../aether-core" }

@@ -15,6 +15,9 @@ categories = ["multimedia::audio"]
 [lib]
 name = "aether_midi"
 
+[dev-dependencies]
+ctrlc = "3.4"
+
 [dependencies]
 aetherdsp-core = { version = "0.1", path = "../aether-core" }
 midir = { workspace = true }
