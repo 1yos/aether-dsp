@@ -43,7 +43,7 @@ jobs:
           fi
 
       - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.78.0
         with:
           components: clippy
 
