@@ -11,7 +11,43 @@ use crate::{
 };
 use std::collections::HashMap;
 
-/// The DSP graph. Lives on the RT thread after initial construction.
+/// Directed Acyclic Graph (DAG) for DSP routing.
+///
+/// The graph owns the node arena and buffer pool. It maintains a topologically
+/// sorted execution order and BFS level structure for parallel processing.
+///
+/// # Structure
+///
+/// - **Arena**: Generational arena storing node records
+/// - **Buffer Pool**: Pre-allocated audio buffers (no RT allocation)
+/// - **Execution Order**: Flat topologically sorted node list
+/// - **BFS Levels**: Nodes grouped by dependency depth for parallel execution
+///
+/// # Example
+///
+/// ```
+/// use aether_core::graph::DspGraph;
+/// use aether_core::node::DspNode;
+/// use aether_core::param::ParamBlock;
+/// use aether_core::{BUFFER_SIZE, MAX_INPUTS};
+///
+/// struct Gain { gain: f32 }
+/// impl DspNode for Gain {
+///     fn process(&mut self, inputs: &[Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS],
+///                output: &mut [f32; BUFFER_SIZE], _params: &mut ParamBlock, _sr: f32) {
+///         if let Some(input) = inputs[0] {
+///             for (i, out) in output.iter_mut().enumerate() {
+///                 *out = input[i] * self.gain;
+///             }
+///         }
+///     }
+///     fn type_name(&self) -> &'static str { "Gain" }
+/// }
+///
+/// let mut graph = DspGraph::new();
+/// let gain_id = graph.add_node(Box::new(Gain { gain: 0.5 })).unwrap();
+/// graph.set_output_node(gain_id);
+/// ```
 pub struct DspGraph {
     pub arena: Arena<NodeRecord>,
     pub buffers: BufferPool,
@@ -29,6 +65,19 @@ pub struct DspGraph {
 }
 
 impl DspGraph {
+    /// Creates a new empty DSP graph.
+    ///
+    /// Initializes the arena, buffer pool, and execution structures with
+    /// pre-allocated capacity for `MAX_NODES` nodes.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aether_core::graph::DspGraph;
+    ///
+    /// let graph = DspGraph::new();
+    /// assert_eq!(graph.execution_order.len(), 0);
+    /// ```
     pub fn new() -> Self {
         Self {
             arena: Arena::with_capacity(MAX_NODES),
@@ -41,7 +90,50 @@ impl DspGraph {
         }
     }
 
-    /// Add a node to the graph. Returns its NodeId.
+    /// Adds a node to the graph and returns its ID.
+    ///
+    /// Acquires a buffer from the pool, inserts the node into the arena,
+    /// and rebuilds the topological execution order.
+    ///
+    /// # Arguments
+    ///
+    /// * `processor` - Boxed DSP node implementation
+    ///
+    /// # Returns
+    ///
+    /// * `Some(NodeId)` - The node's unique identifier
+    /// * `None` - If arena is full or buffer pool exhausted
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aether_core::graph::DspGraph;
+    /// use aether_core::node::DspNode;
+    /// use aether_core::param::ParamBlock;
+    /// use aether_core::{BUFFER_SIZE, MAX_INPUTS};
+    ///
+    /// struct Oscillator { frequency: f32, phase: f32 }
+    /// impl DspNode for Oscillator {
+    ///     fn process(&mut self, _inputs: &[Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS],
+    ///                output: &mut [f32; BUFFER_SIZE], _params: &mut ParamBlock, sr: f32) {
+    ///         let phase_inc = self.frequency / sr;
+    ///         for sample in output.iter_mut() {
+    ///             *sample = (self.phase * std::f32::consts::TAU).sin();
+    ///             self.phase = (self.phase + phase_inc).fract();
+    ///         }
+    ///     }
+    ///     fn type_name(&self) -> &'static str { "Oscillator" }
+    /// }
+    ///
+    /// let mut graph = DspGraph::new();
+    /// let osc = Box::new(Oscillator { frequency: 440.0, phase: 0.0 });
+    /// let id = graph.add_node(osc).unwrap();
+    /// ```
+    ///
+    /// # See Also
+    ///
+    /// * [`remove_node`](Self::remove_node) - Remove a node from the graph
+    /// * [`connect`](Self::connect) - Connect two nodes
     pub fn add_node(&mut self, processor: Box<dyn DspNode>) -> Option<NodeId> {
         let buf = self.buffers.acquire()?;
         let record = NodeRecord::new(processor, buf);
@@ -52,7 +144,48 @@ impl DspGraph {
         Some(id)
     }
 
-    /// Remove a node, releasing its buffer.
+    /// Removes a node from the graph and releases its buffer.
+    ///
+    /// Removes the node from the arena, releases its output buffer back to
+    /// the pool, and removes all edges connected to this node. Rebuilds the
+    /// topological execution order.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - Node ID to remove
+    ///
+    /// # Returns
+    ///
+    /// * `true` - Node removed successfully
+    /// * `false` - Node doesn't exist (invalid ID or already removed)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aether_core::graph::DspGraph;
+    /// use aether_core::node::DspNode;
+    /// use aether_core::param::ParamBlock;
+    /// use aether_core::{BUFFER_SIZE, MAX_INPUTS};
+    ///
+    /// struct SimpleNode;
+    /// impl DspNode for SimpleNode {
+    ///     fn process(&mut self, _: &[Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS],
+    ///                output: &mut [f32; BUFFER_SIZE], _: &mut ParamBlock, _: f32) {
+    ///         output.fill(0.0);
+    ///     }
+    ///     fn type_name(&self) -> &'static str { "SimpleNode" }
+    /// }
+    ///
+    /// let mut graph = DspGraph::new();
+    /// let node_id = graph.add_node(Box::new(SimpleNode)).unwrap();
+    ///
+    /// assert!(graph.remove_node(node_id)); // Returns true
+    /// assert!(!graph.remove_node(node_id)); // Returns false (already removed)
+    /// ```
+    ///
+    /// # See Also
+    ///
+    /// * [`add_node`](Self::add_node) - Add a node to the graph
     pub fn remove_node(&mut self, id: NodeId) -> bool {
         if let Some(record) = self.arena.remove(id) {
             self.buffers.release(record.output_buffer);
@@ -68,7 +201,52 @@ impl DspGraph {
         }
     }
 
-    /// Connect src output → dst input[slot].
+    /// Connects the output of one node to the input of another.
+    ///
+    /// Creates an edge in the DAG from `src` to `dst`, routing audio from
+    /// the source node's output buffer to the destination node's input slot.
+    /// Rebuilds the topological execution order to maintain DAG invariants.
+    ///
+    /// # Arguments
+    ///
+    /// * `src` - Source node ID (output)
+    /// * `dst` - Destination node ID (input)
+    /// * `slot` - Input slot index on destination node (0 to MAX_INPUTS-1)
+    ///
+    /// # Returns
+    ///
+    /// * `true` - Connection successful
+    /// * `false` - One or both nodes don't exist
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aether_core::graph::DspGraph;
+    /// use aether_core::node::DspNode;
+    /// use aether_core::param::ParamBlock;
+    /// use aether_core::{BUFFER_SIZE, MAX_INPUTS};
+    ///
+    /// struct SimpleNode;
+    /// impl DspNode for SimpleNode {
+    ///     fn process(&mut self, _: &[Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS],
+    ///                output: &mut [f32; BUFFER_SIZE], _: &mut ParamBlock, _: f32) {
+    ///         output.fill(0.0);
+    ///     }
+    ///     fn type_name(&self) -> &'static str { "SimpleNode" }
+    /// }
+    ///
+    /// let mut graph = DspGraph::new();
+    /// let node_a = graph.add_node(Box::new(SimpleNode)).unwrap();
+    /// let node_b = graph.add_node(Box::new(SimpleNode)).unwrap();
+    ///
+    /// // Connect node_a output → node_b input slot 0
+    /// graph.connect(node_a, node_b, 0);
+    /// ```
+    ///
+    /// # See Also
+    ///
+    /// * [`disconnect`](Self::disconnect) - Remove a connection
+    /// * [`add_node`](Self::add_node) - Add nodes to connect
     pub fn connect(&mut self, src: NodeId, dst: NodeId, slot: usize) -> bool {
         if self.arena.get(src).is_none() || self.arena.get(dst).is_none() {
             return false;
@@ -85,7 +263,50 @@ impl DspGraph {
         true
     }
 
-    /// Disconnect dst input[slot].
+    /// Disconnects an input slot on a destination node.
+    ///
+    /// Removes the connection to the specified input slot, clearing the
+    /// audio routing. The slot will receive silence until reconnected.
+    /// Rebuilds the topological execution order.
+    ///
+    /// # Arguments
+    ///
+    /// * `dst` - Destination node ID
+    /// * `slot` - Input slot index to disconnect (0 to MAX_INPUTS-1)
+    ///
+    /// # Returns
+    ///
+    /// * `true` - Disconnection successful
+    /// * `false` - Node doesn't exist or slot was already empty
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aether_core::graph::DspGraph;
+    /// use aether_core::node::DspNode;
+    /// use aether_core::param::ParamBlock;
+    /// use aether_core::{BUFFER_SIZE, MAX_INPUTS};
+    ///
+    /// struct SimpleNode;
+    /// impl DspNode for SimpleNode {
+    ///     fn process(&mut self, _: &[Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS],
+    ///                output: &mut [f32; BUFFER_SIZE], _: &mut ParamBlock, _: f32) {
+    ///         output.fill(0.0);
+    ///     }
+    ///     fn type_name(&self) -> &'static str { "SimpleNode" }
+    /// }
+    ///
+    /// let mut graph = DspGraph::new();
+    /// let node_a = graph.add_node(Box::new(SimpleNode)).unwrap();
+    /// let node_b = graph.add_node(Box::new(SimpleNode)).unwrap();
+    ///
+    /// graph.connect(node_a, node_b, 0);
+    /// graph.disconnect(node_b, 0); // Disconnect slot 0
+    /// ```
+    ///
+    /// # See Also
+    ///
+    /// * [`connect`](Self::connect) - Create a connection
     pub fn disconnect(&mut self, dst: NodeId, slot: usize) -> bool {
         let src_id = self.arena.get(dst).and_then(|r| r.inputs[slot]);
         if let Some(src) = src_id {
@@ -149,6 +370,39 @@ impl DspGraph {
         }
     }
 
+    /// Sets the output node whose buffer is sent to the DAC.
+    ///
+    /// Designates which node's output buffer should be copied to the
+    /// audio device output. Only one node can be the output node at a time.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - Node ID to use as output
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aether_core::graph::DspGraph;
+    /// use aether_core::node::DspNode;
+    /// use aether_core::param::ParamBlock;
+    /// use aether_core::{BUFFER_SIZE, MAX_INPUTS};
+    ///
+    /// struct Oscillator { phase: f32 }
+    /// impl DspNode for Oscillator {
+    ///     fn process(&mut self, _: &[Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS],
+    ///                output: &mut [f32; BUFFER_SIZE], _: &mut ParamBlock, _: f32) {
+    ///         for sample in output.iter_mut() {
+    ///             *sample = (self.phase * std::f32::consts::TAU).sin();
+    ///             self.phase = (self.phase + 0.01).fract();
+    ///         }
+    ///     }
+    ///     fn type_name(&self) -> &'static str { "Oscillator" }
+    /// }
+    ///
+    /// let mut graph = DspGraph::new();
+    /// let osc_id = graph.add_node(Box::new(Oscillator { phase: 0.0 })).unwrap();
+    /// graph.set_output_node(osc_id);
+    /// ```
     pub fn set_output_node(&mut self, id: NodeId) {
         self.output_node = Some(id);
     }

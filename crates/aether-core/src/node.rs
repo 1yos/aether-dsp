@@ -9,18 +9,129 @@ use crate::{
 };
 
 /// The core DSP processing trait.
-/// Implementations MUST be real-time safe:
-///   - No allocation
-///   - No locks
-///   - No I/O
-///   - Bounded execution time
+///
+/// Implement this trait to create custom audio processors (oscillators, filters,
+/// effects, etc.). The scheduler calls `process()` once per audio block in
+/// topological order.
+///
+/// # Real-Time Safety Requirements
+///
+/// Implementations **MUST** be real-time safe:
+/// - ✅ No allocation (pre-allocate in `new()`)
+/// - ✅ No locks (use lock-free data structures)
+/// - ✅ No I/O (no file/network operations)
+/// - ✅ Bounded execution time (no unbounded loops)
+///
+/// # Example
+///
+/// ```
+/// use aether_core::node::DspNode;
+/// use aether_core::param::ParamBlock;
+/// use aether_core::{BUFFER_SIZE, MAX_INPUTS};
+///
+/// /// Simple gain node
+/// struct Gain {
+///     gain: f32,
+/// }
+///
+/// impl Gain {
+///     fn new(gain: f32) -> Self {
+///         Self { gain }
+///     }
+/// }
+///
+/// impl DspNode for Gain {
+///     fn process(
+///         &mut self,
+///         inputs: &[Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS],
+///         output: &mut [f32; BUFFER_SIZE],
+///         _params: &mut ParamBlock,
+///         _sample_rate: f32,
+///     ) {
+///         // Get first input (if connected)
+///         if let Some(input) = inputs[0] {
+///             // Apply gain to each sample
+///             for (i, out) in output.iter_mut().enumerate() {
+///                 *out = input[i] * self.gain;
+///             }
+///         } else {
+///             // No input connected, output silence
+///             output.fill(0.0);
+///         }
+///     }
+///
+///     fn type_name(&self) -> &'static str {
+///         "Gain"
+///     }
+/// }
+/// ```
+///
+/// # Performance Tips
+///
+/// - Pre-allocate buffers in `new()`, not in `process()`
+/// - Use SIMD when possible (see `std::simd`)
+/// - Avoid branching in inner loops
+/// - Use `#[inline]` for hot functions
+///
+/// # See Also
+///
+/// * [`NodeRecord`] - Graph-level node storage
+/// * [`Scheduler::process_block`](crate::scheduler::Scheduler::process_block) - Calls this trait
 pub trait DspNode: Send {
     /// Process one buffer of audio.
     ///
-    /// `inputs`: resolved input buffer slices (None = silence).
-    /// `output`: the node's output buffer to fill.
-    /// `params`: the node's parameter block (pre-ticked by scheduler).
-    /// `sample_rate`: current sample rate in Hz.
+    /// Called once per audio block by the scheduler. This is the hot path -
+    /// optimize carefully and maintain real-time safety.
+    ///
+    /// # Arguments
+    ///
+    /// * `inputs` - Array of optional input buffers. `None` means no connection (silence).
+    ///              Index corresponds to input slot (0 to MAX_INPUTS-1).
+    /// * `output` - Output buffer to fill with processed audio (64 samples).
+    /// * `params` - Parameter block for this node (smoothed parameters).
+    /// * `sample_rate` - Current sample rate in Hz (e.g., 48000.0).
+    ///
+    /// # Real-Time Safety
+    ///
+    /// This function is called from the audio thread. It **MUST**:
+    /// - Complete within the buffer duration (1.33ms @ 48kHz)
+    /// - Not allocate memory
+    /// - Not acquire locks
+    /// - Not perform I/O
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aether_core::node::DspNode;
+    /// use aether_core::param::ParamBlock;
+    /// use aether_core::{BUFFER_SIZE, MAX_INPUTS};
+    ///
+    /// struct Oscillator {
+    ///     frequency: f32,
+    ///     phase: f32,
+    /// }
+    ///
+    /// impl DspNode for Oscillator {
+    ///     fn process(
+    ///         &mut self,
+    ///         _inputs: &[Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS],
+    ///         output: &mut [f32; BUFFER_SIZE],
+    ///         _params: &mut ParamBlock,
+    ///         sample_rate: f32,
+    ///     ) {
+    ///         let phase_inc = self.frequency / sample_rate;
+    ///         
+    ///         for sample in output.iter_mut() {
+    ///             *sample = (self.phase * std::f32::consts::TAU).sin() * 0.3;
+    ///             self.phase = (self.phase + phase_inc).fract();
+    ///         }
+    ///     }
+    ///
+    ///     fn type_name(&self) -> &'static str {
+    ///         "Oscillator"
+    ///     }
+    /// }
+    /// ```
     fn process(
         &mut self,
         inputs: &[Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS],
@@ -30,14 +141,106 @@ pub trait DspNode: Send {
     );
 
     /// Capture internal state for continuity transfer.
+    ///
+    /// Called when the graph structure changes (add/remove nodes, reconnect).
+    /// Return any internal state that should be preserved across the mutation.
+    ///
+    /// # Returns
+    ///
+    /// A `StateBlob` containing serialized state, or `StateBlob::EMPTY` if
+    /// the node has no state to preserve.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aether_core::node::DspNode;
+    /// use aether_core::state::StateBlob;
+    /// use aether_core::param::ParamBlock;
+    /// use aether_core::{BUFFER_SIZE, MAX_INPUTS};
+    ///
+    /// struct Oscillator {
+    ///     phase: f32,
+    /// }
+    ///
+    /// impl DspNode for Oscillator {
+    ///     fn process(&mut self, _: &[Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS],
+    ///                output: &mut [f32; BUFFER_SIZE], _: &mut ParamBlock, _: f32) {
+    ///         output.fill(0.0);
+    ///     }
+    ///
+    ///     fn capture_state(&self) -> StateBlob {
+    ///         // Preserve phase to avoid clicks
+    ///         StateBlob::from_f32(self.phase)
+    ///     }
+    ///
+    ///     fn restore_state(&mut self, state: StateBlob) {
+    ///         if let Some(phase) = state.as_f32() {
+    ///             self.phase = phase;
+    ///         }
+    ///     }
+    ///
+    ///     fn type_name(&self) -> &'static str {
+    ///         "Oscillator"
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// # See Also
+    ///
+    /// * [`restore_state`](Self::restore_state) - Restore captured state
     fn capture_state(&self) -> StateBlob {
         StateBlob::EMPTY
     }
 
     /// Restore internal state after a graph mutation.
+    ///
+    /// Called after the graph structure changes. Restore any state that was
+    /// captured by `capture_state()` to maintain audio continuity.
+    ///
+    /// # Arguments
+    ///
+    /// * `state` - State blob from `capture_state()`
+    ///
+    /// # Example
+    ///
+    /// See [`capture_state`](Self::capture_state) for a complete example.
     fn restore_state(&mut self, _state: StateBlob) {}
 
     /// Human-readable node type name (for serialization/UI).
+    ///
+    /// Returns a static string identifying the node type. Used for:
+    /// - Debugging and logging
+    /// - Serialization/deserialization
+    /// - UI display
+    /// - Node registry lookups
+    ///
+    /// # Returns
+    ///
+    /// A static string slice with the node type name.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aether_core::node::DspNode;
+    /// use aether_core::param::ParamBlock;
+    /// use aether_core::{BUFFER_SIZE, MAX_INPUTS};
+    ///
+    /// struct Reverb;
+    ///
+    /// impl DspNode for Reverb {
+    ///     fn process(&mut self, _: &[Option<&[f32; BUFFER_SIZE]>; MAX_INPUTS],
+    ///                output: &mut [f32; BUFFER_SIZE], _: &mut ParamBlock, _: f32) {
+    ///         output.fill(0.0);
+    ///     }
+    ///
+    ///     fn type_name(&self) -> &'static str {
+    ///         "Reverb" // Used for identification
+    ///     }
+    /// }
+    ///
+    /// let reverb = Reverb;
+    /// assert_eq!(reverb.type_name(), "Reverb");
+    /// ```
     fn type_name(&self) -> &'static str;
 }
 
