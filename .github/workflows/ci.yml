@@ -43,8 +43,9 @@ jobs:
           fi
 
       - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@1.78.0
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
+          toolchain: stable
           components: clippy
 
       # Swatinem/rust-cache caches per-crate artifacts separately —
