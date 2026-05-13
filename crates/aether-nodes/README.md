@@ -2,7 +2,9 @@
 
 [![crates.io](https://img.shields.io/crates/v/aetherdsp-nodes.svg)](https://crates.io/crates/aetherdsp-nodes)
 [![docs.rs](https://docs.rs/aetherdsp-nodes/badge.svg)](https://docs.rs/aetherdsp-nodes)
+[![CI](https://github.com/1yos/aether-dsp/actions/workflows/ci.yml/badge.svg)](https://github.com/1yos/aether-dsp/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
+[![Downloads](https://img.shields.io/crates/d/aetherdsp-nodes.svg)](https://crates.io/crates/aetherdsp-nodes)
 
 Built-in DSP nodes for AetherDSP — oscillators, filters, effects, and more.
 

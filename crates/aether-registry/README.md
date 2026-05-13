@@ -2,7 +2,9 @@
 
 [![crates.io](https://img.shields.io/crates/v/aetherdsp-registry.svg)](https://crates.io/crates/aetherdsp-registry)
 [![docs.rs](https://docs.rs/aetherdsp-registry/badge.svg)](https://docs.rs/aetherdsp-registry)
+[![CI](https://github.com/1yos/aether-dsp/actions/workflows/ci.yml/badge.svg)](https://github.com/1yos/aether-dsp/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
+[![Downloads](https://img.shields.io/crates/d/aetherdsp-registry.svg)](https://crates.io/crates/aetherdsp-registry)
 
 Runtime node type registry for [AetherDSP](https://github.com/1yos/aether-dsp).
 

@@ -1,5 +1,8 @@
 # aether-samples
 
+[![CI](https://github.com/1yos/aether-dsp/actions/workflows/ci.yml/badge.svg)](https://github.com/1yos/aether-dsp/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
+
 On-demand sample pack download and management for [AetherDSP](https://github.com/1yos/aether-dsp).
 
 Handles fetching, verifying, extracting, and tracking instrument sample packs distributed via GitHub Releases. Used by Aether Studio to give every instrument its real recorded sound.

@@ -2,7 +2,9 @@
 
 [![crates.io](https://img.shields.io/crates/v/aether-midi.svg)](https://crates.io/crates/aether-midi)
 [![docs.rs](https://docs.rs/aether-midi/badge.svg)](https://docs.rs/aether-midi)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/1yos/aether-dsp/actions/workflows/ci.yml/badge.svg)](https://github.com/1yos/aether-dsp/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
+[![Downloads](https://img.shields.io/crates/d/aether-midi.svg)](https://crates.io/crates/aether-midi)
 
 MIDI engine for [AetherDSP](https://crates.io/crates/aether-core) — device routing, clock sync, and microtonal tuning.
 

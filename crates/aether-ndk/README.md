@@ -1,5 +1,11 @@
 # aether-ndk — Node Development Kit v0.1
 
+[![crates.io](https://img.shields.io/crates/v/aether-ndk.svg)](https://crates.io/crates/aether-ndk)
+[![docs.rs](https://docs.rs/aether-ndk/badge.svg)](https://docs.rs/aether-ndk)
+[![CI](https://github.com/1yos/aether-dsp/actions/workflows/ci.yml/badge.svg)](https://github.com/1yos/aether-dsp/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
+[![Downloads](https://img.shields.io/crates/d/aether-ndk.svg)](https://crates.io/crates/aether-ndk)
+
 Build custom DSP nodes for AetherDSP in minutes.
 
 ```rust

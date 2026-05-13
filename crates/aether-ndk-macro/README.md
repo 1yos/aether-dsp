@@ -2,7 +2,9 @@
 
 [![crates.io](https://img.shields.io/crates/v/aether-ndk-macro.svg)](https://crates.io/crates/aether-ndk-macro)
 [![docs.rs](https://docs.rs/aether-ndk-macro/badge.svg)](https://docs.rs/aether-ndk-macro)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/1yos/aether-dsp/actions/workflows/ci.yml/badge.svg)](https://github.com/1yos/aether-dsp/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
+[![Downloads](https://img.shields.io/crates/d/aether-ndk-macro.svg)](https://crates.io/crates/aether-ndk-macro)
 
 Procedural macro for the [Aether Node Development Kit](https://crates.io/crates/aether-ndk).
 

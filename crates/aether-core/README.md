@@ -2,7 +2,9 @@
 
 [![crates.io](https://img.shields.io/crates/v/aetherdsp-core.svg)](https://crates.io/crates/aetherdsp-core)
 [![docs.rs](https://docs.rs/aetherdsp-core/badge.svg)](https://docs.rs/aetherdsp-core)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/1yos/aether-dsp/actions/workflows/ci.yml/badge.svg)](https://github.com/1yos/aether-dsp/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
+[![Downloads](https://img.shields.io/crates/d/aetherdsp-core.svg)](https://crates.io/crates/aetherdsp-core)
 
 Hard real-time modular DSP engine for Rust.
 
