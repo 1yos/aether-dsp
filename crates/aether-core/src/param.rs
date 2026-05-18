@@ -140,6 +140,57 @@ impl Param {
         }
     }
 
+    /// Schedule a ramp to `target` with validation, clamping to `[min, max]`.
+    ///
+    /// Like [`set_target`](Self::set_target), but clamps the target value to the
+    /// specified range and validates that it's finite (not NaN or Infinity).
+    ///
+    /// # Arguments
+    ///
+    /// * `target` - Target value to ramp towards
+    /// * `ramp_samples` - Number of samples for the ramp (0 = instant)
+    /// * `min` - Minimum allowed value
+    /// * `max` - Maximum allowed value
+    ///
+    /// # Returns
+    ///
+    /// The clamped target value that was actually set.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aether_core::param::Param;
+    ///
+    /// let mut gain = Param::new(0.5);
+    ///
+    /// // Clamp to [0.0, 1.0]
+    /// let actual = gain.set_target_clamped(1.5, 480, 0.0, 1.0);
+    /// assert_eq!(actual, 1.0); // Clamped to max
+    ///
+    /// // NaN is replaced with current value
+    /// let actual = gain.set_target_clamped(f32::NAN, 0, 0.0, 1.0);
+    /// assert_eq!(actual, gain.current);
+    /// ```
+    ///
+    /// # Safety
+    ///
+    /// This function ensures RT safety by:
+    /// - Replacing NaN/Infinity with the current value
+    /// - Clamping to valid range
+    /// - Preventing invalid audio state
+    #[inline]
+    pub fn set_target_clamped(&mut self, target: f32, ramp_samples: u32, min: f32, max: f32) -> f32 {
+        // Validate: replace NaN/Infinity with current value
+        let validated = if target.is_finite() {
+            target.clamp(min, max)
+        } else {
+            self.current
+        };
+        
+        self.set_target(validated, ramp_samples);
+        validated
+    }
+
     /// Advance by one sample. Call once per sample in the RT loop.
     ///
     /// Updates `current` by adding `step`. When the target is reached,
@@ -457,5 +508,216 @@ impl ParamBlock {
 impl Default for ParamBlock {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Parameter validation utilities.
+///
+/// These functions help ensure parameter values are safe for real-time audio processing.
+pub mod validation {
+    /// Validates that a value is finite (not NaN or Infinity).
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - Value to validate
+    ///
+    /// # Returns
+    ///
+    /// `true` if the value is finite, `false` otherwise.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aether_core::param::validation::is_finite;
+    ///
+    /// assert!(is_finite(1.0));
+    /// assert!(is_finite(0.0));
+    /// assert!(is_finite(-100.0));
+    /// assert!(!is_finite(f32::NAN));
+    /// assert!(!is_finite(f32::INFINITY));
+    /// assert!(!is_finite(f32::NEG_INFINITY));
+    /// ```
+    #[inline]
+    pub fn is_finite(value: f32) -> bool {
+        value.is_finite()
+    }
+
+    /// Clamps a value to a range, replacing NaN/Infinity with a default.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - Value to clamp
+    /// * `min` - Minimum allowed value
+    /// * `max` - Maximum allowed value
+    /// * `default` - Default value to use if `value` is NaN/Infinity
+    ///
+    /// # Returns
+    ///
+    /// Clamped value in range `[min, max]`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aether_core::param::validation::clamp_or_default;
+    ///
+    /// assert_eq!(clamp_or_default(0.5, 0.0, 1.0, 0.5), 0.5);
+    /// assert_eq!(clamp_or_default(1.5, 0.0, 1.0, 0.5), 1.0);
+    /// assert_eq!(clamp_or_default(-0.5, 0.0, 1.0, 0.5), 0.0);
+    /// assert_eq!(clamp_or_default(f32::NAN, 0.0, 1.0, 0.5), 0.5);
+    /// assert_eq!(clamp_or_default(f32::INFINITY, 0.0, 1.0, 0.5), 0.5);
+    /// ```
+    #[inline]
+    pub fn clamp_or_default(value: f32, min: f32, max: f32, default: f32) -> f32 {
+        if value.is_finite() {
+            value.clamp(min, max)
+        } else {
+            default
+        }
+    }
+
+    /// Validates a frequency value (positive, finite, reasonable range).
+    ///
+    /// # Arguments
+    ///
+    /// * `freq` - Frequency in Hz
+    /// * `sample_rate` - Sample rate in Hz
+    ///
+    /// # Returns
+    ///
+    /// Clamped frequency in range `[0.1, sample_rate/2]` (Nyquist limit).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aether_core::param::validation::validate_frequency;
+    ///
+    /// assert_eq!(validate_frequency(440.0, 48000.0), 440.0);
+    /// assert_eq!(validate_frequency(-100.0, 48000.0), 0.1); // Negative clamped to min
+    /// assert_eq!(validate_frequency(30000.0, 48000.0), 24000.0); // Above Nyquist
+    /// assert_eq!(validate_frequency(f32::NAN, 48000.0), 440.0); // NaN replaced with A4
+    /// ```
+    #[inline]
+    pub fn validate_frequency(freq: f32, sample_rate: f32) -> f32 {
+        const MIN_FREQ: f32 = 0.1;
+        let max_freq = sample_rate * 0.5; // Nyquist limit
+        clamp_or_default(freq, MIN_FREQ, max_freq, 440.0) // Default to A4
+    }
+
+    /// Validates a gain value (0.0 to 1.0 or higher).
+    ///
+    /// # Arguments
+    ///
+    /// * `gain` - Gain value (linear, not dB)
+    /// * `max_gain` - Maximum allowed gain
+    ///
+    /// # Returns
+    ///
+    /// Clamped gain in range `[0.0, max_gain]`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aether_core::param::validation::validate_gain;
+    ///
+    /// assert_eq!(validate_gain(0.5, 2.0), 0.5);
+    /// assert_eq!(validate_gain(-0.5, 2.0), 0.0); // Negative clamped to 0
+    /// assert_eq!(validate_gain(3.0, 2.0), 2.0); // Above max
+    /// assert_eq!(validate_gain(f32::NAN, 2.0), 1.0); // NaN replaced with unity
+    /// ```
+    #[inline]
+    pub fn validate_gain(gain: f32, max_gain: f32) -> f32 {
+        clamp_or_default(gain, 0.0, max_gain, 1.0) // Default to unity gain
+    }
+
+    /// Validates a time value in milliseconds.
+    ///
+    /// # Arguments
+    ///
+    /// * `time_ms` - Time in milliseconds
+    /// * `min_ms` - Minimum allowed time
+    /// * `max_ms` - Maximum allowed time
+    ///
+    /// # Returns
+    ///
+    /// Clamped time in range `[min_ms, max_ms]`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aether_core::param::validation::validate_time_ms;
+    ///
+    /// assert_eq!(validate_time_ms(50.0, 1.0, 1000.0), 50.0);
+    /// assert_eq!(validate_time_ms(0.5, 1.0, 1000.0), 1.0); // Below min
+    /// assert_eq!(validate_time_ms(2000.0, 1.0, 1000.0), 1000.0); // Above max
+    /// assert_eq!(validate_time_ms(f32::NAN, 1.0, 1000.0), 100.0); // NaN replaced with 100ms
+    /// ```
+    #[inline]
+    pub fn validate_time_ms(time_ms: f32, min_ms: f32, max_ms: f32) -> f32 {
+        clamp_or_default(time_ms, min_ms, max_ms, 100.0) // Default to 100ms
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_param_validation_nan() {
+        let mut param = Param::new(0.5);
+        let actual = param.set_target_clamped(f32::NAN, 0, 0.0, 1.0);
+        assert_eq!(actual, 0.5); // Should keep current value
+        assert_eq!(param.current, 0.5);
+    }
+
+    #[test]
+    fn test_param_validation_infinity() {
+        let mut param = Param::new(0.5);
+        let actual = param.set_target_clamped(f32::INFINITY, 0, 0.0, 1.0);
+        assert_eq!(actual, 0.5); // Should keep current value
+        assert_eq!(param.current, 0.5);
+    }
+
+    #[test]
+    fn test_param_validation_clamp_max() {
+        let mut param = Param::new(0.5);
+        let actual = param.set_target_clamped(1.5, 0, 0.0, 1.0);
+        assert_eq!(actual, 1.0); // Should clamp to max
+        assert_eq!(param.current, 1.0);
+    }
+
+    #[test]
+    fn test_param_validation_clamp_min() {
+        let mut param = Param::new(0.5);
+        let actual = param.set_target_clamped(-0.5, 0, 0.0, 1.0);
+        assert_eq!(actual, 0.0); // Should clamp to min
+        assert_eq!(param.current, 0.0);
+    }
+
+    #[test]
+    fn test_param_validation_valid_value() {
+        let mut param = Param::new(0.5);
+        let actual = param.set_target_clamped(0.75, 0, 0.0, 1.0);
+        assert_eq!(actual, 0.75); // Should accept valid value
+        assert_eq!(param.current, 0.75);
+    }
+
+    #[test]
+    fn test_validation_frequency() {
+        use validation::validate_frequency;
+        
+        assert_eq!(validate_frequency(440.0, 48000.0), 440.0);
+        assert_eq!(validate_frequency(-100.0, 48000.0), 0.1);
+        assert_eq!(validate_frequency(30000.0, 48000.0), 24000.0);
+        assert_eq!(validate_frequency(f32::NAN, 48000.0), 440.0);
+    }
+
+    #[test]
+    fn test_validation_gain() {
+        use validation::validate_gain;
+        
+        assert_eq!(validate_gain(0.5, 2.0), 0.5);
+        assert_eq!(validate_gain(-0.5, 2.0), 0.0);
+        assert_eq!(validate_gain(3.0, 2.0), 2.0);
+        assert_eq!(validate_gain(f32::NAN, 2.0), 1.0);
     }
 }

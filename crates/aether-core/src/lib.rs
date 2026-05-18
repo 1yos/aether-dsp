@@ -41,6 +41,7 @@ pub mod command;
 pub mod graph;
 pub mod node;
 pub mod param;
+pub mod preset;
 pub mod scheduler;
 pub mod state;
 

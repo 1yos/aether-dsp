@@ -33,6 +33,10 @@ all-nodes = [
     "karplus-strong",
     "waveshaper",
     "chorus",
+    "eq",
+    "limiter",
+    "gate",
+    "panner",
     "record",
     "scope",
 ]
@@ -51,6 +55,10 @@ granular = []
 karplus-strong = []
 waveshaper = []
 chorus = []
+eq = []
+limiter = []
+gate = []
+panner = []
 record = []
 scope = []
 
