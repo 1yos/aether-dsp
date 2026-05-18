@@ -39,10 +39,12 @@ pub mod arena;
 pub mod buffer_pool;
 pub mod command;
 pub mod graph;
+pub mod hotreload;
 pub mod node;
 pub mod param;
 pub mod preset;
 pub mod scheduler;
+pub mod schema;
 pub mod state;
 
 /// Audio buffer size in samples. Hard real-time constraint: 64 samples @ 48kHz = 1.33ms deadline.

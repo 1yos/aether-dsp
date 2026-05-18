@@ -7,6 +7,7 @@ pub mod theme;
 pub mod widgets;
 pub mod dsp_graph;
 pub mod ide;
+pub mod plugin_gui;
 
 pub use project::ProjectType;
 pub use workspace::Workspace;

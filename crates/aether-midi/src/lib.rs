@@ -14,6 +14,7 @@
 
 pub mod engine;
 pub mod event;
+pub mod learn;
 pub mod mpe;
 pub mod router;
 pub mod smf;
@@ -21,6 +22,7 @@ pub mod tuning;
 
 pub use engine::MidiEngine;
 pub use event::{MidiEvent, MidiEventKind};
+pub use learn::{MappingCurve, MidiLearn, MidiMapping};
 pub use mpe::{MpeConfig, MpeEngine, NoteExpression};
 pub use router::MidiRouter;
 pub use smf::{Division, MidiFile, MidiFormat, MidiTrack, TimedMidiEvent};
