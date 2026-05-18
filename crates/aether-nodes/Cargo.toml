@@ -66,6 +66,7 @@ scope = []
 proptest = "1"
 hound = "3"
 ringbuf = { workspace = true }
+rand = "0.8"
 
 [dependencies]
 aetherdsp-core = { version = "0.1", path = "../aether-core" }
