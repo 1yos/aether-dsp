@@ -86,6 +86,11 @@ impl UndoStack {    /// Push an entry to the back. If at capacity, the oldest en
 mod tests {
     use super::*;
 
+    /// Helper to check if response is a Snapshot (for property tests)
+    fn is_snapshot(response: &crate::graph_manager::Response) -> bool {
+        matches!(response, crate::graph_manager::Response::Snapshot { .. })
+    }
+
     fn dummy_entry() -> UndoEntry {
         UndoEntry {
             forward: StructuralIntent::AddNode {
@@ -225,7 +230,7 @@ mod tests {
                 let add_response = graph_manager.handle(add_intent, &mut scheduler);
                 
                 // Verify we got a snapshot response (not an error)
-                prop_assert!(matches!(add_response, Response::Snapshot { .. }));
+                prop_assert!(is_snapshot(&add_response));
 
                 // Capture post-add snapshot
                 let post_add_snapshot = extract_snapshot(&add_response)
@@ -238,7 +243,7 @@ mod tests {
                 let undo_response = graph_manager.handle(Intent::Undo, &mut scheduler);
                 
                 // Verify we got a snapshot response
-                prop_assert!(matches!(undo_response, Response::Snapshot { .. }));
+                prop_assert!(is_snapshot(&undo_response));
 
                 // Capture post-undo snapshot
                 let post_undo_snapshot = extract_snapshot(&undo_response)
@@ -304,7 +309,7 @@ mod tests {
                 let connect_response = graph_manager.handle(connect_intent, &mut scheduler);
                 
                 // Verify we got a snapshot response
-                prop_assert!(matches!(connect_response, Response::Snapshot { .. }));
+                prop_assert!(is_snapshot(&connect_response));
 
                 // Capture post-connect snapshot
                 let post_connect_snapshot = extract_snapshot(&connect_response)
@@ -317,7 +322,7 @@ mod tests {
                 let undo_response = graph_manager.handle(Intent::Undo, &mut scheduler);
                 
                 // Verify we got a snapshot response
-                prop_assert!(matches!(undo_response, Response::Snapshot { .. }));
+                prop_assert!(is_snapshot(&undo_response));
 
                 // Capture post-undo snapshot
                 let post_undo_snapshot = extract_snapshot(&undo_response)
@@ -393,7 +398,7 @@ mod tests {
                 let disconnect_response = graph_manager.handle(disconnect_intent, &mut scheduler);
                 
                 // Verify we got a snapshot response
-                prop_assert!(matches!(disconnect_response, Response::Snapshot { .. }));
+                prop_assert!(is_snapshot(&disconnect_response));
 
                 // Capture post-disconnect snapshot
                 let post_disconnect_snapshot = extract_snapshot(&disconnect_response)
@@ -406,7 +411,7 @@ mod tests {
                 let undo_response = graph_manager.handle(Intent::Undo, &mut scheduler);
                 
                 // Verify we got a snapshot response
-                prop_assert!(matches!(undo_response, Response::Snapshot { .. }));
+                prop_assert!(is_snapshot(&undo_response));
 
                 // Capture post-undo snapshot
                 let post_undo_snapshot = extract_snapshot(&undo_response)
@@ -494,7 +499,7 @@ mod tests {
                 let add_response = graph_manager.handle(add_intent, &mut scheduler);
                 
                 // Verify we got a snapshot response (not an error)
-                prop_assert!(matches!(add_response, Response::Snapshot { .. }));
+                prop_assert!(is_snapshot(&add_response));
 
                 // Capture post-add snapshot
                 let post_add_snapshot = extract_snapshot(&add_response)
@@ -507,7 +512,7 @@ mod tests {
                 let undo_response = graph_manager.handle(Intent::Undo, &mut scheduler);
                 
                 // Verify we got a snapshot response
-                prop_assert!(matches!(undo_response, Response::Snapshot { .. }));
+                prop_assert!(is_snapshot(&undo_response));
 
                 // Capture post-undo snapshot
                 let post_undo_snapshot = extract_snapshot(&undo_response)
@@ -524,7 +529,7 @@ mod tests {
                 let redo_response = graph_manager.handle(Intent::Redo, &mut scheduler);
                 
                 // Verify we got a snapshot response
-                prop_assert!(matches!(redo_response, Response::Snapshot { .. }));
+                prop_assert!(is_snapshot(&redo_response));
 
                 // Capture post-redo snapshot
                 let post_redo_snapshot = extract_snapshot(&redo_response)
@@ -590,7 +595,7 @@ mod tests {
                 let connect_response = graph_manager.handle(connect_intent, &mut scheduler);
                 
                 // Verify we got a snapshot response
-                prop_assert!(matches!(connect_response, Response::Snapshot { .. }));
+                prop_assert!(is_snapshot(&connect_response));
 
                 // Capture post-connect snapshot
                 let post_connect_snapshot = extract_snapshot(&connect_response)
@@ -603,7 +608,7 @@ mod tests {
                 let undo_response = graph_manager.handle(Intent::Undo, &mut scheduler);
                 
                 // Verify we got a snapshot response
-                prop_assert!(matches!(undo_response, Response::Snapshot { .. }));
+                prop_assert!(is_snapshot(&undo_response));
 
                 // Capture post-undo snapshot
                 let post_undo_snapshot = extract_snapshot(&undo_response)
@@ -620,7 +625,7 @@ mod tests {
                 let redo_response = graph_manager.handle(Intent::Redo, &mut scheduler);
                 
                 // Verify we got a snapshot response
-                prop_assert!(matches!(redo_response, Response::Snapshot { .. }));
+                prop_assert!(is_snapshot(&redo_response));
 
                 // Capture post-redo snapshot
                 let post_redo_snapshot = extract_snapshot(&redo_response)
@@ -696,7 +701,7 @@ mod tests {
                 let disconnect_response = graph_manager.handle(disconnect_intent, &mut scheduler);
                 
                 // Verify we got a snapshot response
-                prop_assert!(matches!(disconnect_response, Response::Snapshot { .. }));
+                prop_assert!(is_snapshot(&disconnect_response));
 
                 // Capture post-disconnect snapshot
                 let post_disconnect_snapshot = extract_snapshot(&disconnect_response)
@@ -709,7 +714,7 @@ mod tests {
                 let undo_response = graph_manager.handle(Intent::Undo, &mut scheduler);
                 
                 // Verify we got a snapshot response
-                prop_assert!(matches!(undo_response, Response::Snapshot { .. }));
+                prop_assert!(is_snapshot(&undo_response));
 
                 // Capture post-undo snapshot
                 let post_undo_snapshot = extract_snapshot(&undo_response)
@@ -726,7 +731,7 @@ mod tests {
                 let redo_response = graph_manager.handle(Intent::Redo, &mut scheduler);
                 
                 // Verify we got a snapshot response
-                prop_assert!(matches!(redo_response, Response::Snapshot { .. }));
+                prop_assert!(is_snapshot(&redo_response));
 
                 // Capture post-redo snapshot
                 let post_redo_snapshot = extract_snapshot(&redo_response)
@@ -752,3 +757,4 @@ mod tests {
         }
     }
 }
+

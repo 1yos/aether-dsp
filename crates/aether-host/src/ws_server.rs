@@ -7,7 +7,7 @@
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use futures_util::{SinkExt, StreamExt};
 use tokio::net::TcpListener;
@@ -18,6 +18,45 @@ use aether_core::{arena::NodeId, scheduler::Scheduler};
 use aether_midi::MidiEngine;
 use ringbuf::HeapCons;
 use ringbuf::traits::{Consumer, Observer};
+
+/// Maximum WebSocket message size (1 MB)
+const MAX_MESSAGE_SIZE: usize = 1024 * 1024;
+
+/// Maximum commands per second (rate limiting)
+const MAX_COMMANDS_PER_SECOND: usize = 100;
+
+/// Rate limiter for commands
+struct RateLimiter {
+    command_times: Vec<Instant>,
+    max_per_second: usize,
+}
+
+impl RateLimiter {
+    fn new(max_per_second: usize) -> Self {
+        Self {
+            command_times: Vec::new(),
+            max_per_second,
+        }
+    }
+
+    /// Check if a command is allowed. Returns true if allowed, false if rate limit exceeded.
+    fn check_and_record(&mut self) -> bool {
+        let now = Instant::now();
+        let one_second_ago = now - Duration::from_secs(1);
+
+        // Remove commands older than 1 second
+        self.command_times.retain(|&time| time > one_second_ago);
+
+        // Check if we're at the limit
+        if self.command_times.len() >= self.max_per_second {
+            return false;
+        }
+
+        // Record this command
+        self.command_times.push(now);
+        true
+    }
+}
 
 pub struct WsState {
     pub graph_manager: tokio::sync::Mutex<GraphManager>,
@@ -53,6 +92,9 @@ async fn handle_connection(stream: tokio::net::TcpStream, state: Arc<WsState>) {
     };
 
     let (mut tx, mut rx) = ws.split();
+
+    // Initialize rate limiter
+    let mut rate_limiter = RateLimiter::new(MAX_COMMANDS_PER_SECOND);
 
     // Send current snapshot immediately on connect
     {
@@ -119,6 +161,29 @@ async fn handle_connection(stream: tokio::net::TcpStream, state: Arc<WsState>) {
                 }
 
                 let text = msg.to_text().unwrap_or("");
+                
+                // Security: Check message size limit
+                if text.len() > MAX_MESSAGE_SIZE {
+                    let error_response = Response::Error {
+                        message: format!("Message too large: {} bytes (max: {} bytes)", text.len(), MAX_MESSAGE_SIZE),
+                    };
+                    if let Ok(json) = serde_json::to_string(&error_response) {
+                        let _ = tx.send(Message::Text(json)).await;
+                    }
+                    continue;
+                }
+
+                // Security: Check rate limit
+                if !rate_limiter.check_and_record() {
+                    let error_response = Response::Error {
+                        message: format!("Rate limit exceeded: max {} commands per second", MAX_COMMANDS_PER_SECOND),
+                    };
+                    if let Ok(json) = serde_json::to_string(&error_response) {
+                        let _ = tx.send(Message::Text(json)).await;
+                    }
+                    continue;
+                }
+
                 let response: Response = match serde_json::from_str::<Intent>(text) {
                     Ok(intent) => {
                         // Handle MIDI intents here — they need access to WsState::midi_engine

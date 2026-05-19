@@ -249,7 +249,7 @@ fn read_track(reader: &mut &[u8]) -> Result<MidiTrack, String> {
     }
 
     let track_length = read_u32(reader)?;
-    let mut track_data = reader[..track_length as usize].to_vec();
+    let track_data = reader[..track_length as usize].to_vec();
     *reader = &reader[track_length as usize..];
 
     let mut track = MidiTrack::new();
