@@ -29,20 +29,15 @@ pub struct MidiMapping {
 }
 
 /// Mapping curve type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum MappingCurve {
     /// Linear mapping (default).
+    #[default]
     Linear,
     /// Exponential curve (good for frequency).
     Exponential,
     /// Logarithmic curve (good for gain).
     Logarithmic,
-}
-
-impl Default for MappingCurve {
-    fn default() -> Self {
-        Self::Linear
-    }
 }
 
 /// MIDI Learn engine.
