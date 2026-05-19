@@ -69,7 +69,7 @@ jobs:
         run: cargo check --workspace
 
       - name: cargo test (core crates only)
-        run: cargo test --lib -p aetherdsp-core -p aetherdsp-nodes -p aetherdsp-ndk -p aetherdsp-midi
+        run: cargo test --lib -p aetherdsp-core -p aetherdsp-nodes -p aetherdsp-ndk -p aetherdsp-midi -p aether-ui
 
       - name: cargo clippy
         run: cargo clippy --workspace -- -D warnings -A dead_code
