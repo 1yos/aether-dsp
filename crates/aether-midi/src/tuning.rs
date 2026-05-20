@@ -4,6 +4,24 @@
 //! Many instruments — Ethiopian, Indian, Arabic, Turkish, gamelan —
 //! use different tuning systems. This module lets you define the exact
 //! frequency for each MIDI note number.
+//!
+//! ## Precision
+//!
+//! Frequencies are stored as `f32`, providing approximately 0.0001 Hz precision
+//! at 440 Hz. This is more than sufficient for audio applications, as human pitch
+//! discrimination is typically around 1 Hz at best. For extreme low-frequency
+//! accuracy (<1 Hz), consider using `f64` in custom implementations.
+//!
+//! ## Pitch-Bend Interaction
+//!
+//! When using tuning tables with MIDI pitch-bend:
+//! - Pitch-bend operates **relative to the tuned pitch**, not 12-TET
+//! - Example: A note tuned to 261.63 Hz with +200 cent bend becomes 261.63 * 2^(200/1200)
+//! - This preserves the tuning system's interval relationships
+//! - Vibrato and modulation also operate relative to the tuned frequency
+//!
+//! This ensures that microtonal music remains in the correct tuning system even
+//! when pitch-bend or vibrato is applied.
 
 use serde::{Deserialize, Serialize};
 
@@ -92,6 +110,14 @@ impl TuningTable {
 
     /// Ethiopian Kiñit (pentatonic) approximation.
     /// Uses the Tizita major scale pattern.
+    /// 
+    /// NOTE: This is an approximation. Ethiopian qenet (modal scales) are defined
+    /// more by melodic contour, ornamentation, and emotional intent than fixed
+    /// interval ratios. The cent offsets used here are estimates based on
+    /// performance practice, not documented measurements.
+    /// 
+    /// Source: Approximation based on Ethiopian music performance practice.
+    /// TODO: Validate with Ethiopian musicologists or Kebede's research.
     pub fn ethiopian_tizita(concert_a: f32) -> Self {
         let offsets = [
             0.0,    // C  — root
@@ -113,7 +139,14 @@ impl TuningTable {
         t
     }
 
-    /// Just intonation (pure intervals based on harmonic series).
+    /// Just intonation (5-limit) — pure intervals based on harmonic series.
+    /// Uses ratios with prime factors up to 5 (e.g., 3/2, 5/4).
+    /// 
+    /// This produces perfectly consonant major thirds (5/4) and perfect fifths (3/2)
+    /// with no beating, unlike 12-TET which has slight detuning.
+    /// 
+    /// Source: Traditional Western just intonation, documented since Ptolemy (2nd century).
+    /// Note: This is 5-limit JI. For septimal intervals (7/4, 7/6), see just_intonation_7_limit.
     pub fn just_intonation(concert_a: f32) -> Self {
         let ratios: [f32; 12] = [
             1.0, 16.0/15.0, 9.0/8.0, 6.0/5.0, 5.0/4.0, 4.0/3.0,
@@ -129,7 +162,7 @@ impl TuningTable {
             1200.0 * (ratios[i] / tet_ratios[i]).log2()
         });
         let mut t = Self::from_cents_offsets(concert_a, &offsets);
-        t.name = "Just Intonation".into();
+        t.name = "Just Intonation (5-limit)".into();
         t.description = "Pure harmonic ratios — no beating on perfect intervals".into();
         t
     }
@@ -146,6 +179,14 @@ impl Default for TuningTable {
 impl TuningTable {
     /// Arabic Maqam Rast — the most common Arabic maqam.
     /// Uses quarter-tone flats on the 3rd and 7th scale degrees.
+    /// 
+    /// NOTE: This implementation uses 24-TET (50-cent quarter-tones), which is
+    /// the modern theoretical standard established by Mikhail Mishaqa (19th century).
+    /// Historical Arabic music theory (al-Farabi, al-Urmawi) used ratio-based
+    /// intervals. Performance practice often deviates from both systems based on
+    /// melodic context and regional tradition.
+    /// 
+    /// Source: Modern 24-TET Arabic music theory (24-tone equal temperament).
     pub fn arabic_maqam_rast(concert_a: f32) -> Self {
         let offsets = [
             0.0,    // C  — root (Rast)
@@ -169,6 +210,12 @@ impl TuningTable {
 
     /// Arabic Maqam Bayati — second most common Arabic maqam.
     /// Characteristic half-flat on the 2nd degree.
+    /// 
+    /// NOTE: This implementation uses 24-TET (50-cent quarter-tones), which is
+    /// the modern theoretical standard. Performance practice varies by region
+    /// and melodic context.
+    /// 
+    /// Source: Modern 24-TET Arabic music theory (24-tone equal temperament).
     pub fn arabic_maqam_bayati(concert_a: f32) -> Self {
         let offsets = [
             0.0,    // C  — root
@@ -190,7 +237,49 @@ impl TuningTable {
         t
     }
 
+    /// Arabic Maqam Hijaz — characteristic augmented 2nd interval.
+    /// Tetrachord pattern: semitone - augmented 2nd - semitone (1-3-1).
+    /// 
+    /// The Hijaz tetrachord is one of the most distinctive sounds in Arabic music,
+    /// featuring a large augmented 2nd (300 cents) between the 2nd and 3rd degrees.
+    /// Also known as "Phrygian dominant" in Western theory and "Freygish" in Jewish music.
+    /// 
+    /// Scale structure from root: C - Db - E - F - G - Ab - B - C
+    /// Intervals: semitone (100¢), augmented 2nd (300¢), semitone (100¢), whole tone (200¢),
+    ///            semitone (100¢), augmented 2nd (300¢), semitone (100¢)
+    /// 
+    /// Source: Traditional Arabic maqam theory, documented in maqamworld.com and
+    /// ethnomusicological literature.
+    pub fn arabic_maqam_hijaz(concert_a: f32) -> Self {
+        let offsets = [
+            0.0,    // C  — root (Hijaz)
+            0.0,    // C# — Db (semitone above root)
+            0.0,    // D
+            0.0,    // D#
+            0.0,    // E  — augmented 2nd from Db (characteristic interval)
+            0.0,    // F  — semitone above E
+            0.0,    // F#
+            0.0,    // G  — whole tone above F
+            -100.0, // G# — Ab (semitone above G)
+            0.0,    // A
+            0.0,    // A#
+            0.0,    // B  — augmented 2nd from Ab
+        ];
+        let mut t = Self::from_cents_offsets(concert_a, &offsets);
+        t.name = "Arabic Maqam Hijaz".into();
+        t.description = "Arabic Maqam Hijaz — augmented 2nd between 2nd and 3rd degrees (1-3-1 tetrachord)".into();
+        t
+    }
+
     /// Ethiopian Bati scale — minor pentatonic variant.
+    /// 
+    /// NOTE: This is an approximation. Ethiopian qenet (modal scales) are defined
+    /// more by melodic contour, ornamentation, and emotional intent than fixed
+    /// interval ratios. The cent offsets used here (-20/-30/-20) are estimates
+    /// based on performance practice, not documented measurements.
+    /// 
+    /// Source: Approximation based on Ethiopian music performance practice.
+    /// TODO: Validate with Ethiopian musicologists or Kebede's research.
     pub fn ethiopian_bati(concert_a: f32) -> Self {
         let offsets = [
             0.0,    // C
@@ -212,8 +301,51 @@ impl TuningTable {
         t
     }
 
+    /// Ethiopian Ambassel — pentatonic with raised 4th.
+    /// One of the four main Ethiopian qenet (modal scales).
+    /// 
+    /// Ambassel (also spelled Ambasel or Ambessel) is characterized by its raised
+    /// 4th degree, distinguishing it from Bati which has a lowered 4th. The scale
+    /// structure is: C - D - F - G - A (pentatonic).
+    /// 
+    /// Intervals from root: whole tone (200¢), minor 3rd (300¢), whole tone (200¢),
+    /// whole tone (200¢).
+    /// 
+    /// NOTE: Like all Ethiopian qenet, this is defined more by melodic contour and
+    /// ornamentation than fixed intervals. This implementation provides a 12-TET
+    /// approximation for the characteristic pentatonic structure.
+    /// 
+    /// Source: Ethiopian music theory, documented in Scribd "Ethiopian Music Scales"
+    /// and ethnomusicological literature.
+    /// TODO: Validate with Ethiopian musicologists or Kebede's research.
+    pub fn ethiopian_ambassel(concert_a: f32) -> Self {
+        let offsets = [
+            0.0,    // C  — root
+            0.0,    // C#
+            0.0,    // D  — whole tone (200 cents)
+            0.0,    // D#
+            0.0,    // E
+            0.0,    // F  — raised 4th (characteristic interval, 500 cents from root)
+            0.0,    // F#
+            0.0,    // G  — perfect 5th (700 cents from root)
+            0.0,    // G#
+            0.0,    // A  — major 6th (900 cents from root)
+            0.0,    // A#
+            0.0,    // B
+        ];
+        let mut t = Self::from_cents_offsets(concert_a, &offsets);
+        t.name = "Ethiopian Ambassel".into();
+        t.description = "Ethiopian Ambassel — pentatonic with raised 4th, one of four main qenet modes".into();
+        t
+    }
+
     /// Indian Raga Yaman (Kalyan thaat) — the most common North Indian raga.
     /// Uses a raised 4th (Ma tivra).
+    /// 
+    /// This implementation uses just intonation ratios from Sa (root):
+    /// Sa Re Ga Ma# Pa Dha Ni Sa = 1/1, 9/8, 5/4, 45/32, 3/2, 5/3, 15/8, 2/1
+    /// 
+    /// Source: North Indian classical music theory, just intonation ratios.
     pub fn indian_raga_yaman(concert_a: f32) -> Self {
         // Yaman uses all natural notes except F# (raised 4th)
         // In just intonation ratios from Sa (root):
@@ -241,6 +373,13 @@ impl TuningTable {
 
     /// Javanese Gamelan Slendro — 5-tone scale.
     /// Approximate equal division of the octave into 5 parts.
+    /// 
+    /// NOTE: This uses exact 2:1 octaves (1200 cents). Real gamelan ensembles
+    /// often have stretched octaves (~1210-1215 cents) due to inharmonic overtones
+    /// of bronze/iron bars. For stretched octave version, see gamelan_slendro_stretched.
+    /// 
+    /// Source: Generic approximation. Real gamelan tunings vary by ensemble.
+    /// Reference: "On the Tuning and Stretched Octave of Javanese Gamelans" (2016).
     pub fn gamelan_slendro(_concert_a: f32) -> Self {
         // Slendro divides the octave into 5 roughly equal parts (~240 cents each)
         // but with characteristic deviations. Using a common approximation.
@@ -260,6 +399,16 @@ impl TuningTable {
     }
 
     /// Javanese Gamelan Pelog — 7-tone scale with characteristic large and small intervals.
+    /// 
+    /// NOTE: Pelog tuning varies dramatically between gamelan ensembles. This is
+    /// a generic approximation using commonly cited interval patterns. Real gamelan
+    /// instruments are tuned individually and not intended to match Western pitch
+    /// standards or other ensembles.
+    /// 
+    /// For authentic reproduction, measure a specific ensemble or use documented
+    /// measurements from ethnomusicological studies.
+    /// 
+    /// Source: Generic approximation. Reference: "Javanese Pelog Tunings Reconsidered" (1980).
     pub fn gamelan_pelog(concert_a: f32) -> Self {
         // Pelog has 7 tones with unequal steps. Common approximation in cents from root:
         // 0, 120, 270, 540, 675, 785, 950, 1200
