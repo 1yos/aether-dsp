@@ -26,7 +26,7 @@ AetherDSP is two things at once: a production-grade audio engine library for Rus
 | [`aetherdsp-nodes`](https://crates.io/crates/aetherdsp-nodes)         | 0.2.3   | 17 DSP nodes: oscillator, filters, reverb, LFO, granular, Karplus-Strong, compressor, waveshaper, chorus |
 | [`aetherdsp-ndk`](https://crates.io/crates/aetherdsp-ndk)             | 0.1.4   | Node Development Kit — build custom nodes with `#[aether_node]`                                          |
 | [`aetherdsp-ndk-macro`](https://crates.io/crates/aetherdsp-ndk-macro) | 0.1.4   | Proc-macro behind the NDK                                                                                |
-| [`aetherdsp-midi`](https://crates.io/crates/aetherdsp-midi)           | 0.1.4   | MIDI engine with 11 tuning systems including Ethiopian, Arabic, Gamelan                                  |
+| [`aetherdsp-midi`](https://crates.io/crates/aetherdsp-midi)           | 0.1.4   | MIDI engine with 13 tuning systems including Ethiopian, Arabic, Gamelan                                  |
 | [`aetherdsp-sampler`](https://crates.io/crates/aetherdsp-sampler)     | 0.2.1   | Polyphonic sampler with ArcSwap lock-free instrument loading                                             |
 | [`aetherdsp-timbre`](https://crates.io/crates/aetherdsp-timbre)       | 0.1.4   | FFT-based spectral timbre analysis and transfer                                                          |
 | [`aetherdsp-manifest`](https://crates.io/crates/aetherdsp-manifest)   | 0.1.4   | Node package manifest format                                                                             |
@@ -93,21 +93,23 @@ Compressor gain reduction → Reverb wet level
 
 AetherDSP treats tuning as a first-class feature. Every instrument loads with its correct tuning system by default.
 
-| System              | Description                                   |
-| ------------------- | --------------------------------------------- |
-| 12-TET              | Standard equal temperament                    |
-| Ethiopian Tizita    | Pentatonic with characteristic flat intervals |
-| Ethiopian Bati      | Minor pentatonic variant                      |
-| Ethiopian Ambassel  | Pentatonic with raised 4th                    |
-| Arabic Maqam Rast   | Quarter-tone flats on 3rd and 7th             |
-| Arabic Maqam Bayati | Half-flat on 2nd degree                       |
-| Arabic Maqam Hijaz  | Augmented 2nd between 2nd and 3rd degrees     |
-| Indian Raga Yaman   | Just intonation, raised 4th (Kalyan thaat)    |
-| Gamelan Slendro     | 5-tone Javanese scale                         |
-| Gamelan Pelog       | 7-tone Javanese scale with unequal intervals  |
-| Just Intonation     | Pure harmonic ratios (5-limit)                |
+| System                      | Description                                   |
+| --------------------------- | --------------------------------------------- |
+| 12-TET                      | Standard equal temperament                    |
+| Ethiopian Tizita            | Pentatonic with characteristic flat intervals |
+| Ethiopian Bati              | Minor pentatonic variant                      |
+| Ethiopian Ambassel          | Pentatonic with raised 4th                    |
+| Arabic Maqam Rast           | Quarter-tone flats on 3rd and 7th             |
+| Arabic Maqam Bayati         | Half-flat on 2nd degree                       |
+| Arabic Maqam Hijaz          | Augmented 2nd between 2nd and 3rd degrees     |
+| Indian Raga Yaman           | Just intonation, raised 4th (Kalyan thaat)    |
+| Gamelan Slendro             | 5-tone Javanese scale                         |
+| Gamelan Slendro (Stretched) | 5-tone with stretched octave (~1210 cents)    |
+| Gamelan Pelog               | 7-tone Javanese scale with unequal intervals  |
+| Just Intonation (5-limit)   | Pure harmonic ratios (traditional)            |
+| Just Intonation (7-limit)   | Pure ratios with septimal intervals (blues)   |
 
-**Total: 11 tuning systems** covering Ethiopian, Arabic, Indian, and Javanese musical traditions.
+**Total: 13 tuning systems** covering Ethiopian, Arabic, Indian, and Javanese musical traditions.
 
 For detailed information about tuning system implementation, precision, and pitch-bend interaction, see the [Tuning Systems Tutorial](docs/tutorials/tuning-systems.md).
 

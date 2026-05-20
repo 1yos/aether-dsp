@@ -166,6 +166,51 @@ impl TuningTable {
         t.description = "Pure harmonic ratios — no beating on perfect intervals".into();
         t
     }
+
+    /// Just intonation (7-limit) — includes septimal intervals.
+    /// Uses ratios with prime factors up to 7 (e.g., 7/4, 7/6, 7/5).
+    /// 
+    /// 7-limit JI adds septimal intervals that appear in blues, barbershop harmony,
+    /// and many non-Western musical traditions. The harmonic seventh (7/4) is
+    /// significantly flatter than the 12-TET minor seventh, creating a characteristic
+    /// "bluesy" sound.
+    /// 
+    /// Key septimal intervals:
+    /// - 7/6: Septimal minor third (~267 cents, between minor and major third)
+    /// - 7/5: Septimal tritone (~583 cents, slightly flat of 12-TET tritone)
+    /// - 7/4: Harmonic seventh (~969 cents, much flatter than 12-TET minor 7th)
+    /// 
+    /// Source: Extended just intonation theory, used by microtonal composers
+    /// (Harry Partch, Ben Johnston) and in blues/barbershop traditions.
+    pub fn just_intonation_7_limit(concert_a: f32) -> Self {
+        let ratios: [f32; 12] = [
+            1.0,      // C  — root (1/1)
+            16.0/15.0,// C# — minor semitone
+            9.0/8.0,  // D  — major second
+            7.0/6.0,  // D# — septimal minor third
+            5.0/4.0,  // E  — major third
+            4.0/3.0,  // F  — perfect fourth
+            7.0/5.0,  // F# — septimal tritone
+            3.0/2.0,  // G  — perfect fifth
+            8.0/5.0,  // G# — minor sixth
+            5.0/3.0,  // A  — major sixth
+            7.0/4.0,  // A# — harmonic seventh (characteristic septimal interval)
+            15.0/8.0, // B  — major seventh
+        ];
+        let tet_ratios: [f32; 12] = [
+            1.0, 2.0f32.powf(1.0/12.0), 2.0f32.powf(2.0/12.0), 2.0f32.powf(3.0/12.0),
+            2.0f32.powf(4.0/12.0), 2.0f32.powf(5.0/12.0), 2.0f32.powf(6.0/12.0),
+            2.0f32.powf(7.0/12.0), 2.0f32.powf(8.0/12.0), 2.0f32.powf(9.0/12.0),
+            2.0f32.powf(10.0/12.0), 2.0f32.powf(11.0/12.0),
+        ];
+        let offsets: [f32; 12] = std::array::from_fn(|i| {
+            1200.0 * (ratios[i] / tet_ratios[i]).log2()
+        });
+        let mut t = Self::from_cents_offsets(concert_a, &offsets);
+        t.name = "Just Intonation (7-limit)".into();
+        t.description = "Pure harmonic ratios with septimal intervals (7/4, 7/6, 7/5) — blues and barbershop".into();
+        t
+    }
 }
 
 impl Default for TuningTable {
@@ -395,6 +440,34 @@ impl TuningTable {
             frequencies,
             name: "Gamelan Slendro".into(),
             description: "Javanese Gamelan Slendro — 5-tone scale, ~240 cents per step".into(),
+        }
+    }
+
+    /// Javanese Gamelan Slendro with stretched octave — ethnomusicologically accurate.
+    /// 
+    /// Real Javanese gamelan instruments have stretched octaves due to the inharmonic
+    /// overtones of bronze and iron bars. Measurements show octaves ranging from
+    /// approximately 1210-1215 cents (not the Western 1200 cents).
+    /// 
+    /// This implementation uses 1210-cent octaves, dividing them into 5 roughly equal
+    /// steps of ~242 cents each. This creates the characteristic "pseudo-octave" sound
+    /// of authentic gamelan.
+    /// 
+    /// Source: "On the Tuning and Stretched Octave of Javanese Gamelans" (JHU Muse, 2016),
+    /// "Ombak and octave stretching in Balinese gamelan" (ResearchGate, 2020).
+    pub fn gamelan_slendro_stretched(_concert_a: f32) -> Self {
+        let octave_cents = 1210.0; // Stretched octave (measured from real ensembles)
+        let step = octave_cents / 5.0; // ~242 cents per step
+        let mut frequencies = vec![0.0f32; 128];
+        for (note, freq) in frequencies.iter_mut().enumerate() {
+            let slendro_step = (note as f32 / 2.4).floor();
+            let cents_from_c0 = slendro_step * step;
+            *freq = 16.352 * 2.0f32.powf(cents_from_c0 / 1200.0);
+        }
+        Self {
+            frequencies,
+            name: "Gamelan Slendro (Stretched)".into(),
+            description: "Javanese Gamelan Slendro with stretched octave (~1210 cents) — ethnomusicologically accurate".into(),
         }
     }
 
