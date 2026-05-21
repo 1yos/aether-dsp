@@ -112,8 +112,12 @@ the 1.33 ms deadline.
 
 ## 5. UI Integration
 
-The React frontend communicates with the Rust host via a WebSocket server
-(`tokio-tungstenite`) on `ws://127.0.0.1:9001`. The protocol is JSON:
+**Note:** As of v0.3 (May 2026), AetherDSP uses a native Iced-based DAW with GPU
+acceleration via wgpu. The React UI prototype was removed. The WebSocket bridge
+described below is maintained for external control and automation.
+
+The `aether-host` WebSocket server (`tokio-tungstenite`) on `ws://127.0.0.1:9001`
+provides external control via JSON protocol:
 
 ```json
 {
