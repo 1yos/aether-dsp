@@ -322,8 +322,18 @@ Every push runs on **Windows, macOS, and Linux**:
 
 ---
 
+## Author
+
+**Yoseph Abebe** — Creator and Lead Developer
+
+Based in Addis Ababa, Ethiopia
+
+GitHub: [@1yos](https://github.com/1yos)
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE)
 
-GitHub: [github.com/1yos/aether-dsp](https://github.com/1yos/aether-dsp)
+Repository: [github.com/1yos/aether-dsp](https://github.com/1yos/aether-dsp)

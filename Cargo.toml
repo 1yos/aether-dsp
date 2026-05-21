@@ -20,7 +20,7 @@ resolver = "2"
 [workspace.package]
 version = "0.1.5"
 edition = "2021"
-authors = ["AetherDSP Project"]
+authors = ["Yoseph Abebe <yoseph@aetherdsp.dev>"]
 license = "MIT"
 repository = "https://github.com/1yos/aether-dsp"
 homepage = "https://github.com/1yos/aether-dsp"
