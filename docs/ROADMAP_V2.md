@@ -1,35 +1,26 @@
-# AetherDSP — v0.2 Roadmap
+# AetherDSP — Roadmap (Historical)
 
-## Overview
+**Note:** This document describes the v0.2 roadmap. As of May 2026, AetherDSP is at v0.3 with a native Iced DAW. See README.md for current status.
 
-v0.2 focuses on three pillars: **WebSocket synchronization hardening**,
-**advanced modulation**, and **SIMD performance**. Each milestone is scoped
+## v0.2 Overview (Completed)
+
+v0.2 focused on three pillars: **WebSocket synchronization hardening**,
+**advanced modulation**, and **SIMD performance**. Each milestone was scoped
 to be independently shippable.
 
 ---
 
-## Milestone 1 — WebSocket Sync (v0.2.0)
+## Milestone 1 — WebSocket Sync (v0.2.0) ✅ COMPLETED
 
 **Goal:** Full bidirectional graph control from the UI with sub-frame latency.
 
 ### Tasks
 
-- [ ] **Snapshot push on mutation** — after every `AddNode`/`Connect`/`Disconnect`
-      command, the control thread pushes a fresh `GraphSnapshot` to all connected
-      WebSocket clients automatically (no polling).
-
-- [ ] **Reconnect logic in UI** — `useWebSocket.ts` retries with exponential
-      backoff (1s, 2s, 4s, max 30s) on disconnect.
-
-- [ ] **Add/Remove node from UI** — Toolbar "+" buttons send `AddNode` commands
-      over WebSocket; the Rust host allocates the node and responds with the new
-      `NodeId`.
-
-- [ ] **Edge connect/disconnect from UI** — React Flow `onConnect`/`onEdgesDelete`
-      callbacks send `Connect`/`Disconnect` commands.
-
-- [ ] **Preset save/load** — serialize `GraphSnapshot` to JSON, store in
-      `localStorage`, restore on load.
+- [x] **Snapshot push on mutation** — Implemented in aether-host
+- [x] **Reconnect logic** — WebSocket bridge maintains connections
+- [x] **Add/Remove node from UI** — Native Iced UI (v0.3) replaced React
+- [x] **Edge connect/disconnect** — Native UI handles graph operations
+- [x] **Preset save/load** — Project save/load implemented in v0.3
 
 ### API additions
 
@@ -49,11 +40,11 @@ Command::SetOutputNode { id: NodeId }
 
 ---
 
-## Milestone 2 — Advanced Modulation (v0.2.1)
+## Milestone 2 — Advanced Modulation (v0.2.1) ✅ COMPLETED
 
-**Goal:** LFO and modulation matrix for expressive sound design.
+**Status:** Implemented. LFO, Compressor, and modulation matrix added in v0.2.
 
-### New DSP Nodes
+### New DSP Nodes (Completed)
 
 | Node         | Description                               | Params                            |
 | ------------ | ----------------------------------------- | --------------------------------- |
@@ -79,9 +70,9 @@ maintaining RT safety. The modulation depth is itself a smoothed `Param`.
 
 ---
 
-## Milestone 3 — SIMD Optimization (v0.2.2)
+## Milestone 3 — SIMD Optimization (v0.2.2) ⚠️ PARTIAL
 
-**Goal:** 4–8× throughput improvement on oscillator, filter, and mixer hot paths.
+**Status:** Oscillator sine path uses SIMD-friendly polynomial approximation. Full SIMD with `std::simd` deferred to v0.4.
 
 ### Strategy
 
@@ -117,9 +108,9 @@ use std::simd::f32x4;
 
 ---
 
-## Milestone 4 — Parallel Execution (v0.2.3)
+## Milestone 4 — Parallel Execution (v0.2.3) ❌ DEFERRED
 
-**Goal:** Utilize all CPU cores for independent DSP layers.
+**Status:** Deferred to v0.4. Current single-threaded execution meets performance targets.
 
 ### Implementation
 
@@ -145,9 +136,9 @@ between nodes in the same layer.
 
 ---
 
-## Milestone 5 — CLAP Plugin (v0.2.4)
+## Milestone 5 — CLAP Plugin (v0.2.4) ❌ DEFERRED
 
-**Goal:** Ship `aether_plugin.clap` loadable in Bitwig, REAPER, and Ardour.
+**Status:** Plugin wrapper exists in `crates/aether-plugin` but not production-ready. Deferred to post-v1.0.
 
 ### Tasks
 

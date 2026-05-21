@@ -262,7 +262,7 @@ aether-dsp/
 ├── crates/
 │   ├── aether-core/        # RT engine: arena, graph, scheduler, params
 │   ├── aether-nodes/       # 17 DSP nodes including compressor, waveshaper, chorus
-│   ├── aether-midi/        # MIDI engine + 9 tuning systems
+│   ├── aether-midi/        # MIDI engine + 13 tuning systems
 │   ├── aether-sampler/     # Polyphonic sampler with ArcSwap
 │   ├── aether-timbre/      # Spectral timbre analysis and transfer
 │   ├── aether-samples/     # Sample pack download and management
@@ -312,13 +312,13 @@ Every push runs on **Windows, macOS, and Linux**:
 
 ## Roadmap
 
-| Version | Milestone                                                                                    |
-| ------- | -------------------------------------------------------------------------------------------- |
-| v0.1    | RT engine + WebSocket bridge + 9 crates on crates.io ✅                                      |
-| v0.2    | 17 DSP nodes, modulation matrix, sample library, VST3/CLAP export ✅                         |
-| v0.3    | Native GPU DAW (Iced): Song view, Piano roll, Mixer, Transport, Save/Load, Export, Metronome |
-| v0.4    | SIMD optimization, world music instruments, tuning systems                                   |
-| v1.0    | Stable public release                                                                        |
+| Version | Milestone                                                                                       |
+| ------- | ----------------------------------------------------------------------------------------------- |
+| v0.1    | RT engine + WebSocket bridge + 9 crates on crates.io ✅                                         |
+| v0.2    | 17 DSP nodes, modulation matrix, sample library, VST3/CLAP export ✅                            |
+| v0.3    | Native GPU DAW (Iced): Song view, Piano roll, Mixer, Transport, Save/Load, Export, Metronome ✅ |
+| v0.4    | SIMD optimization, world music instruments, expanded tuning systems                             |
+| v1.0    | Stable public release                                                                           |
 
 ---
 
