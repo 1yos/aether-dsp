@@ -12,7 +12,7 @@ MIDI engine for [AetherDSP](https://crates.io/crates/aether-core) — device rou
 
 - **MIDI device routing** — connect hardware controllers to graph nodes
 - **MIDI clock** — sync BPM to external MIDI clock source
-- **Tuning tables** — full microtonal support including Ethiopian scales (Tizita, Bati, Anchihoye), Arabic maqam, and custom frequency maps
+- **Tuning tables** — 13 microtonal tuning systems including Ethiopian scales (Tizita, Bati, Ambassel), Arabic maqam (Rast, Bayati, Hijaz), Indian raga, Gamelan (Slendro, Pelog), and Just Intonation (5-limit, 7-limit)
 - **Event system** — typed MIDI events (NoteOn, NoteOff, CC, PitchBend, Clock)
 
 ## Tuning systems
@@ -20,14 +20,30 @@ MIDI engine for [AetherDSP](https://crates.io/crates/aether-core) — device rou
 ```rust
 use aether_midi::tuning::TuningTable;
 
-// Ethiopian Tizita scale
+// Ethiopian scales
 let tizita = TuningTable::ethiopian_tizita();
+let bati = TuningTable::ethiopian_bati();
+let ambassel = TuningTable::ethiopian_ambassel();
 
-// Arabic Maqam Rast
+// Arabic maqam
 let rast = TuningTable::arabic_maqam_rast();
+let bayati = TuningTable::arabic_maqam_bayati();
+let hijaz = TuningTable::arabic_maqam_hijaz();
 
-// Custom — provide your own frequency ratios
-let custom = TuningTable::from_ratios(&[1.0, 1.125, 1.25, 1.333, 1.5, 1.667, 1.875]);
+// Indian raga
+let yaman = TuningTable::indian_raga_yaman();
+
+// Gamelan
+let slendro = TuningTable::gamelan_slendro();
+let slendro_stretched = TuningTable::gamelan_slendro_stretched(); // Ethnomusicologically accurate
+let pelog = TuningTable::gamelan_pelog();
+
+// Just Intonation
+let ji_5 = TuningTable::just_intonation(); // 5-limit (traditional)
+let ji_7 = TuningTable::just_intonation_7_limit(); // 7-limit (blues, barbershop)
+
+// Custom — provide your own frequencies
+let custom = TuningTable::from_frequencies(vec![...], "My Scale", "Description");
 ```
 
 ## License
