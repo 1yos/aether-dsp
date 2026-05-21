@@ -3,9 +3,7 @@
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{
-    parse_macro_input, Data, DeriveInput, Expr, Fields, Lit,
-};
+use syn::{parse_macro_input, Data, DeriveInput, Expr, Fields, Lit};
 
 #[proc_macro_attribute]
 pub fn aether_node(_attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -38,7 +36,9 @@ pub fn aether_node(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 is_param = true;
                 // Parse key=value pairs inside #[param(...)]
                 let _ = attr.parse_nested_meta(|meta| {
-                    let key = meta.path.get_ident()
+                    let key = meta
+                        .path
+                        .get_ident()
                         .map(|i| i.to_string())
                         .unwrap_or_default();
                     let value: Expr = meta.value()?.parse()?;

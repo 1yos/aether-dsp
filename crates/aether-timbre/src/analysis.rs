@@ -1,6 +1,6 @@
 //! Spectral analysis — extract the timbre fingerprint of an instrument.
 
-use rustfft::{FftPlanner, num_complex::Complex};
+use rustfft::{num_complex::Complex, FftPlanner};
 
 /// The spectral envelope of an instrument — its timbre fingerprint.
 /// Stored as magnitude values across frequency bins.
@@ -28,7 +28,9 @@ impl SpectralEnvelope {
         let mut avg_magnitudes = vec![0.0f32; fft_size / 2 + 1];
 
         let window: Vec<f32> = (0..fft_size)
-            .map(|i| 0.5 * (1.0 - (2.0 * std::f32::consts::PI * i as f32 / (fft_size - 1) as f32).cos()))
+            .map(|i| {
+                0.5 * (1.0 - (2.0 * std::f32::consts::PI * i as f32 / (fft_size - 1) as f32).cos())
+            })
             .collect();
 
         let mut frame_count = 0;
@@ -130,7 +132,9 @@ impl TimbreProfile {
 
     /// Get the best matching envelope for a given MIDI note.
     pub fn envelope_for_note(&self, note: u8) -> Option<&SpectralEnvelope> {
-        if self.envelopes.is_empty() { return None; }
+        if self.envelopes.is_empty() {
+            return None;
+        }
         let mut best_dist = u8::MAX;
         for (n, _env) in &self.envelopes {
             let dist = note.abs_diff(*n);
@@ -139,7 +143,8 @@ impl TimbreProfile {
             }
         }
         // Return the envelope from the best match
-        self.envelopes.iter()
+        self.envelopes
+            .iter()
             .min_by_key(|(n, _)| note.abs_diff(*n))
             .map(|(_, e)| e)
     }

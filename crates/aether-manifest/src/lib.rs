@@ -24,8 +24,8 @@
 //! }
 //! ```
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -63,9 +63,15 @@ pub struct Manifest {
     pub metadata: HashMap<String, serde_json::Value>,
 }
 
-fn default_engine() -> String { "aether-dsp".into() }
-fn default_sample_rate() -> u32 { 48_000 }
-fn default_block_size() -> usize { 64 }
+fn default_engine() -> String {
+    "aether-dsp".into()
+}
+fn default_sample_rate() -> u32 {
+    48_000
+}
+fn default_block_size() -> usize {
+    64
+}
 
 /// A node instance in the manifest.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -107,10 +113,7 @@ impl Manifest {
     }
 
     /// Validate the manifest against a node registry.
-    pub fn validate(
-        &self,
-        registry: &aether_ndk::node::NodeRegistry,
-    ) -> Result<(), ManifestError> {
+    pub fn validate(&self, registry: &aether_ndk::node::NodeRegistry) -> Result<(), ManifestError> {
         let mut ids = std::collections::HashSet::new();
         for node in &self.nodes {
             if !ids.insert(node.id.as_str()) {
@@ -140,8 +143,8 @@ impl Manifest {
         registry: &aether_ndk::node::NodeRegistry,
         _sample_rate: f32,
     ) -> Result<aether_core::graph::DspGraph, ManifestError> {
-        use aether_core::graph::DspGraph;
         use aether_core::arena::NodeId;
+        use aether_core::graph::DspGraph;
         use std::collections::HashMap;
 
         self.validate(registry)?;
@@ -160,7 +163,11 @@ impl Manifest {
             if let Some(defs) = registry.param_defs(&node_def.node_type) {
                 let record = graph.arena.get_mut(node_id).unwrap();
                 for def in defs {
-                    let value = node_def.params.get(def.name).copied().unwrap_or(def.default);
+                    let value = node_def
+                        .params
+                        .get(def.name)
+                        .copied()
+                        .unwrap_or(def.default);
                     record.params.add(value);
                 }
             }

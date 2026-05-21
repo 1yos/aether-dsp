@@ -7,9 +7,9 @@ use aether_ndk::prelude::*;
 /// Amplitude modulation (tremolo) using a sine LFO.
 #[aether_node]
 pub struct Tremolo {
-    #[param(name = "Rate",  min = 0.1,  max = 20.0, default = 4.0)]
+    #[param(name = "Rate", min = 0.1, max = 20.0, default = 4.0)]
     rate: f32,
-    #[param(name = "Depth", min = 0.0,  max = 1.0,  default = 0.5)]
+    #[param(name = "Depth", min = 0.0, max = 1.0, default = 0.5)]
     depth: f32,
     // Internal state — not a param
     phase: f32,
@@ -25,7 +25,7 @@ impl DspProcess for Tremolo {
     ) {
         let input = inputs.get(0);
         for (i, out) in output.iter_mut().enumerate() {
-            let rate  = params.get(0).current;
+            let rate = params.get(0).current;
             let depth = params.get(1).current;
             // LFO: 1.0 at phase=0, dips to (1-depth) at phase=0.5
             let lfo = 1.0 - depth * 0.5 * (1.0 - (self.phase * std::f32::consts::TAU).cos());
@@ -42,7 +42,10 @@ fn main() {
     println!("Node type:  {}", Tremolo::type_name());
     println!("Param count: {}", Tremolo::PARAM_COUNT);
     for def in Tremolo::param_defs() {
-        println!("  {} [{:.1}–{:.1}] default={:.2}", def.name, def.min, def.max, def.default);
+        println!(
+            "  {} [{:.1}–{:.1}] default={:.2}",
+            def.name, def.min, def.max, def.default
+        );
     }
 
     // Wrap it for the engine

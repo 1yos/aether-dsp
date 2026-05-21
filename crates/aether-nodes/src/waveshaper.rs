@@ -45,7 +45,9 @@ impl Waveshaper {
 }
 
 impl Default for Waveshaper {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DspNode for Waveshaper {
@@ -60,9 +62,9 @@ impl DspNode for Waveshaper {
         let input = inputs[0].unwrap_or(&silence);
 
         let drive = params.get(0).current.clamp(0.0, 1.0);
-        let mode  = params.get(1).current as u32;
-        let tone  = params.get(2).current.clamp(0.0, 1.0);
-        let wet   = params.get(3).current.clamp(0.0, 1.0);
+        let mode = params.get(1).current as u32;
+        let tone = params.get(2).current.clamp(0.0, 1.0);
+        let wet = params.get(3).current.clamp(0.0, 1.0);
 
         // Drive maps 0–1 to 1–20× gain
         let gain = 1.0 + drive * 19.0;
@@ -81,8 +83,11 @@ impl DspNode for Waveshaper {
                     // Fold-back: reflect signal at ±1
                     let mut v = driven;
                     while v.abs() > 1.0 {
-                        if v > 1.0 { v = 2.0 - v; }
-                        else if v < -1.0 { v = -2.0 - v; }
+                        if v > 1.0 {
+                            v = 2.0 - v;
+                        } else if v < -1.0 {
+                            v = -2.0 - v;
+                        }
                     }
                     v
                 }
@@ -115,7 +120,9 @@ impl DspNode for Waveshaper {
         let _ = sample_rate;
     }
 
-    fn type_name(&self) -> &'static str { "Waveshaper" }
+    fn type_name(&self) -> &'static str {
+        "Waveshaper"
+    }
 }
 
 #[cfg(test)]
@@ -126,14 +133,20 @@ mod tests {
     fn test_waveshaper_zero_drive_passthrough() {
         let mut ws = Waveshaper::new();
         let mut params = ParamBlock::new();
-        for &v in &[0.0f32, 0.0, 0.5, 1.0] { params.add(v); }
-        let input: [f32; BUFFER_SIZE] = std::array::from_fn(|i| (i as f32 / BUFFER_SIZE as f32) * 0.5);
+        for &v in &[0.0f32, 0.0, 0.5, 1.0] {
+            params.add(v);
+        }
+        let input: [f32; BUFFER_SIZE] =
+            std::array::from_fn(|i| (i as f32 / BUFFER_SIZE as f32) * 0.5);
         let inputs = [Some(&input); MAX_INPUTS];
         let mut output = [0.0f32; BUFFER_SIZE];
         ws.process(&inputs, &mut output, &mut params, 48000.0);
         // With drive=0, gain=1, tanh(x)≈x for small x, output ≈ input
         for i in 0..BUFFER_SIZE {
-            assert!((output[i] - input[i]).abs() < 0.05, "zero drive should be near-passthrough");
+            assert!(
+                (output[i] - input[i]).abs() < 0.05,
+                "zero drive should be near-passthrough"
+            );
         }
     }
 
@@ -141,13 +154,18 @@ mod tests {
     fn test_waveshaper_hard_clip_bounds() {
         let mut ws = Waveshaper::new();
         let mut params = ParamBlock::new();
-        for &v in &[1.0f32, 1.0, 0.0, 1.0] { params.add(v); } // hard clip, full wet
+        for &v in &[1.0f32, 1.0, 0.0, 1.0] {
+            params.add(v);
+        } // hard clip, full wet
         let input = [2.0f32; BUFFER_SIZE]; // way above clip
         let inputs = [Some(&input); MAX_INPUTS];
         let mut output = [0.0f32; BUFFER_SIZE];
         ws.process(&inputs, &mut output, &mut params, 48000.0);
         for s in &output {
-            assert!(s.abs() <= 1.5, "hard clip output should be bounded, got {s}");
+            assert!(
+                s.abs() <= 1.5,
+                "hard clip output should be bounded, got {s}"
+            );
         }
     }
 }

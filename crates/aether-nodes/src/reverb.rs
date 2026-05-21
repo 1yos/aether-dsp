@@ -50,8 +50,13 @@ impl CombFilter {
         output
     }
 
-    fn set_feedback(&mut self, v: f32) { self.feedback = v; }
-    fn set_damp(&mut self, v: f32) { self.damp1 = v; self.damp2 = 1.0 - v; }
+    fn set_feedback(&mut self, v: f32) {
+        self.feedback = v;
+    }
+    fn set_damp(&mut self, v: f32) {
+        self.damp1 = v;
+        self.damp2 = 1.0 - v;
+    }
 }
 
 struct AllpassFilter {
@@ -61,7 +66,10 @@ struct AllpassFilter {
 
 impl AllpassFilter {
     fn new(size: usize) -> Self {
-        Self { buf: vec![0.0; size], pos: 0 }
+        Self {
+            buf: vec![0.0; size],
+            pos: 0,
+        }
     }
 
     #[inline(always)]
@@ -137,10 +145,18 @@ impl Reverb {
         let mut out_l = 0.0f32;
         let mut out_r = 0.0f32;
 
-        for c in &mut self.comb_l { out_l += c.process(input_gain); }
-        for c in &mut self.comb_r { out_r += c.process(input_gain); }
-        for a in &mut self.allpass_l { out_l = a.process(out_l); }
-        for a in &mut self.allpass_r { out_r = a.process(out_r); }
+        for c in &mut self.comb_l {
+            out_l += c.process(input_gain);
+        }
+        for c in &mut self.comb_r {
+            out_r += c.process(input_gain);
+        }
+        for a in &mut self.allpass_l {
+            out_l = a.process(out_l);
+        }
+        for a in &mut self.allpass_r {
+            out_r = a.process(out_r);
+        }
 
         (out_l, out_r)
     }

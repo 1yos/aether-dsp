@@ -24,16 +24,22 @@ fn main() {
     }
 
     let result = match args[1].as_str() {
-        "new"      => commands::new_project(&args[2..]),
-        "node"     => commands::new_node(&args[2..]),
-        "build"    => commands::build(&args[2..]),
-        "run"      => commands::run(&args[2..]),
-        "list"     => commands::list_nodes(&args[2..]),
-        "schema"   => commands::schema(&args[2..]),
+        "new" => commands::new_project(&args[2..]),
+        "node" => commands::new_node(&args[2..]),
+        "build" => commands::build(&args[2..]),
+        "run" => commands::run(&args[2..]),
+        "list" => commands::list_nodes(&args[2..]),
+        "schema" => commands::schema(&args[2..]),
         "validate" => commands::validate(&args[2..]),
         "registry" => commands::registry(&args[2..]),
-        "version"  => { println!("aether-cli v0.1.0 (AetherSDK)"); Ok(()) }
-        "help" | "--help" | "-h" => { print_help(); Ok(()) }
+        "version" => {
+            println!("aether-cli v0.1.0 (AetherSDK)");
+            Ok(())
+        }
+        "help" | "--help" | "-h" => {
+            print_help();
+            Ok(())
+        }
         cmd => {
             eprintln!("Unknown command: {cmd}");
             eprintln!("Run `aether help` for usage.");
@@ -49,7 +55,7 @@ fn main() {
 
 fn print_help() {
     println!(
-r#"aether — AetherSDK CLI v0.1.0
+        r#"aether — AetherSDK CLI v0.1.0
 
 USAGE:
     aether <COMMAND> [OPTIONS]

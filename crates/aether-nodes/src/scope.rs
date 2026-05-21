@@ -49,8 +49,7 @@ mod tests {
 
     /// Generate a [f32; BUFFER_SIZE] array via proptest (BUFFER_SIZE = 64).
     fn audio_buffer() -> impl Strategy<Value = [f32; BUFFER_SIZE]> {
-        prop::collection::vec(-1.0f32..=1.0f32, BUFFER_SIZE)
-            .prop_map(|v| v.try_into().unwrap())
+        prop::collection::vec(-1.0f32..=1.0f32, BUFFER_SIZE).prop_map(|v| v.try_into().unwrap())
     }
 
     // Property 9

@@ -32,13 +32,17 @@ impl Compressor {
 
     #[inline(always)]
     fn linear_to_db(linear: f32) -> f32 {
-        if linear <= 1e-10 { return -200.0; }
+        if linear <= 1e-10 {
+            return -200.0;
+        }
         20.0 * linear.log10()
     }
 }
 
 impl Default for Compressor {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DspNode for Compressor {
@@ -53,13 +57,13 @@ impl DspNode for Compressor {
         let input = inputs[0].unwrap_or(&silence);
 
         let threshold_db = params.get(0).current.clamp(-60.0, 0.0);
-        let ratio        = params.get(1).current.clamp(1.0, 20.0);
-        let attack_ms    = params.get(2).current.clamp(0.1, 200.0);
-        let release_ms   = params.get(3).current.clamp(10.0, 2000.0);
-        let makeup_db    = params.get(4).current.clamp(0.0, 24.0);
-        let knee_db      = params.get(5).current.clamp(0.0, 12.0);
+        let ratio = params.get(1).current.clamp(1.0, 20.0);
+        let attack_ms = params.get(2).current.clamp(0.1, 200.0);
+        let release_ms = params.get(3).current.clamp(10.0, 2000.0);
+        let makeup_db = params.get(4).current.clamp(0.0, 24.0);
+        let knee_db = params.get(5).current.clamp(0.0, 12.0);
 
-        let attack_coeff  = (-1.0 / (attack_ms  * 0.001 * sample_rate)).exp();
+        let attack_coeff = (-1.0 / (attack_ms * 0.001 * sample_rate)).exp();
         let release_coeff = (-1.0 / (release_ms * 0.001 * sample_rate)).exp();
         let makeup_linear = Self::db_to_linear(makeup_db);
 
@@ -69,7 +73,7 @@ impl DspNode for Compressor {
             // RMS envelope follower (squared signal, smoothed)
             let x2 = x * x;
             self.rms_env = if x2 > self.rms_env {
-                attack_coeff  * self.rms_env + (1.0 - attack_coeff)  * x2
+                attack_coeff * self.rms_env + (1.0 - attack_coeff) * x2
             } else {
                 release_coeff * self.rms_env + (1.0 - release_coeff) * x2
             };
@@ -78,7 +82,7 @@ impl DspNode for Compressor {
             // Gain computer with soft knee
             let gain_reduction_db = if knee_db > 0.0 {
                 let knee_start = threshold_db - knee_db * 0.5;
-                let knee_end   = threshold_db + knee_db * 0.5;
+                let knee_end = threshold_db + knee_db * 0.5;
                 if rms_db <= knee_start {
                     0.0
                 } else if rms_db >= knee_end {
@@ -100,7 +104,7 @@ impl DspNode for Compressor {
 
             // Smooth gain envelope
             self.gain_env = if target_gain < self.gain_env {
-                attack_coeff  * self.gain_env + (1.0 - attack_coeff)  * target_gain
+                attack_coeff * self.gain_env + (1.0 - attack_coeff) * target_gain
             } else {
                 release_coeff * self.gain_env + (1.0 - release_coeff) * target_gain
             };
@@ -110,7 +114,9 @@ impl DspNode for Compressor {
         }
     }
 
-    fn type_name(&self) -> &'static str { "Compressor" }
+    fn type_name(&self) -> &'static str {
+        "Compressor"
+    }
 }
 
 #[cfg(test)]
@@ -122,12 +128,16 @@ mod tests {
         let mut comp = Compressor::new();
         let mut params = ParamBlock::new();
         // threshold=0dB, ratio=1, attack=1ms, release=100ms, makeup=0dB, knee=0
-        for &v in &[-20.0f32, 2.0, 1.0, 100.0, 0.0, 0.0] { params.add(v); }
+        for &v in &[-20.0f32, 2.0, 1.0, 100.0, 0.0, 0.0] {
+            params.add(v);
+        }
         let input = [0.0f32; BUFFER_SIZE];
         let inputs = [Some(&input); MAX_INPUTS];
         let mut output = [0.0f32; BUFFER_SIZE];
         comp.process(&inputs, &mut output, &mut params, 48000.0);
-        for s in &output { assert!(s.abs() < 1e-6, "silence should pass through as silence"); }
+        for s in &output {
+            assert!(s.abs() < 1e-6, "silence should pass through as silence");
+        }
     }
 
     #[test]
@@ -135,13 +145,18 @@ mod tests {
         let mut comp = Compressor::new();
         let mut params = ParamBlock::new();
         // threshold=-20dB, ratio=4, attack=1ms, release=100ms, makeup=0dB, knee=0
-        for &v in &[-20.0f32, 4.0, 1.0, 100.0, 0.0, 0.0] { params.add(v); }
+        for &v in &[-20.0f32, 4.0, 1.0, 100.0, 0.0, 0.0] {
+            params.add(v);
+        }
         let input = [0.5f32; BUFFER_SIZE]; // ~-6dB, above threshold
         let inputs = [Some(&input); MAX_INPUTS];
         let mut output = [0.0f32; BUFFER_SIZE];
         comp.process(&inputs, &mut output, &mut params, 48000.0);
         // After settling, output should be quieter than input
         let last = output[BUFFER_SIZE - 1].abs();
-        assert!(last < 0.5, "compressor should reduce gain above threshold, got {last}");
+        assert!(
+            last < 0.5,
+            "compressor should reduce gain above threshold, got {last}"
+        );
     }
 }

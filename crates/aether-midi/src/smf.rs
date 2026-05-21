@@ -82,13 +82,18 @@ impl MidiFile {
     /// Returns an error if the file is malformed or unsupported.
     pub fn from_bytes(data: &[u8]) -> Result<Self, String> {
         let mut reader = data;
-        
+
         // Read header chunk
         let mut chunk_type = [0u8; 4];
-        reader.read_exact(&mut chunk_type).map_err(|e| format!("Failed to read chunk type: {}", e))?;
-        
+        reader
+            .read_exact(&mut chunk_type)
+            .map_err(|e| format!("Failed to read chunk type: {}", e))?;
+
         if &chunk_type != b"MThd" {
-            return Err(format!("Invalid MIDI file: expected MThd, got {:?}", chunk_type));
+            return Err(format!(
+                "Invalid MIDI file: expected MThd, got {:?}",
+                chunk_type
+            ));
         }
 
         let header_length = read_u32(&mut reader)?;
@@ -112,7 +117,10 @@ impl MidiFile {
         } else {
             let fps = ((division_value >> 8) & 0x7F) as u8;
             let ticks_per_frame = (division_value & 0xFF) as u8;
-            Division::SmpteFrames { fps, ticks_per_frame }
+            Division::SmpteFrames {
+                fps,
+                ticks_per_frame,
+            }
         };
 
         let mut tracks = Vec::new();
@@ -135,7 +143,8 @@ impl MidiFile {
         let mut data = Vec::new();
 
         // Write header chunk
-        data.write_all(b"MThd").map_err(|e| format!("Write error: {}", e))?;
+        data.write_all(b"MThd")
+            .map_err(|e| format!("Write error: {}", e))?;
         write_u32(&mut data, 6)?; // Header length
 
         let format_value = self.format as u16;
@@ -144,9 +153,10 @@ impl MidiFile {
 
         let division_value = match self.division {
             Division::TicksPerQuarterNote(ticks) => ticks,
-            Division::SmpteFrames { fps, ticks_per_frame } => {
-                0x8000 | ((fps as u16) << 8) | (ticks_per_frame as u16)
-            }
+            Division::SmpteFrames {
+                fps,
+                ticks_per_frame,
+            } => 0x8000 | ((fps as u16) << 8) | (ticks_per_frame as u16),
         };
         write_u16(&mut data, division_value)?;
 
@@ -192,29 +202,39 @@ impl Default for MidiTrack {
 
 fn read_u16(reader: &mut &[u8]) -> Result<u16, String> {
     let mut buf = [0u8; 2];
-    reader.read_exact(&mut buf).map_err(|e| format!("Read error: {}", e))?;
+    reader
+        .read_exact(&mut buf)
+        .map_err(|e| format!("Read error: {}", e))?;
     Ok(u16::from_be_bytes(buf))
 }
 
 fn read_u32(reader: &mut &[u8]) -> Result<u32, String> {
     let mut buf = [0u8; 4];
-    reader.read_exact(&mut buf).map_err(|e| format!("Read error: {}", e))?;
+    reader
+        .read_exact(&mut buf)
+        .map_err(|e| format!("Read error: {}", e))?;
     Ok(u32::from_be_bytes(buf))
 }
 
 fn write_u16(writer: &mut Vec<u8>, value: u16) -> Result<(), String> {
-    writer.write_all(&value.to_be_bytes()).map_err(|e| format!("Write error: {}", e))
+    writer
+        .write_all(&value.to_be_bytes())
+        .map_err(|e| format!("Write error: {}", e))
 }
 
 fn write_u32(writer: &mut Vec<u8>, value: u32) -> Result<(), String> {
-    writer.write_all(&value.to_be_bytes()).map_err(|e| format!("Write error: {}", e))
+    writer
+        .write_all(&value.to_be_bytes())
+        .map_err(|e| format!("Write error: {}", e))
 }
 
 fn read_variable_length(reader: &mut &[u8]) -> Result<u32, String> {
     let mut value = 0u32;
     for _ in 0..4 {
         let mut byte = [0u8];
-        reader.read_exact(&mut byte).map_err(|e| format!("Read error: {}", e))?;
+        reader
+            .read_exact(&mut byte)
+            .map_err(|e| format!("Read error: {}", e))?;
         value = (value << 7) | ((byte[0] & 0x7F) as u32);
         if byte[0] & 0x80 == 0 {
             return Ok(value);
@@ -227,25 +247,32 @@ fn write_variable_length(writer: &mut Vec<u8>, mut value: u32) -> Result<(), Str
     let mut bytes = Vec::new();
     bytes.push((value & 0x7F) as u8);
     value >>= 7;
-    
+
     while value > 0 {
         bytes.push(((value & 0x7F) | 0x80) as u8);
         value >>= 7;
     }
-    
+
     for &byte in bytes.iter().rev() {
-        writer.write_all(&[byte]).map_err(|e| format!("Write error: {}", e))?;
+        writer
+            .write_all(&[byte])
+            .map_err(|e| format!("Write error: {}", e))?;
     }
-    
+
     Ok(())
 }
 
 fn read_track(reader: &mut &[u8]) -> Result<MidiTrack, String> {
     let mut chunk_type = [0u8; 4];
-    reader.read_exact(&mut chunk_type).map_err(|e| format!("Read error: {}", e))?;
-    
+    reader
+        .read_exact(&mut chunk_type)
+        .map_err(|e| format!("Read error: {}", e))?;
+
     if &chunk_type != b"MTrk" {
-        return Err(format!("Invalid track chunk: expected MTrk, got {:?}", chunk_type));
+        return Err(format!(
+            "Invalid track chunk: expected MTrk, got {:?}",
+            chunk_type
+        ));
     }
 
     let track_length = read_u32(reader)?;
@@ -258,9 +285,11 @@ fn read_track(reader: &mut &[u8]) -> Result<MidiTrack, String> {
 
     while !track_reader.is_empty() {
         let delta_time = read_variable_length(&mut track_reader)?;
-        
+
         let mut status_byte = [0u8];
-        track_reader.read_exact(&mut status_byte).map_err(|e| format!("Read error: {}", e))?;
+        track_reader
+            .read_exact(&mut status_byte)
+            .map_err(|e| format!("Read error: {}", e))?;
         let status = status_byte[0];
 
         // Handle running status
@@ -276,49 +305,69 @@ fn read_track(reader: &mut &[u8]) -> Result<MidiTrack, String> {
         let event = match actual_status & 0xF0 {
             0x90 => {
                 // Note on
-                let note = if data_start != 0 { data_start } else {
+                let note = if data_start != 0 {
+                    data_start
+                } else {
                     let mut byte = [0u8];
-                    track_reader.read_exact(&mut byte).map_err(|e| format!("Read error: {}", e))?;
+                    track_reader
+                        .read_exact(&mut byte)
+                        .map_err(|e| format!("Read error: {}", e))?;
                     byte[0]
                 };
                 let mut velocity = [0u8];
-                track_reader.read_exact(&mut velocity).map_err(|e| format!("Read error: {}", e))?;
-                
+                track_reader
+                    .read_exact(&mut velocity)
+                    .map_err(|e| format!("Read error: {}", e))?;
+
                 let channel = (actual_status & 0x0F) + 1;
                 MidiEvent {
                     timestamp: 0,
                     channel,
-                    kind: MidiEventKind::NoteOn { note, velocity: velocity[0] },
+                    kind: MidiEventKind::NoteOn {
+                        note,
+                        velocity: velocity[0],
+                    },
                 }
             }
             0x80 => {
                 // Note off
-                let note = if data_start != 0 { data_start } else {
+                let note = if data_start != 0 {
+                    data_start
+                } else {
                     let mut byte = [0u8];
-                    track_reader.read_exact(&mut byte).map_err(|e| format!("Read error: {}", e))?;
+                    track_reader
+                        .read_exact(&mut byte)
+                        .map_err(|e| format!("Read error: {}", e))?;
                     byte[0]
                 };
                 let mut velocity = [0u8];
-                track_reader.read_exact(&mut velocity).map_err(|e| format!("Read error: {}", e))?;
-                
+                track_reader
+                    .read_exact(&mut velocity)
+                    .map_err(|e| format!("Read error: {}", e))?;
+
                 let channel = (actual_status & 0x0F) + 1;
                 MidiEvent {
                     timestamp: 0,
                     channel,
-                    kind: MidiEventKind::NoteOff { note, velocity: velocity[0] },
+                    kind: MidiEventKind::NoteOff {
+                        note,
+                        velocity: velocity[0],
+                    },
                 }
             }
             0xFF => {
                 // Meta event
                 let mut meta_type = [0u8];
-                track_reader.read_exact(&mut meta_type).map_err(|e| format!("Read error: {}", e))?;
+                track_reader
+                    .read_exact(&mut meta_type)
+                    .map_err(|e| format!("Read error: {}", e))?;
                 let length = read_variable_length(&mut track_reader)?;
-                
+
                 // Skip meta event data
                 if length as usize <= track_reader.len() {
                     track_reader = &track_reader[length as usize..];
                 }
-                
+
                 // Skip meta events
                 continue;
             }
@@ -335,8 +384,10 @@ fn read_track(reader: &mut &[u8]) -> Result<MidiTrack, String> {
 }
 
 fn write_track(writer: &mut Vec<u8>, track: &MidiTrack) -> Result<(), String> {
-    writer.write_all(b"MTrk").map_err(|e| format!("Write error: {}", e))?;
-    
+    writer
+        .write_all(b"MTrk")
+        .map_err(|e| format!("Write error: {}", e))?;
+
     // Write placeholder for track length
     let length_pos = writer.len();
     write_u32(writer, 0)?;
@@ -346,15 +397,19 @@ fn write_track(writer: &mut Vec<u8>, track: &MidiTrack) -> Result<(), String> {
     // Write events
     for timed_event in &track.events {
         write_variable_length(writer, timed_event.delta_time)?;
-        
+
         match &timed_event.event.kind {
             MidiEventKind::NoteOn { note, velocity } => {
                 let status = 0x90 | ((timed_event.event.channel - 1) & 0x0F);
-                writer.write_all(&[status, *note, *velocity]).map_err(|e| format!("Write error: {}", e))?;
+                writer
+                    .write_all(&[status, *note, *velocity])
+                    .map_err(|e| format!("Write error: {}", e))?;
             }
             MidiEventKind::NoteOff { note, velocity } => {
                 let status = 0x80 | ((timed_event.event.channel - 1) & 0x0F);
-                writer.write_all(&[status, *note, *velocity]).map_err(|e| format!("Write error: {}", e))?;
+                writer
+                    .write_all(&[status, *note, *velocity])
+                    .map_err(|e| format!("Write error: {}", e))?;
             }
             _ => {
                 // Skip other events for now
@@ -363,7 +418,9 @@ fn write_track(writer: &mut Vec<u8>, track: &MidiTrack) -> Result<(), String> {
     }
 
     // Write end of track meta event
-    writer.write_all(&[0xFF, 0x2F, 0x00]).map_err(|e| format!("Write error: {}", e))?;
+    writer
+        .write_all(&[0xFF, 0x2F, 0x00])
+        .map_err(|e| format!("Write error: {}", e))?;
 
     // Update track length
     let track_length = (writer.len() - track_start) as u32;
@@ -379,22 +436,31 @@ mod tests {
 
     #[test]
     fn test_midi_file_creation() {
-        let mut file = MidiFile::new(
-            MidiFormat::SingleTrack,
-            Division::TicksPerQuarterNote(480),
-        );
+        let mut file = MidiFile::new(MidiFormat::SingleTrack, Division::TicksPerQuarterNote(480));
 
         let mut track = MidiTrack::with_name("Test Track");
-        track.add_event(0, MidiEvent {
-            timestamp: 0,
-            channel: 1,
-            kind: MidiEventKind::NoteOn { note: 60, velocity: 100 },
-        });
-        track.add_event(480, MidiEvent {
-            timestamp: 0,
-            channel: 1,
-            kind: MidiEventKind::NoteOff { note: 60, velocity: 0 },
-        });
+        track.add_event(
+            0,
+            MidiEvent {
+                timestamp: 0,
+                channel: 1,
+                kind: MidiEventKind::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            },
+        );
+        track.add_event(
+            480,
+            MidiEvent {
+                timestamp: 0,
+                channel: 1,
+                kind: MidiEventKind::NoteOff {
+                    note: 60,
+                    velocity: 0,
+                },
+            },
+        );
 
         file.add_track(track);
 
@@ -405,22 +471,31 @@ mod tests {
     #[test]
     #[ignore] // TODO: Fix round-trip serialization
     fn test_midi_file_write_read() {
-        let mut file = MidiFile::new(
-            MidiFormat::SingleTrack,
-            Division::TicksPerQuarterNote(480),
-        );
+        let mut file = MidiFile::new(MidiFormat::SingleTrack, Division::TicksPerQuarterNote(480));
 
         let mut track = MidiTrack::new();
-        track.add_event(0, MidiEvent {
-            timestamp: 0,
-            channel: 1,
-            kind: MidiEventKind::NoteOn { note: 60, velocity: 100 },
-        });
-        track.add_event(480, MidiEvent {
-            timestamp: 0,
-            channel: 1,
-            kind: MidiEventKind::NoteOff { note: 60, velocity: 0 },
-        });
+        track.add_event(
+            0,
+            MidiEvent {
+                timestamp: 0,
+                channel: 1,
+                kind: MidiEventKind::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            },
+        );
+        track.add_event(
+            480,
+            MidiEvent {
+                timestamp: 0,
+                channel: 1,
+                kind: MidiEventKind::NoteOff {
+                    note: 60,
+                    velocity: 0,
+                },
+            },
+        );
 
         file.add_track(track);
 
@@ -437,7 +512,7 @@ mod tests {
     #[test]
     fn test_variable_length_encoding() {
         let mut data = Vec::new();
-        
+
         write_variable_length(&mut data, 0).unwrap();
         assert_eq!(data, vec![0x00]);
 

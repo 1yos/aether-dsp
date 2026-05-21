@@ -7,12 +7,7 @@
 //! - filter_sweep_before.wav (unfiltered white noise)
 //! - filter_sweep_after.wav (filtered with sweep)
 
-use aether_core::{
-    node::DspNode,
-    param::ParamBlock,
-    BUFFER_SIZE,
-    MAX_INPUTS,
-};
+use aether_core::{node::DspNode, param::ParamBlock, BUFFER_SIZE, MAX_INPUTS};
 use aether_nodes::filter::StateVariableFilter;
 use hound::{WavSpec, WavWriter};
 use rand::Rng;
@@ -60,7 +55,7 @@ fn main() {
 
     // Parameters: cutoff, resonance, mode
     params.add(200.0); // Start at 200 Hz
-    params.add(0.7);   // Moderate resonance
+    params.add(0.7); // Moderate resonance
     params.add(FILTER_MODE_LOWPASS);
 
     let mut sample_idx = 0;

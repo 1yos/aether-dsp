@@ -52,7 +52,13 @@ impl Lfo {
                     3.0 - 4.0 * self.phase
                 }
             }
-            2 => if self.phase < 0.5 { 1.0 } else { -1.0 },
+            2 => {
+                if self.phase < 0.5 {
+                    1.0
+                } else {
+                    -1.0
+                }
+            }
             3 => {
                 // Sample-and-hold: new random value on each cycle
                 if crossed_zero {

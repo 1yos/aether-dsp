@@ -179,14 +179,20 @@ impl Param {
     /// - Clamping to valid range
     /// - Preventing invalid audio state
     #[inline]
-    pub fn set_target_clamped(&mut self, target: f32, ramp_samples: u32, min: f32, max: f32) -> f32 {
+    pub fn set_target_clamped(
+        &mut self,
+        target: f32,
+        ramp_samples: u32,
+        min: f32,
+        max: f32,
+    ) -> f32 {
         // Validate: replace NaN/Infinity with current value
         let validated = if target.is_finite() {
             target.clamp(min, max)
         } else {
             self.current
         };
-        
+
         self.set_target(validated, ramp_samples);
         validated
     }
@@ -704,7 +710,7 @@ mod tests {
     #[test]
     fn test_validation_frequency() {
         use validation::validate_frequency;
-        
+
         assert_eq!(validate_frequency(440.0, 48000.0), 440.0);
         assert_eq!(validate_frequency(-100.0, 48000.0), 0.1);
         assert_eq!(validate_frequency(30000.0, 48000.0), 24000.0);
@@ -714,7 +720,7 @@ mod tests {
     #[test]
     fn test_validation_gain() {
         use validation::validate_gain;
-        
+
         assert_eq!(validate_gain(0.5, 2.0), 0.5);
         assert_eq!(validate_gain(-0.5, 2.0), 0.0);
         assert_eq!(validate_gain(3.0, 2.0), 2.0);

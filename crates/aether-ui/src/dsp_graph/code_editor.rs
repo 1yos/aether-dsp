@@ -67,15 +67,14 @@ impl DspNode for CustomNode {
     fn num_inputs(&self) -> usize { 1 }
     fn num_outputs(&self) -> usize { 1 }
 }
-"#.to_string()
+"#
+        .to_string()
     }
 
     pub fn view(&self) -> Element<'_, Message> {
-        let title = text("Code Editor")
-            .size(16)
-            .style(|_theme| text::Style {
-                color: Some(AetherTheme::TEXT_PRIMARY),
-            });
+        let title = text("Code Editor").size(16).style(|_theme| text::Style {
+            color: Some(AetherTheme::TEXT_PRIMARY),
+        });
 
         let subtitle = text("Write custom DSP nodes in Rust")
             .size(12)
@@ -84,43 +83,27 @@ impl DspNode for CustomNode {
             });
 
         // Code editor (simplified - in production would use a proper code editor widget)
-        let code_display = scrollable(
-            text(&self.code)
-                .size(12)
-                .style(|_theme| text::Style {
-                    color: Some(AetherTheme::TEXT_PRIMARY),
-                })
-        )
+        let code_display = scrollable(text(&self.code).size(12).style(|_theme| text::Style {
+            color: Some(AetherTheme::TEXT_PRIMARY),
+        }))
         .height(Length::Fill);
 
-        let output_title = text("Output")
-            .size(12)
-            .style(|_theme| text::Style {
-                color: Some(AetherTheme::TEXT_SECONDARY),
-            });
+        let output_title = text("Output").size(12).style(|_theme| text::Style {
+            color: Some(AetherTheme::TEXT_SECONDARY),
+        });
 
-        let output_display = container(
-            text(&self.output)
-                .size(10)
-                .style(|_theme| text::Style {
-                    color: Some(AetherTheme::TEXT_DISABLED),
-                })
-        )
+        let output_display = container(text(&self.output).size(10).style(|_theme| text::Style {
+            color: Some(AetherTheme::TEXT_DISABLED),
+        }))
         .padding(Spacing::SM)
         .style(|_theme| container::Style {
             background: Some(AetherTheme::NODE_BACKGROUND.into()),
             ..Default::default()
         });
 
-        let content = column![
-            title,
-            subtitle,
-            code_display,
-            output_title,
-            output_display,
-        ]
-        .spacing(Spacing::MD)
-        .padding(Spacing::MD);
+        let content = column![title, subtitle, code_display, output_title, output_display,]
+            .spacing(Spacing::MD)
+            .padding(Spacing::MD);
 
         container(content)
             .width(Length::Fill)

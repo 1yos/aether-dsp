@@ -34,13 +34,17 @@ impl Gate {
 
     #[inline(always)]
     fn linear_to_db(linear: f32) -> f32 {
-        if linear <= 1e-10 { return -200.0; }
+        if linear <= 1e-10 {
+            return -200.0;
+        }
         20.0 * linear.log10()
     }
 }
 
 impl Default for Gate {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DspNode for Gate {
@@ -55,15 +59,15 @@ impl DspNode for Gate {
         let input = inputs[0].unwrap_or(&silence);
 
         let threshold_db = params.get(0).current.clamp(-80.0, 0.0);
-        let ratio        = params.get(1).current.clamp(1.0, 100.0);
-        let attack_ms    = params.get(2).current.clamp(0.1, 100.0);
-        let release_ms   = params.get(3).current.clamp(10.0, 2000.0);
-        let hold_ms      = params.get(4).current.clamp(0.0, 500.0);
+        let ratio = params.get(1).current.clamp(1.0, 100.0);
+        let attack_ms = params.get(2).current.clamp(0.1, 100.0);
+        let release_ms = params.get(3).current.clamp(10.0, 2000.0);
+        let hold_ms = params.get(4).current.clamp(0.0, 500.0);
 
         let threshold_linear = Self::db_to_linear(threshold_db);
-        let attack_coeff     = (-1.0 / (attack_ms  * 0.001 * sample_rate)).exp();
-        let release_coeff    = (-1.0 / (release_ms * 0.001 * sample_rate)).exp();
-        let hold_samples     = (hold_ms * 0.001 * sample_rate) as usize;
+        let attack_coeff = (-1.0 / (attack_ms * 0.001 * sample_rate)).exp();
+        let release_coeff = (-1.0 / (release_ms * 0.001 * sample_rate)).exp();
+        let hold_samples = (hold_ms * 0.001 * sample_rate) as usize;
 
         for i in 0..BUFFER_SIZE {
             let x = input[i];
@@ -71,7 +75,7 @@ impl DspNode for Gate {
             // RMS envelope follower
             let x2 = x * x;
             self.rms_env = if x2 > self.rms_env {
-                attack_coeff  * self.rms_env + (1.0 - attack_coeff)  * x2
+                attack_coeff * self.rms_env + (1.0 - attack_coeff) * x2
             } else {
                 release_coeff * self.rms_env + (1.0 - release_coeff) * x2
             };
@@ -95,7 +99,7 @@ impl DspNode for Gate {
 
             // Smooth gain envelope
             self.gain_env = if target_gain > self.gain_env {
-                attack_coeff  * self.gain_env + (1.0 - attack_coeff)  * target_gain
+                attack_coeff * self.gain_env + (1.0 - attack_coeff) * target_gain
             } else {
                 release_coeff * self.gain_env + (1.0 - release_coeff) * target_gain
             };
@@ -105,7 +109,9 @@ impl DspNode for Gate {
         }
     }
 
-    fn type_name(&self) -> &'static str { "Gate" }
+    fn type_name(&self) -> &'static str {
+        "Gate"
+    }
 }
 
 #[cfg(test)]
@@ -117,13 +123,17 @@ mod tests {
         let mut gate = Gate::new();
         let mut params = ParamBlock::new();
         // threshold=-40dB, ratio=10, attack=1ms, release=100ms, hold=0ms
-        for &v in &[-40.0f32, 10.0, 1.0, 100.0, 0.0] { params.add(v); }
+        for &v in &[-40.0f32, 10.0, 1.0, 100.0, 0.0] {
+            params.add(v);
+        }
         let input = [0.0f32; BUFFER_SIZE];
         let inputs = [Some(&input); MAX_INPUTS];
         let mut output = [0.0f32; BUFFER_SIZE];
         gate.process(&inputs, &mut output, &mut params, 48000.0);
         // Silence should be attenuated (close to zero)
-        for s in &output { assert!(s.abs() < 1e-6, "silence should be attenuated"); }
+        for s in &output {
+            assert!(s.abs() < 1e-6, "silence should be attenuated");
+        }
     }
 
     #[test]
@@ -131,14 +141,19 @@ mod tests {
         let mut gate = Gate::new();
         let mut params = ParamBlock::new();
         // threshold=-40dB, ratio=10, attack=1ms, release=100ms, hold=0ms
-        for &v in &[-40.0f32, 10.0, 1.0, 100.0, 0.0] { params.add(v); }
+        for &v in &[-40.0f32, 10.0, 1.0, 100.0, 0.0] {
+            params.add(v);
+        }
         let input = [0.5f32; BUFFER_SIZE]; // Loud signal (~-6dB)
         let inputs = [Some(&input); MAX_INPUTS];
         let mut output = [0.0f32; BUFFER_SIZE];
         gate.process(&inputs, &mut output, &mut params, 48000.0);
         // After settling, loud signal should pass through
         let last = output[BUFFER_SIZE - 1].abs();
-        assert!(last > 0.3, "loud signal should pass through gate, got {last}");
+        assert!(
+            last > 0.3,
+            "loud signal should pass through gate, got {last}"
+        );
     }
 
     #[test]
@@ -146,7 +161,9 @@ mod tests {
         let mut gate = Gate::new();
         let mut params = ParamBlock::new();
         // threshold=-40dB, ratio=10, attack=1ms, release=100ms, hold=0ms
-        for &v in &[-40.0f32, 10.0, 1.0, 100.0, 0.0] { params.add(v); }
+        for &v in &[-40.0f32, 10.0, 1.0, 100.0, 0.0] {
+            params.add(v);
+        }
         let input = [0.0001f32; BUFFER_SIZE]; // Very quiet signal (~-80dB)
         let inputs = [Some(&input); MAX_INPUTS];
         let mut output = [0.0f32; BUFFER_SIZE];

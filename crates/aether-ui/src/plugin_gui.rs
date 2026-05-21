@@ -34,8 +34,8 @@
 //! ```
 
 use arc_swap::ArcSwap;
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Parameter identifier.
 pub type ParamId = usize;
@@ -45,22 +45,22 @@ pub type ParamId = usize;
 pub struct ParamMeta {
     /// Parameter name (e.g., "Cutoff", "Resonance").
     pub name: String,
-    
+
     /// Minimum value.
     pub min: f32,
-    
+
     /// Maximum value.
     pub max: f32,
-    
+
     /// Default value.
     pub default: f32,
-    
+
     /// Current value.
     pub value: f32,
-    
+
     /// Unit (e.g., "Hz", "dB", "%").
     pub unit: Option<String>,
-    
+
     /// Display format (e.g., "{:.2}" for 2 decimal places).
     pub format: String,
 }
@@ -122,10 +122,10 @@ impl ParamMeta {
 pub struct ParamBridge {
     /// Parameter metadata.
     params: Vec<ParamMeta>,
-    
+
     /// Current parameter values (lock-free).
     values: Arc<ArcSwap<Vec<f32>>>,
-    
+
     /// Parameter name to ID mapping.
     name_to_id: HashMap<String, ParamId>,
 }
@@ -161,16 +161,16 @@ impl ParamBridge {
     ) -> ParamId {
         let name = name.into();
         let id = self.params.len();
-        
+
         let meta = ParamMeta::new(name.clone(), min, max, default);
         self.params.push(meta);
         self.name_to_id.insert(name, id);
-        
+
         // Update values vector
         let mut values = (*self.values.load().as_ref()).clone();
         values.push(default);
         self.values.store(Arc::new(values));
-        
+
         id
     }
 
@@ -179,15 +179,15 @@ impl ParamBridge {
         let id = self.params.len();
         let name = meta.name.clone();
         let default = meta.default;
-        
+
         self.params.push(meta);
         self.name_to_id.insert(name, id);
-        
+
         // Update values vector
         let mut values = (*self.values.load().as_ref()).clone();
         values.push(default);
         self.values.store(Arc::new(values));
-        
+
         id
     }
 
@@ -293,19 +293,19 @@ pub enum ParamWidgetType {
 pub struct ParamWidget {
     /// Parameter ID.
     pub param_id: ParamId,
-    
+
     /// Widget type.
     pub widget_type: ParamWidgetType,
-    
+
     /// Width in pixels (optional).
     pub width: Option<f32>,
-    
+
     /// Height in pixels (optional).
     pub height: Option<f32>,
-    
+
     /// Show value label.
     pub show_label: bool,
-    
+
     /// Show parameter name.
     pub show_name: bool,
 }
@@ -391,13 +391,13 @@ impl ParamWidget {
 pub struct PluginLayout {
     /// Layout name.
     pub name: String,
-    
+
     /// Widgets in the layout.
     pub widgets: Vec<ParamWidget>,
-    
+
     /// Window width.
     pub width: u32,
-    
+
     /// Window height.
     pub height: u32,
 }
@@ -431,7 +431,7 @@ mod tests {
     #[test]
     fn test_param_meta_normalize() {
         let meta = ParamMeta::new("gain", 0.0, 1.0, 0.5);
-        
+
         assert_eq!(meta.normalize(0.0), 0.0);
         assert_eq!(meta.normalize(0.5), 0.5);
         assert_eq!(meta.normalize(1.0), 1.0);
@@ -440,7 +440,7 @@ mod tests {
     #[test]
     fn test_param_meta_denormalize() {
         let meta = ParamMeta::new("cutoff", 20.0, 20000.0, 1000.0);
-        
+
         assert_eq!(meta.denormalize(0.0), 20.0);
         assert_eq!(meta.denormalize(1.0), 20000.0);
         assert!((meta.denormalize(0.5) - 10010.0).abs() < 1.0);
@@ -448,9 +448,8 @@ mod tests {
 
     #[test]
     fn test_param_meta_format() {
-        let meta = ParamMeta::new("gain", 0.0, 1.0, 0.5)
-            .with_unit("dB");
-        
+        let meta = ParamMeta::new("gain", 0.0, 1.0, 0.5).with_unit("dB");
+
         let formatted = meta.format_value(0.75);
         assert!(formatted.contains("0.75"));
         assert!(formatted.contains("dB"));
@@ -459,10 +458,10 @@ mod tests {
     #[test]
     fn test_param_bridge_basic() {
         let mut bridge = ParamBridge::new();
-        
+
         let gain_id = bridge.add_param("gain", 0.0, 1.0, 0.5);
         assert_eq!(bridge.get_value(gain_id), 0.5);
-        
+
         bridge.set_value(gain_id, 0.75);
         assert_eq!(bridge.get_value(gain_id), 0.75);
     }
@@ -470,13 +469,13 @@ mod tests {
     #[test]
     fn test_param_bridge_clamping() {
         let mut bridge = ParamBridge::new();
-        
+
         let gain_id = bridge.add_param("gain", 0.0, 1.0, 0.5);
-        
+
         // Should clamp to max
         bridge.set_value(gain_id, 2.0);
         assert_eq!(bridge.get_value(gain_id), 1.0);
-        
+
         // Should clamp to min
         bridge.set_value(gain_id, -1.0);
         assert_eq!(bridge.get_value(gain_id), 0.0);
@@ -485,10 +484,10 @@ mod tests {
     #[test]
     fn test_param_bridge_reset() {
         let mut bridge = ParamBridge::new();
-        
+
         let gain_id = bridge.add_param("gain", 0.0, 1.0, 0.5);
         bridge.set_value(gain_id, 0.75);
-        
+
         bridge.reset(gain_id);
         assert_eq!(bridge.get_value(gain_id), 0.5);
     }
@@ -496,12 +495,12 @@ mod tests {
     #[test]
     fn test_param_bridge_get_by_name() {
         let mut bridge = ParamBridge::new();
-        
+
         let gain_id = bridge.add_param("gain", 0.0, 1.0, 0.5);
-        
+
         let found_id = bridge.get_id("gain");
         assert_eq!(found_id, Some(gain_id));
-        
+
         let not_found = bridge.get_id("nonexistent");
         assert_eq!(not_found, None);
     }
@@ -511,10 +510,10 @@ mod tests {
         let slider = ParamWidget::slider(0);
         assert_eq!(slider.widget_type, ParamWidgetType::Slider);
         assert!(slider.show_label);
-        
+
         let knob = ParamWidget::knob(1);
         assert_eq!(knob.widget_type, ParamWidgetType::Knob);
-        
+
         let toggle = ParamWidget::toggle(2);
         assert_eq!(toggle.widget_type, ParamWidgetType::Toggle);
     }
@@ -522,10 +521,10 @@ mod tests {
     #[test]
     fn test_plugin_layout() {
         let mut layout = PluginLayout::new("My Plugin", 800, 600);
-        
+
         layout.add_widget(ParamWidget::slider(0));
         layout.add_widget(ParamWidget::knob(1));
-        
+
         assert_eq!(layout.widgets.len(), 2);
         assert_eq!(layout.width, 800);
         assert_eq!(layout.height, 600);
@@ -535,13 +534,13 @@ mod tests {
     fn test_param_bridge_thread_safety() {
         let mut bridge = ParamBridge::new();
         let gain_id = bridge.add_param("gain", 0.0, 1.0, 0.5);
-        
+
         // Get Arc for DSP thread
         let values_arc = bridge.values_arc();
-        
+
         // Simulate UI thread update
         bridge.set_value(gain_id, 0.75);
-        
+
         // Simulate DSP thread read (lock-free)
         let values = values_arc.load();
         assert_eq!(values[gain_id], 0.75);

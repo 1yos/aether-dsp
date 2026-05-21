@@ -1,21 +1,21 @@
 // Aether Studio - Professional Audio Development IDE
 
-mod project;
-mod workspace;
-mod theme;
-mod widgets;
 mod dsp_graph;
 mod ide;
+mod project;
+mod theme;
+mod widgets;
+mod workspace;
 
-use ide::{AetherIDE, code_generator};
-use ide::project_explorer::{ProjectExplorer, Message as ExplorerMessage};
 use ide::code_editor::{CodeEditorView, Message as EditorMessage};
 use ide::graph_view::{GraphView, Message as GraphMessage};
-use ide::terminal::{Terminal, Message as TerminalMessage};
-use ide::toolbar::{Toolbar, Message as ToolbarMessage};
+use ide::project_explorer::{Message as ExplorerMessage, ProjectExplorer};
+use ide::terminal::{Message as TerminalMessage, Terminal};
+use ide::toolbar::{Message as ToolbarMessage, Toolbar};
+use ide::{code_generator, AetherIDE};
 use project::{ProjectConfig, ProjectType};
 use theme::AetherTheme;
-use widgets::welcome_screen::{WelcomeScreen, Message as WelcomeMessage};
+use widgets::welcome_screen::{Message as WelcomeMessage, WelcomeScreen};
 use workspace::{Workspace, WorkspaceMode};
 
 use iced::widget::{column, container, row};
@@ -64,23 +64,27 @@ impl AetherStudio {
                         author: String::new(),
                         description: String::new(),
                     };
-                    
+
                     // Create project in IDE
                     let project_path = PathBuf::from(format!("./projects/{}", config.name));
-                    self.ide.create_project(config.clone(), project_path.clone());
+                    self.ide
+                        .create_project(config.clone(), project_path.clone());
                     self.workspace.create_project(config);
                     self.project_explorer.set_root(project_path);
-                    
+
                     // Generate initial code
                     self.generate_initial_project_code(project_type);
-                    
-                    self.terminal.append_output(&format!("✓ Created new {} project", project_type.name()));
+
+                    self.terminal
+                        .append_output(&format!("✓ Created new {} project", project_type.name()));
                 }
                 WelcomeMessage::OpenExisting => {
-                    self.terminal.append_output("Open existing project - TODO: Implement file dialog");
+                    self.terminal
+                        .append_output("Open existing project - TODO: Implement file dialog");
                 }
                 WelcomeMessage::BrowseExamples => {
-                    self.terminal.append_output("Browse examples - TODO: Implement examples browser");
+                    self.terminal
+                        .append_output("Browse examples - TODO: Implement examples browser");
                 }
                 WelcomeMessage::OpenDocumentation => {
                     self.terminal.append_output("Opening documentation...");
@@ -90,14 +94,17 @@ impl AetherStudio {
                 ToolbarMessage::Build => {
                     self.toolbar.set_building(true);
                     self.terminal.append_output("$ cargo build --release");
-                    self.terminal.append_output("   Compiling aetherdsp-core v0.1.0");
+                    self.terminal
+                        .append_output("   Compiling aetherdsp-core v0.1.0");
                     self.terminal.append_output("   Compiling my-plugin v0.1.0");
-                    self.terminal.append_output("   Finished release [optimized] target(s) in 2.34s");
+                    self.terminal
+                        .append_output("   Finished release [optimized] target(s) in 2.34s");
                     self.toolbar.set_building(false);
                 }
                 ToolbarMessage::Run => {
                     self.terminal.append_output("$ cargo run --release");
-                    self.terminal.append_output("   Running target/release/my-plugin");
+                    self.terminal
+                        .append_output("   Running target/release/my-plugin");
                 }
                 ToolbarMessage::Debug => {
                     self.terminal.append_output("Starting debugger...");
@@ -136,36 +143,29 @@ impl AetherStudio {
 
     fn view_ide(&self) -> Element<'_, Message> {
         let toolbar = self.toolbar.view().map(Message::Toolbar);
-        
+
         let explorer = self.project_explorer.view().map(Message::Explorer);
-        
+
         let editor = if let Some(file) = self.ide.get_active_file() {
-            self.code_editor.view(
-                file.path.file_name()
-                    .and_then(|n| n.to_str())
-                    .unwrap_or("untitled")
-            ).map(Message::Editor)
+            self.code_editor
+                .view(
+                    file.path
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("untitled"),
+                )
+                .map(Message::Editor)
         } else {
             self.view_empty_editor()
         };
-        
+
         let graph = self.graph_view.view().map(Message::Graph);
-        
-        let main_area = row![
-            explorer,
-            editor,
-            graph,
-        ]
-        .spacing(0);
-        
+
+        let main_area = row![explorer, editor, graph,].spacing(0);
+
         let terminal = self.terminal.view().map(Message::Terminal);
-        
-        let content = column![
-            toolbar,
-            main_area,
-            terminal,
-        ]
-        .spacing(0);
+
+        let content = column![toolbar, main_area, terminal,].spacing(0);
 
         container(content)
             .width(Length::Fill)
@@ -179,13 +179,11 @@ impl AetherStudio {
 
     fn view_empty_editor(&self) -> Element<'_, Message> {
         use iced::widget::text;
-        
+
         let content = column![
-            text("No file open")
-                .size(16)
-                .style(|_theme| text::Style {
-                    color: Some(AetherTheme::TEXT_DISABLED),
-                }),
+            text("No file open").size(16).style(|_theme| text::Style {
+                color: Some(AetherTheme::TEXT_DISABLED),
+            }),
             text("Select a file from the project explorer")
                 .size(12)
                 .style(|_theme| text::Style {
@@ -208,7 +206,7 @@ impl AetherStudio {
 
     fn view_gui_designer(&self) -> Element<'_, Message> {
         use iced::widget::text;
-        
+
         let content = column![
             text("GUI Designer Mode").size(24),
             text("Drag-and-drop UI builder").size(14),
@@ -230,7 +228,7 @@ impl AetherStudio {
 
     fn view_project_settings(&self) -> Element<'_, Message> {
         use iced::widget::text;
-        
+
         let content = column![
             text("Project Settings Mode").size(24),
             text("Export, testing, and configuration").size(14),
@@ -254,9 +252,12 @@ impl AetherStudio {
         // Generate example nodes based on project type
         let nodes = match project_type {
             ProjectType::Plugin => vec![
-                ("oscillator".to_string(), dsp_graph::NodeType::Oscillator { 
-                    waveform: dsp_graph::Waveform::Sine 
-                }),
+                (
+                    "oscillator".to_string(),
+                    dsp_graph::NodeType::Oscillator {
+                        waveform: dsp_graph::Waveform::Sine,
+                    },
+                ),
                 ("filter".to_string(), dsp_graph::NodeType::LowPass),
                 ("gain".to_string(), dsp_graph::NodeType::Gain),
             ],
@@ -265,9 +266,7 @@ impl AetherStudio {
                 ("compressor".to_string(), dsp_graph::NodeType::Compressor),
                 ("reverb".to_string(), dsp_graph::NodeType::Reverb),
             ],
-            _ => vec![
-                ("gain".to_string(), dsp_graph::NodeType::Gain),
-            ],
+            _ => vec![("gain".to_string(), dsp_graph::NodeType::Gain)],
         };
 
         // Generate code for first node as example
@@ -277,10 +276,11 @@ impl AetherStudio {
             self.ide.open_file(file_path, code);
             self.code_editor.set_content(
                 self.ide.get_active_file().unwrap().content.clone(),
-                "rust".to_string()
+                "rust".to_string(),
             );
         }
 
-        self.terminal.append_output(&format!("✓ Generated {} example nodes", nodes.len()));
+        self.terminal
+            .append_output(&format!("✓ Generated {} example nodes", nodes.len()));
     }
 }

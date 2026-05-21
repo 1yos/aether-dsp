@@ -153,7 +153,10 @@ impl SampleManager {
     /// Find the pack ID that provides a given instrument.
     pub fn find_pack_for_instrument(&self, instrument_id: &str) -> Option<String> {
         for (pack_id, installed) in &self.installed.packs {
-            if installed.instrument_ids.contains(&instrument_id.to_string()) {
+            if installed
+                .instrument_ids
+                .contains(&instrument_id.to_string())
+            {
                 return Some(pack_id.clone());
             }
         }
@@ -198,8 +201,8 @@ impl SampleManager {
         let tmp_path = self.samples_dir.join(format!("{}.tmp", pack.filename));
         {
             use std::io::Write;
-            let mut response = reqwest::blocking::get(&url)
-                .map_err(|e| SampleError::Network(e.to_string()))?;
+            let mut response =
+                reqwest::blocking::get(&url).map_err(|e| SampleError::Network(e.to_string()))?;
 
             let mut file = std::fs::File::create(&tmp_path)?;
             let mut downloaded = 0u64;
@@ -391,7 +394,10 @@ mod tests {
     fn test_pack_status_not_installed() {
         let tmp = TempDir::new().unwrap();
         let manager = SampleManager::with_dir(tmp.path().to_path_buf()).unwrap();
-        assert_eq!(manager.pack_status("drums-studio-v1"), PackStatus::NotInstalled);
+        assert_eq!(
+            manager.pack_status("drums-studio-v1"),
+            PackStatus::NotInstalled
+        );
     }
 
     #[test]
@@ -441,9 +447,6 @@ mod tests {
         // Reload
         let manager2 = SampleManager::with_dir(dir).unwrap();
         assert!(manager2.installed.packs.contains_key("test-pack"));
-        assert_eq!(
-            manager2.installed.packs["test-pack"].version,
-            "1.0.0"
-        );
+        assert_eq!(manager2.installed.packs["test-pack"].version, "1.0.0");
     }
 }

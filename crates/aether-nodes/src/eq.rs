@@ -32,19 +32,25 @@ struct BiquadState {
 
 impl BiquadState {
     fn new() -> Self {
-        Self { x1: 0.0, x2: 0.0, y1: 0.0, y2: 0.0 }
+        Self {
+            x1: 0.0,
+            x2: 0.0,
+            y1: 0.0,
+            y2: 0.0,
+        }
     }
 
     #[inline(always)]
     fn process(&mut self, x: f32, coeffs: &BiquadCoeffs) -> f32 {
         let y = coeffs.b0 * x + coeffs.b1 * self.x1 + coeffs.b2 * self.x2
-              - coeffs.a1 * self.y1 - coeffs.a2 * self.y2;
-        
+            - coeffs.a1 * self.y1
+            - coeffs.a2 * self.y2;
+
         self.x2 = self.x1;
         self.x1 = x;
         self.y2 = self.y1;
         self.y1 = y;
-        
+
         y
     }
 }
@@ -156,7 +162,9 @@ impl ParametricEq {
 }
 
 impl Default for ParametricEq {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DspNode for ParametricEq {
@@ -171,11 +179,11 @@ impl DspNode for ParametricEq {
         let input = inputs[0].unwrap_or(&silence);
 
         // Get parameters with validation
-        let low_freq  = params.get(0).current.clamp(20.0, 500.0);
-        let low_gain  = params.get(1).current.clamp(-24.0, 24.0);
-        let mid_freq  = params.get(2).current.clamp(200.0, 5000.0);
-        let mid_gain  = params.get(3).current.clamp(-24.0, 24.0);
-        let mid_q     = params.get(4).current.clamp(0.1, 10.0);
+        let low_freq = params.get(0).current.clamp(20.0, 500.0);
+        let low_gain = params.get(1).current.clamp(-24.0, 24.0);
+        let mid_freq = params.get(2).current.clamp(200.0, 5000.0);
+        let mid_gain = params.get(3).current.clamp(-24.0, 24.0);
+        let mid_q = params.get(4).current.clamp(0.1, 10.0);
         let high_freq = params.get(5).current.clamp(2000.0, 20000.0);
         let high_gain = params.get(6).current.clamp(-24.0, 24.0);
 
@@ -189,18 +197,20 @@ impl DspNode for ParametricEq {
 
         for i in 0..BUFFER_SIZE {
             let x = input[i];
-            
+
             // Process through all three bands
             let y1 = self.low_state.process(x, &self.low_coeffs);
             let y2 = self.mid_state.process(y1, &self.mid_coeffs);
             let y3 = self.high_state.process(y2, &self.high_coeffs);
-            
+
             output[i] = y3;
             params.tick_all();
         }
     }
 
-    fn type_name(&self) -> &'static str { "ParametricEq" }
+    fn type_name(&self) -> &'static str {
+        "ParametricEq"
+    }
 }
 
 #[cfg(test)]
@@ -212,12 +222,16 @@ mod tests {
         let mut eq = ParametricEq::new();
         let mut params = ParamBlock::new();
         // Flat EQ (0dB gain on all bands)
-        for &v in &[100.0f32, 0.0, 1000.0, 0.0, 1.0, 5000.0, 0.0] { params.add(v); }
+        for &v in &[100.0f32, 0.0, 1000.0, 0.0, 1.0, 5000.0, 0.0] {
+            params.add(v);
+        }
         let input = [0.0f32; BUFFER_SIZE];
         let inputs = [Some(&input); MAX_INPUTS];
         let mut output = [0.0f32; BUFFER_SIZE];
         eq.process(&inputs, &mut output, &mut params, 48000.0);
-        for s in &output { assert!(s.abs() < 1e-6, "silence should pass through"); }
+        for s in &output {
+            assert!(s.abs() < 1e-6, "silence should pass through");
+        }
     }
 
     #[test]
@@ -225,12 +239,17 @@ mod tests {
         let mut eq = ParametricEq::new();
         let mut params = ParamBlock::new();
         // Boost mid frequencies
-        for &v in &[100.0f32, 0.0, 1000.0, 12.0, 1.0, 5000.0, 0.0] { params.add(v); }
+        for &v in &[100.0f32, 0.0, 1000.0, 12.0, 1.0, 5000.0, 0.0] {
+            params.add(v);
+        }
         let input = [0.1f32; BUFFER_SIZE];
         let inputs = [Some(&input); MAX_INPUTS];
         let mut output = [0.0f32; BUFFER_SIZE];
         eq.process(&inputs, &mut output, &mut params, 48000.0);
         // Output should be non-zero
-        assert!(output[BUFFER_SIZE - 1].abs() > 0.0, "EQ should process signal");
+        assert!(
+            output[BUFFER_SIZE - 1].abs() > 0.0,
+            "EQ should process signal"
+        );
     }
 }

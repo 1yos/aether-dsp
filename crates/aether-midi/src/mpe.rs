@@ -25,11 +25,11 @@ pub struct MpeConfig {
     /// Lower zone size (number of member channels, 0-15).
     /// 0 = disabled, 15 = channels 2-16 are member channels.
     pub lower_zone_size: u8,
-    
+
     /// Upper zone size (number of member channels, 0-15).
     /// 0 = disabled, 15 = channels 1-15 are member channels.
     pub upper_zone_size: u8,
-    
+
     /// Pitch bend range in semitones (typically 48).
     pub pitch_bend_range: f32,
 }
@@ -49,19 +49,19 @@ impl Default for MpeConfig {
 pub struct NoteExpression {
     /// MIDI note number (0-127).
     pub note: u8,
-    
+
     /// MIDI channel (1-16).
     pub channel: u8,
-    
+
     /// Velocity (0-127).
     pub velocity: u8,
-    
+
     /// Pitch bend in semitones (±pitch_bend_range).
     pub pitch_bend: f32,
-    
+
     /// Channel pressure/aftertouch (0.0-1.0).
     pub pressure: f32,
-    
+
     /// Timbre/brightness CC74 (0.0-1.0).
     pub timbre: f32,
 }
@@ -69,14 +69,14 @@ pub struct NoteExpression {
 /// MPE engine for managing per-note expression.
 pub struct MpeEngine {
     config: MpeConfig,
-    
+
     /// Active notes: (channel, note) -> NoteExpression
     active_notes: HashMap<(u8, u8), NoteExpression>,
-    
+
     /// Channel allocation: note -> channel
     /// Used to assign notes to available channels in round-robin fashion.
     note_to_channel: HashMap<u8, u8>,
-    
+
     /// Next channel to allocate (round-robin).
     next_channel: u8,
 }
@@ -273,7 +273,7 @@ mod tests {
     #[test]
     fn test_mpe_note_on_off() {
         let mut mpe = MpeEngine::new();
-        
+
         // Note on
         let expr = mpe.note_on(60, 100);
         assert_eq!(expr.note, 60);
@@ -290,13 +290,13 @@ mod tests {
     #[test]
     fn test_mpe_pitch_bend() {
         let mut mpe = MpeEngine::new();
-        
+
         let expr = mpe.note_on(60, 100);
         let channel = expr.channel;
 
         // Apply pitch bend (+1 semitone)
         mpe.pitch_bend(channel, 8192 + 170); // ~+1 semitone
-        
+
         let updated = mpe.get_note_expression(60).unwrap();
         assert!(updated.pitch_bend > 0.9 && updated.pitch_bend < 1.1);
     }
@@ -304,13 +304,13 @@ mod tests {
     #[test]
     fn test_mpe_pressure() {
         let mut mpe = MpeEngine::new();
-        
+
         let expr = mpe.note_on(60, 100);
         let channel = expr.channel;
 
         // Apply pressure
         mpe.channel_pressure(channel, 64); // 50%
-        
+
         let updated = mpe.get_note_expression(60).unwrap();
         assert!((updated.pressure - 0.5).abs() < 0.01);
     }
@@ -318,13 +318,13 @@ mod tests {
     #[test]
     fn test_mpe_timbre() {
         let mut mpe = MpeEngine::new();
-        
+
         let expr = mpe.note_on(60, 100);
         let channel = expr.channel;
 
         // Apply timbre
         mpe.timbre(channel, 127); // 100%
-        
+
         let updated = mpe.get_note_expression(60).unwrap();
         assert_eq!(updated.timbre, 1.0);
     }
@@ -332,7 +332,7 @@ mod tests {
     #[test]
     fn test_mpe_channel_allocation() {
         let mut mpe = MpeEngine::new();
-        
+
         // Allocate 3 notes
         let expr1 = mpe.note_on(60, 100);
         let expr2 = mpe.note_on(62, 100);
@@ -347,7 +347,7 @@ mod tests {
     #[test]
     fn test_mpe_clear_all() {
         let mut mpe = MpeEngine::new();
-        
+
         mpe.note_on(60, 100);
         mpe.note_on(62, 100);
         mpe.note_on(64, 100);

@@ -1,3 +1,5 @@
+#[cfg(feature = "chorus")]
+pub mod chorus;
 #[cfg(feature = "compressor")]
 pub mod compressor;
 #[cfg(feature = "delay")]
@@ -38,29 +40,27 @@ pub mod reverb;
 pub mod scope;
 #[cfg(feature = "waveshaper")]
 pub mod waveshaper;
-#[cfg(feature = "chorus")]
-pub mod chorus;
 
 #[cfg(test)]
 mod tests {
     mod regression;
 }
 
+#[cfg(feature = "chorus")]
+pub use chorus::Chorus;
+#[cfg(feature = "compressor")]
+pub use compressor::Compressor;
+#[cfg(feature = "eq")]
+pub use eq::ParametricEq;
+#[cfg(feature = "gate")]
+pub use gate::Gate;
+#[cfg(feature = "limiter")]
+pub use limiter::Limiter;
+#[cfg(feature = "panner")]
+pub use panner::Panner;
 #[cfg(feature = "record")]
 pub use record::RecordNode;
 #[cfg(feature = "scope")]
 pub use scope::ScopeNode;
-#[cfg(feature = "compressor")]
-pub use compressor::Compressor;
 #[cfg(feature = "waveshaper")]
 pub use waveshaper::Waveshaper;
-#[cfg(feature = "chorus")]
-pub use chorus::Chorus;
-#[cfg(feature = "eq")]
-pub use eq::ParametricEq;
-#[cfg(feature = "limiter")]
-pub use limiter::Limiter;
-#[cfg(feature = "gate")]
-pub use gate::Gate;
-#[cfg(feature = "panner")]
-pub use panner::Panner;

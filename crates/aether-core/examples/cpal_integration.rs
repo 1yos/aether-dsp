@@ -37,17 +37,16 @@
 //! ```
 
 use aether_core::{
-    command::Command,
-    graph::DspGraph,
-    node::DspNode,
-    param::ParamBlock,
-    scheduler::Scheduler,
+    command::Command, graph::DspGraph, node::DspNode, param::ParamBlock, scheduler::Scheduler,
     BUFFER_SIZE, MAX_INPUTS,
 };
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use ringbuf::{traits::{Producer, Split}, HeapRb};
-use std::sync::Arc;
+use ringbuf::{
+    traits::{Producer, Split},
+    HeapRb,
+};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 /// Simple sine wave oscillator for testing
 struct SineOscillator {
@@ -101,8 +100,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = device.default_output_config()?;
     println!("📊 Sample Rate: {} Hz", config.sample_rate().0);
     println!("🎚️  Channels: {}", config.channels());
-    println!("📦 Buffer Size: {} samples (aether uses {})", 
-             "varies", BUFFER_SIZE);
+    println!(
+        "📦 Buffer Size: {} samples (aether uses {})",
+        "varies", BUFFER_SIZE
+    );
     println!();
 
     let sample_rate = config.sample_rate().0 as f32;
@@ -122,7 +123,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Send initial graph to scheduler
     producer.try_push(Command::AddNode { id: osc_id }).ok();
-    producer.try_push(Command::SetOutputNode { id: osc_id }).ok();
+    producer
+        .try_push(Command::SetOutputNode { id: osc_id })
+        .ok();
 
     println!("  ✅ Oscillator (440 Hz) → Output");
     println!();
@@ -140,12 +143,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Build audio stream
     let stream = match config.sample_format() {
-        cpal::SampleFormat::F32 => build_stream::<f32>(&device, &config.into(), 
-                                                        scheduler, consumer, running.clone())?,
-        cpal::SampleFormat::I16 => build_stream::<i16>(&device, &config.into(), 
-                                                        scheduler, consumer, running.clone())?,
-        cpal::SampleFormat::U16 => build_stream::<u16>(&device, &config.into(), 
-                                                        scheduler, consumer, running.clone())?,
+        cpal::SampleFormat::F32 => build_stream::<f32>(
+            &device,
+            &config.into(),
+            scheduler,
+            consumer,
+            running.clone(),
+        )?,
+        cpal::SampleFormat::I16 => build_stream::<i16>(
+            &device,
+            &config.into(),
+            scheduler,
+            consumer,
+            running.clone(),
+        )?,
+        cpal::SampleFormat::U16 => build_stream::<u16>(
+            &device,
+            &config.into(),
+            scheduler,
+            consumer,
+            running.clone(),
+        )?,
         _ => return Err("Unsupported sample format".into()),
     };
 

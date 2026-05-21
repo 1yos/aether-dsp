@@ -1,8 +1,8 @@
 //! MIDI engine — manages hardware MIDI input via midir.
 
-use std::sync::{Arc, Mutex};
-use midir::{MidiInput, MidiInputConnection};
 use crate::{event::MidiEvent, router::MidiRouter};
+use midir::{MidiInput, MidiInputConnection};
+use std::sync::{Arc, Mutex};
 
 /// Manages MIDI hardware connections and routes events.
 pub struct MidiEngine {
@@ -28,7 +28,8 @@ impl MidiEngine {
             Err(_) => return Vec::new(),
         };
         let ports = midi_in.ports();
-        ports.iter()
+        ports
+            .iter()
             .filter_map(|p| midi_in.port_name(p).ok())
             .collect()
     }
@@ -36,28 +37,32 @@ impl MidiEngine {
     /// Connect to a MIDI input port by index.
     /// Returns Ok(()) if connected, Err with message if failed.
     pub fn connect_port(&mut self, port_index: usize) -> Result<(), String> {
-        let midi_in = MidiInput::new("aether-midi-in")
-            .map_err(|e| format!("MIDI init error: {e}"))?;
+        let midi_in =
+            MidiInput::new("aether-midi-in").map_err(|e| format!("MIDI init error: {e}"))?;
         let ports = midi_in.ports();
-        let port = ports.get(port_index)
+        let port = ports
+            .get(port_index)
             .ok_or_else(|| format!("MIDI port {port_index} not found"))?;
-        let port_name = midi_in.port_name(port)
+        let port_name = midi_in
+            .port_name(port)
             .unwrap_or_else(|_| format!("Port {port_index}"));
 
         let router = Arc::clone(&self.router);
         let counter = Arc::clone(&self.sample_counter);
 
-        let conn = midi_in.connect(
-            port,
-            "aether-midi-conn",
-            move |_timestamp_us, bytes, _| {
-                let ts = *counter.lock().unwrap();
-                if let Some(event) = MidiEvent::from_bytes(bytes, ts) {
-                    router.lock().unwrap().dispatch(&event);
-                }
-            },
-            (),
-        ).map_err(|e| format!("MIDI connect error: {e}"))?;
+        let conn = midi_in
+            .connect(
+                port,
+                "aether-midi-conn",
+                move |_timestamp_us, bytes, _| {
+                    let ts = *counter.lock().unwrap();
+                    if let Some(event) = MidiEvent::from_bytes(bytes, ts) {
+                        router.lock().unwrap().dispatch(&event);
+                    }
+                },
+                (),
+            )
+            .map_err(|e| format!("MIDI connect error: {e}"))?;
 
         println!("MIDI: connected to '{port_name}'");
         self._connections.push(conn);
@@ -91,5 +96,7 @@ impl MidiEngine {
 }
 
 impl Default for MidiEngine {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

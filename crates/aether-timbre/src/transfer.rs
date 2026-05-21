@@ -1,7 +1,7 @@
 //! Timbre transfer — apply a target instrument's spectral envelope to a source signal.
 
-use rustfft::{FftPlanner, num_complex::Complex};
 use crate::analysis::SpectralEnvelope;
+use rustfft::{num_complex::Complex, FftPlanner};
 
 /// Applies spectral envelope transfer in real time using overlap-add.
 pub struct TimbreTransfer {
@@ -27,7 +27,9 @@ impl TimbreTransfer {
         let fft_size = fft_size.next_power_of_two();
         let hop_size = fft_size / 4;
         let window: Vec<f32> = (0..fft_size)
-            .map(|i| 0.5 * (1.0 - (2.0 * std::f32::consts::PI * i as f32 / (fft_size - 1) as f32).cos()))
+            .map(|i| {
+                0.5 * (1.0 - (2.0 * std::f32::consts::PI * i as f32 / (fft_size - 1) as f32).cos())
+            })
             .collect();
         Self {
             fft_size,

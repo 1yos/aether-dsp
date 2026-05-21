@@ -81,7 +81,10 @@ pub enum PackStatus {
     /// Installed and up to date.
     Installed { version: String },
     /// Installed but a newer version is available.
-    UpdateAvailable { installed_version: String, latest_version: String },
+    UpdateAvailable {
+        installed_version: String,
+        latest_version: String,
+    },
 }
 
 impl SampleManifest {
@@ -92,6 +95,9 @@ impl SampleManifest {
 
     /// All packs in a given category.
     pub fn by_category(&self, category: &PackCategory) -> Vec<&SamplePack> {
-        self.packs.iter().filter(|p| &p.category == category).collect()
+        self.packs
+            .iter()
+            .filter(|p| &p.category == category)
+            .collect()
     }
 }

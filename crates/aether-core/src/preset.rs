@@ -41,24 +41,24 @@ use std::collections::HashMap;
 pub struct Preset {
     /// Preset name
     pub name: String,
-    
+
     /// Preset description
     pub description: String,
-    
+
     /// Author name (optional)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub author: Option<String>,
-    
+
     /// Tags for categorization
     #[serde(default)]
     pub tags: Vec<String>,
-    
+
     /// Nodes in the graph
     pub nodes: Vec<NodeConfig>,
-    
+
     /// Connections between nodes
     pub connections: Vec<Connection>,
-    
+
     /// Metadata (BPM, key, etc.)
     #[serde(default)]
     pub metadata: HashMap<String, String>,
@@ -69,14 +69,14 @@ pub struct Preset {
 pub struct NodeConfig {
     /// Node ID (unique within preset)
     pub id: usize,
-    
+
     /// Node type name (e.g., "Oscillator", "Filter")
     pub node_type: String,
-    
+
     /// Parameter values
     #[serde(default)]
     pub params: Vec<f32>,
-    
+
     /// UI position (optional, for visual editors)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<(f32, f32)>,
@@ -87,10 +87,10 @@ pub struct NodeConfig {
 pub struct Connection {
     /// Source node ID
     pub src_id: usize,
-    
+
     /// Destination node ID
     pub dst_id: usize,
-    
+
     /// Input slot on destination node
     pub slot: usize,
 }
@@ -170,7 +170,11 @@ impl Preset {
     /// assert_eq!(preset.connections.len(), 1);
     /// ```
     pub fn add_connection(&mut self, src_id: usize, dst_id: usize, slot: usize) {
-        self.connections.push(Connection { src_id, dst_id, slot });
+        self.connections.push(Connection {
+            src_id,
+            dst_id,
+            slot,
+        });
     }
 
     /// Sets a parameter value for a node.
@@ -355,10 +359,16 @@ impl Preset {
         // Check connections reference valid nodes
         for conn in &self.connections {
             if !self.nodes.iter().any(|n| n.id == conn.src_id) {
-                return Err(format!("Connection references non-existent source node: {}", conn.src_id));
+                return Err(format!(
+                    "Connection references non-existent source node: {}",
+                    conn.src_id
+                ));
             }
             if !self.nodes.iter().any(|n| n.id == conn.dst_id) {
-                return Err(format!("Connection references non-existent destination node: {}", conn.dst_id));
+                return Err(format!(
+                    "Connection references non-existent destination node: {}",
+                    conn.dst_id
+                ));
             }
         }
 
@@ -417,11 +427,11 @@ mod tests {
         let mut preset = Preset::new("Test", "Test preset");
         preset.add_node(0, "Oscillator");
         preset.set_param(0, 0, 440.0);
-        
+
         let json = preset.to_json().unwrap();
         assert!(json.contains("Test")); // Check name is present
         assert!(json.contains("Oscillator")); // Check node type is present
-        
+
         let loaded = Preset::from_json(&json).unwrap();
         assert_eq!(loaded.name, "Test");
         assert_eq!(loaded.nodes.len(), 1);
@@ -466,7 +476,7 @@ mod tests {
         preset.add_tag("synth");
         preset.set_metadata("bpm", "120");
         preset.set_metadata("key", "C minor");
-        
+
         assert_eq!(preset.tags.len(), 2);
         assert_eq!(preset.metadata.get("bpm"), Some(&"120".to_string()));
     }

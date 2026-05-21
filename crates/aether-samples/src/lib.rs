@@ -22,15 +22,15 @@
 //!     ...
 //! ```
 
-pub mod manifest;
-pub mod manager;
-pub mod progress;
 pub mod error;
+pub mod manager;
+pub mod manifest;
+pub mod progress;
 
-pub use manifest::{SampleManifest, SamplePack, PackStatus};
-pub use manager::SampleManager;
-pub use progress::DownloadProgress;
 pub use error::SampleError;
+pub use manager::SampleManager;
+pub use manifest::{PackStatus, SampleManifest, SamplePack};
+pub use progress::DownloadProgress;
 
 /// GitHub Releases URL for the sample manifest.
 /// This points to the latest release's manifest asset.
@@ -38,5 +38,4 @@ pub const MANIFEST_URL: &str =
     "https://github.com/1yos/aether-dsp/releases/latest/download/samples-manifest.json";
 
 /// Base URL for sample pack downloads.
-pub const RELEASES_BASE_URL: &str =
-    "https://github.com/1yos/aether-dsp/releases/latest/download";
+pub const RELEASES_BASE_URL: &str = "https://github.com/1yos/aether-dsp/releases/latest/download";

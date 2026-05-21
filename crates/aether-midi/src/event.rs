@@ -40,7 +40,9 @@ impl MidiEvent {
     /// Parse raw MIDI bytes into a MidiEvent.
     /// Returns None for unsupported or malformed messages.
     pub fn from_bytes(bytes: &[u8], timestamp: u64) -> Option<Self> {
-        if bytes.is_empty() { return None; }
+        if bytes.is_empty() {
+            return None;
+        }
         let status = bytes[0];
         let channel = status & 0x0F;
         let kind_byte = status >> 4;
@@ -48,25 +50,45 @@ impl MidiEvent {
         let kind = match kind_byte {
             0x8 => {
                 // Note Off
-                if bytes.len() < 3 { return None; }
-                MidiEventKind::NoteOff { note: bytes[1] & 0x7F, velocity: bytes[2] & 0x7F }
+                if bytes.len() < 3 {
+                    return None;
+                }
+                MidiEventKind::NoteOff {
+                    note: bytes[1] & 0x7F,
+                    velocity: bytes[2] & 0x7F,
+                }
             }
             0x9 => {
-                if bytes.len() < 3 { return None; }
+                if bytes.len() < 3 {
+                    return None;
+                }
                 let vel = bytes[2] & 0x7F;
                 if vel == 0 {
                     // Note On with velocity 0 = Note Off
-                    MidiEventKind::NoteOff { note: bytes[1] & 0x7F, velocity: 0 }
+                    MidiEventKind::NoteOff {
+                        note: bytes[1] & 0x7F,
+                        velocity: 0,
+                    }
                 } else {
-                    MidiEventKind::NoteOn { note: bytes[1] & 0x7F, velocity: vel }
+                    MidiEventKind::NoteOn {
+                        note: bytes[1] & 0x7F,
+                        velocity: vel,
+                    }
                 }
             }
             0xA => {
-                if bytes.len() < 3 { return None; }
-                MidiEventKind::PolyPressure { note: bytes[1] & 0x7F, pressure: bytes[2] & 0x7F }
+                if bytes.len() < 3 {
+                    return None;
+                }
+                MidiEventKind::PolyPressure {
+                    note: bytes[1] & 0x7F,
+                    pressure: bytes[2] & 0x7F,
+                }
             }
             0xB => {
-                if bytes.len() < 3 { return None; }
+                if bytes.len() < 3 {
+                    return None;
+                }
                 let cc = bytes[1] & 0x7F;
                 let val = bytes[2] & 0x7F;
                 match cc {
@@ -76,15 +98,25 @@ impl MidiEvent {
                 }
             }
             0xC => {
-                if bytes.len() < 2 { return None; }
-                MidiEventKind::ProgramChange { program: bytes[1] & 0x7F }
+                if bytes.len() < 2 {
+                    return None;
+                }
+                MidiEventKind::ProgramChange {
+                    program: bytes[1] & 0x7F,
+                }
             }
             0xD => {
-                if bytes.len() < 2 { return None; }
-                MidiEventKind::ChannelPressure { pressure: bytes[1] & 0x7F }
+                if bytes.len() < 2 {
+                    return None;
+                }
+                MidiEventKind::ChannelPressure {
+                    pressure: bytes[1] & 0x7F,
+                }
             }
             0xE => {
-                if bytes.len() < 3 { return None; }
+                if bytes.len() < 3 {
+                    return None;
+                }
                 let lsb = bytes[1] as i16;
                 let msb = bytes[2] as i16;
                 let value = ((msb << 7) | lsb) - 8192;
@@ -93,7 +125,11 @@ impl MidiEvent {
             _ => return None,
         };
 
-        Some(MidiEvent { timestamp, channel, kind })
+        Some(MidiEvent {
+            timestamp,
+            channel,
+            kind,
+        })
     }
 
     /// Is this a note-on event?
@@ -117,7 +153,9 @@ impl MidiEvent {
     /// Get velocity (0–127) if this is a note event.
     pub fn velocity(&self) -> Option<u8> {
         match self.kind {
-            MidiEventKind::NoteOn { velocity, .. } | MidiEventKind::NoteOff { velocity, .. } => Some(velocity),
+            MidiEventKind::NoteOn { velocity, .. } | MidiEventKind::NoteOff { velocity, .. } => {
+                Some(velocity)
+            }
             _ => None,
         }
     }

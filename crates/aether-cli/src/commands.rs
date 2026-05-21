@@ -1,10 +1,10 @@
 //! CLI command implementations.
 
-use std::path::{Path, PathBuf};
+use aether_manifest::{new_project_manifest, Manifest};
 use aether_ndk::registry::builtin_registry;
 use aether_ndk::schema::schema_to_json;
-use aether_manifest::{Manifest, new_project_manifest};
-use aether_registry::{PackageRegistry, PackageEntry};
+use aether_registry::{PackageEntry, PackageRegistry};
+use std::path::{Path, PathBuf};
 
 pub type CmdResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -26,8 +26,10 @@ pub fn new_project(args: &[String]) -> CmdResult {
     std::fs::write(dir.join("aether.json"), manifest.to_json())?;
 
     // Cargo.toml for the project
-    std::fs::write(dir.join("Cargo.toml"), format!(
-r#"[package]
+    std::fs::write(
+        dir.join("Cargo.toml"),
+        format!(
+            r#"[package]
 name = "{name}"
 version = "0.1.0"
 edition = "2021"
@@ -35,22 +37,27 @@ edition = "2021"
 [dependencies]
 aether-ndk = {{ path = "../aether-dsp/crates/aether-ndk" }}
 "#
-    ))?;
+        ),
+    )?;
 
     // src/lib.rs
-    std::fs::write(dir.join("src").join("lib.rs"), format!(
-r#"//! {name} — AetherSDK project
+    std::fs::write(
+        dir.join("src").join("lib.rs"),
+        format!(
+            r#"//! {name} — AetherSDK project
 //!
 //! Add your custom DSP nodes in src/nodes/.
 //! Edit aether.json to wire them together.
 
 pub mod nodes;
 "#
-    ))?;
+        ),
+    )?;
 
     // src/nodes/mod.rs
-    std::fs::write(dir.join("src").join("nodes").join("mod.rs"),
-        "// Add your node modules here\n"
+    std::fs::write(
+        dir.join("src").join("nodes").join("mod.rs"),
+        "// Add your node modules here\n",
     )?;
 
     // .gitignore
@@ -81,8 +88,10 @@ pub fn new_node(args: &[String]) -> CmdResult {
         return Err(format!("File '{}' already exists", file.display()).into());
     }
 
-    std::fs::write(&file, format!(
-r#"//! {pascal} — custom AetherSDK DSP node
+    std::fs::write(
+        &file,
+        format!(
+            r#"//! {pascal} — custom AetherSDK DSP node
 
 use aether_ndk::prelude::*;
 
@@ -110,7 +119,8 @@ impl DspProcess for {pascal} {{
     }}
 }}
 "#
-    ))?;
+        ),
+    )?;
 
     println!("✓ Created node '{pascal}' at {}", file.display());
     println!("\nRegister it in your project:");
@@ -123,7 +133,9 @@ impl DspProcess for {pascal} {{
 
 pub fn build(args: &[String]) -> CmdResult {
     let plugin = args.iter().any(|a| a == "--plugin");
-    let target = args.iter().position(|a| a == "--plugin")
+    let target = args
+        .iter()
+        .position(|a| a == "--plugin")
         .and_then(|i| args.get(i + 1))
         .map(|s| s.as_str())
         .unwrap_or("clap");
@@ -161,8 +173,11 @@ pub fn run(_args: &[String]) -> CmdResult {
     let registry = builtin_registry();
     manifest.validate(&registry)?;
 
-    println!("✓ Manifest valid: {} nodes, {} connections",
-        manifest.nodes.len(), manifest.connections.len());
+    println!(
+        "✓ Manifest valid: {} nodes, {} connections",
+        manifest.nodes.len(),
+        manifest.connections.len()
+    );
     println!("  Sample rate: {} Hz", manifest.sample_rate);
     println!("  Block size:  {} samples", manifest.block_size);
     println!("\nStarting audio host...");
@@ -186,8 +201,10 @@ pub fn list_nodes(_args: &[String]) -> CmdResult {
         let defs = registry.param_defs(name).unwrap_or(&[]);
         println!("  {name}  ({} params)", defs.len());
         for d in defs {
-            println!("    • {}  [{:.1} – {:.1}]  default: {:.2}",
-                d.name, d.min, d.max, d.default);
+            println!(
+                "    • {}  [{:.1} – {:.1}]  default: {:.2}",
+                d.name, d.min, d.max, d.default
+            );
         }
         println!();
     }
@@ -274,7 +291,9 @@ fn registry_install(path: &Path) -> CmdResult {
 fn to_snake_case(s: &str) -> String {
     let mut out = String::new();
     for (i, c) in s.chars().enumerate() {
-        if c.is_uppercase() && i > 0 { out.push('_'); }
+        if c.is_uppercase() && i > 0 {
+            out.push('_');
+        }
         out.push(c.to_lowercase().next().unwrap());
     }
     out.replace('-', "_")

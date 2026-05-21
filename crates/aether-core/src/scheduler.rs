@@ -16,11 +16,7 @@
 use ringbuf::traits::Consumer;
 
 use crate::{
-    arena::NodeId,
-    command::Command,
-    graph::DspGraph,
-    node::DspNode,
-    param::ParamBlock,
+    arena::NodeId, command::Command, graph::DspGraph, node::DspNode, param::ParamBlock,
     BUFFER_SIZE, MAX_COMMANDS_PER_TICK, MAX_INPUTS,
 };
 
@@ -178,7 +174,10 @@ impl Scheduler {
         let mut processed = 0;
         while processed < MAX_COMMANDS_PER_TICK {
             match cmd_consumer.try_pop() {
-                Some(cmd) => { self.apply_command(cmd); processed += 1; }
+                Some(cmd) => {
+                    self.apply_command(cmd);
+                    processed += 1;
+                }
                 None => break,
             }
         }
@@ -254,10 +253,9 @@ impl Scheduler {
                         for (slot, maybe_src) in record.inputs.iter().enumerate() {
                             if let Some(src_id) = maybe_src {
                                 if let Some(src_record) = self.graph.arena.get(*src_id) {
-                                    input_ptrs[slot] = Some(
-                                        self.graph.buffers.get(src_record.output_buffer)
-                                            as *const [f32; BUFFER_SIZE],
-                                    );
+                                    input_ptrs[slot] =
+                                        Some(self.graph.buffers.get(src_record.output_buffer)
+                                            as *const [f32; BUFFER_SIZE]);
                                 }
                             }
                         }
@@ -351,10 +349,8 @@ impl Scheduler {
             for (slot, maybe_src) in record.inputs.iter().enumerate() {
                 if let Some(src_id) = maybe_src {
                     if let Some(src_record) = self.graph.arena.get(*src_id) {
-                        input_ptrs[slot] = Some(
-                            self.graph.buffers.get(src_record.output_buffer)
-                                as *const [f32; BUFFER_SIZE],
-                        );
+                        input_ptrs[slot] = Some(self.graph.buffers.get(src_record.output_buffer)
+                            as *const [f32; BUFFER_SIZE]);
                     }
                 }
             }
@@ -382,22 +378,40 @@ impl Scheduler {
 
     fn apply_command(&mut self, cmd: Command) {
         match cmd {
-            Command::AddNode { id } => { let _ = id; }
-            Command::RemoveNode { id } => { self.graph.remove_node(id); }
-            Command::Connect { src, dst, slot } => { self.graph.connect(src, dst, slot); }
-            Command::Disconnect { dst, slot } => { self.graph.disconnect(dst, slot); }
-            Command::UpdateParam { node, param_index, new_param } => {
+            Command::AddNode { id } => {
+                let _ = id;
+            }
+            Command::RemoveNode { id } => {
+                self.graph.remove_node(id);
+            }
+            Command::Connect { src, dst, slot } => {
+                self.graph.connect(src, dst, slot);
+            }
+            Command::Disconnect { dst, slot } => {
+                self.graph.disconnect(dst, slot);
+            }
+            Command::UpdateParam {
+                node,
+                param_index,
+                new_param,
+            } => {
                 if let Some(record) = self.graph.arena.get_mut(node) {
                     if param_index < record.params.count {
                         record.params.params[param_index] = new_param;
                     }
                 }
             }
-            Command::SetOutputNode { id } => { self.graph.set_output_node(id); }
-            Command::SetMute { muted } => { self.muted = muted; }
+            Command::SetOutputNode { id } => {
+                self.graph.set_output_node(id);
+            }
+            Command::SetMute { muted } => {
+                self.muted = muted;
+            }
             Command::ClearGraph => {
                 let ids: Vec<_> = self.graph.execution_order.clone();
-                for id in ids { self.graph.remove_node(id); }
+                for id in ids {
+                    self.graph.remove_node(id);
+                }
                 self.graph.output_node = None;
             }
         }
@@ -505,10 +519,10 @@ mod tests {
             // Add nodes to both schedulers with deterministic gains based on seed
             for i in 0..num_nodes {
                 let gain = ((seed.wrapping_add(i as u64) % 100) as f32) / 100.0;
-                
+
                 let id1 = scheduler_parallel.graph.add_node(Box::new(TestNode::new(gain)));
                 let id2 = scheduler_sequential.graph.add_node(Box::new(TestNode::new(gain)));
-                
+
                 if let (Some(id1), Some(id2)) = (id1, id2) {
                     // Verify both schedulers assigned the same NodeId
                     prop_assert_eq!(id1.index, id2.index);
@@ -522,7 +536,7 @@ mod tests {
                 if src_idx < num_nodes && dst_idx < num_nodes && src_idx < dst_idx {
                     let src = node_ids[src_idx];
                     let dst = node_ids[dst_idx];
-                    
+
                     scheduler_parallel.graph.connect(src, dst, slot);
                     scheduler_sequential.graph.connect(src, dst, slot);
                 }

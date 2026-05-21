@@ -56,7 +56,7 @@ fn mix_channel(output: &mut [f32; BUFFER_SIZE], input: &[f32; BUFFER_SIZE], gain
         // Unity gain: pure addition — compiler emits VADDPS
         for c in 0..chunks {
             let i = c * CHUNK;
-            output[i]     += input[i];
+            output[i] += input[i];
             output[i + 1] += input[i + 1];
             output[i + 2] += input[i + 2];
             output[i + 3] += input[i + 3];
@@ -69,7 +69,7 @@ fn mix_channel(output: &mut [f32; BUFFER_SIZE], input: &[f32; BUFFER_SIZE], gain
         // Scaled: compiler emits VFMADD231PS (fused multiply-add)
         for c in 0..chunks {
             let i = c * CHUNK;
-            output[i]     = gain.mul_add(input[i],     output[i]);
+            output[i] = gain.mul_add(input[i], output[i]);
             output[i + 1] = gain.mul_add(input[i + 1], output[i + 1]);
             output[i + 2] = gain.mul_add(input[i + 2], output[i + 2]);
             output[i + 3] = gain.mul_add(input[i + 3], output[i + 3]);

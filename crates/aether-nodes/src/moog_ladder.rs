@@ -36,7 +36,14 @@ impl MoogLadder {
     }
 
     #[inline(always)]
-    fn process_sample(&mut self, input: f32, cutoff: f32, resonance: f32, drive: f32, sr: f32) -> f32 {
+    fn process_sample(
+        &mut self,
+        input: f32,
+        cutoff: f32,
+        resonance: f32,
+        drive: f32,
+        sr: f32,
+    ) -> f32 {
         let f = cutoff / (sr * 0.5);
         let f = f.clamp(0.0, 1.0);
 
@@ -97,7 +104,9 @@ impl MoogLadder {
 }
 
 impl Default for MoogLadder {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DspNode for MoogLadder {
@@ -112,14 +121,18 @@ impl DspNode for MoogLadder {
         let input = inputs[0].unwrap_or(&silence);
 
         for (i, out) in output.iter_mut().enumerate() {
-            let cutoff    = params.get(0).current.clamp(20.0, sample_rate * 0.45);
+            let cutoff = params.get(0).current.clamp(20.0, sample_rate * 0.45);
             let resonance = params.get(1).current.clamp(0.0, 4.0);
-            let drive     = params.get(2).current.clamp(0.0, 1.0);
+            let drive = params.get(2).current.clamp(0.0, 1.0);
             *out = self.process_sample(input[i], cutoff, resonance, drive, sample_rate);
             params.tick_all();
         }
     }
 
-    fn capture_state(&self) -> StateBlob { StateBlob::EMPTY }
-    fn type_name(&self) -> &'static str { "MoogLadder" }
+    fn capture_state(&self) -> StateBlob {
+        StateBlob::EMPTY
+    }
+    fn type_name(&self) -> &'static str {
+        "MoogLadder"
+    }
 }

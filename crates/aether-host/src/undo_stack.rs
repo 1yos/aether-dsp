@@ -13,12 +13,35 @@ use crate::graph_manager::PatchDef;
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum StructuralIntent {
-    AddNode { node_type: String, created_id: NodeId },
-    RemoveNode { node_id: u32, generation: u32, node_type: String },
-    Connect { src_id: u32, src_gen: u32, dst_id: u32, dst_gen: u32, slot: usize },
-    Disconnect { dst_id: u32, dst_gen: u32, slot: usize, prev_src_id: u32, prev_src_gen: u32 },
-    LoadPatch { patch: PatchDef },
-    ClearGraph { snapshot_before: PatchDef },
+    AddNode {
+        node_type: String,
+        created_id: NodeId,
+    },
+    RemoveNode {
+        node_id: u32,
+        generation: u32,
+        node_type: String,
+    },
+    Connect {
+        src_id: u32,
+        src_gen: u32,
+        dst_id: u32,
+        dst_gen: u32,
+        slot: usize,
+    },
+    Disconnect {
+        dst_id: u32,
+        dst_gen: u32,
+        slot: usize,
+        prev_src_id: u32,
+        prev_src_gen: u32,
+    },
+    LoadPatch {
+        patch: PatchDef,
+    },
+    ClearGraph {
+        snapshot_before: PatchDef,
+    },
 }
 
 // ── UndoEntry ─────────────────────────────────────────────────────────────────
@@ -55,7 +78,8 @@ impl Default for UndoStack {
     }
 }
 
-impl UndoStack {    /// Push an entry to the back. If at capacity, the oldest entry (front) is
+impl UndoStack {
+    /// Push an entry to the back. If at capacity, the oldest entry (front) is
     /// dropped to keep the stack bounded.
     pub fn push(&mut self, entry: UndoEntry) {
         if self.entries.len() >= self.max_depth {
@@ -95,7 +119,10 @@ mod tests {
         UndoEntry {
             forward: StructuralIntent::AddNode {
                 node_type: "Gain".into(),
-                created_id: NodeId { index: 0, generation: 0 },
+                created_id: NodeId {
+                    index: 0,
+                    generation: 0,
+                },
             },
             inverse: StructuralIntent::RemoveNode {
                 node_id: 0,
@@ -228,7 +255,7 @@ mod tests {
                 // Apply AddNode intent
                 let add_intent = Intent::AddNode { node_type: node_type.to_string() };
                 let add_response = graph_manager.handle(add_intent, &mut scheduler);
-                
+
                 // Verify we got a snapshot response (not an error)
                 prop_assert!(is_snapshot(&add_response));
 
@@ -241,7 +268,7 @@ mod tests {
 
                 // Apply Undo intent
                 let undo_response = graph_manager.handle(Intent::Undo, &mut scheduler);
-                
+
                 // Verify we got a snapshot response
                 prop_assert!(is_snapshot(&undo_response));
 
@@ -307,7 +334,7 @@ mod tests {
                     slot,
                 };
                 let connect_response = graph_manager.handle(connect_intent, &mut scheduler);
-                
+
                 // Verify we got a snapshot response
                 prop_assert!(is_snapshot(&connect_response));
 
@@ -320,7 +347,7 @@ mod tests {
 
                 // Apply Undo intent
                 let undo_response = graph_manager.handle(Intent::Undo, &mut scheduler);
-                
+
                 // Verify we got a snapshot response
                 prop_assert!(is_snapshot(&undo_response));
 
@@ -396,7 +423,7 @@ mod tests {
                     slot,
                 };
                 let disconnect_response = graph_manager.handle(disconnect_intent, &mut scheduler);
-                
+
                 // Verify we got a snapshot response
                 prop_assert!(is_snapshot(&disconnect_response));
 
@@ -409,7 +436,7 @@ mod tests {
 
                 // Apply Undo intent
                 let undo_response = graph_manager.handle(Intent::Undo, &mut scheduler);
-                
+
                 // Verify we got a snapshot response
                 prop_assert!(is_snapshot(&undo_response));
 
@@ -497,7 +524,7 @@ mod tests {
                 // Apply AddNode intent
                 let add_intent = Intent::AddNode { node_type: node_type.to_string() };
                 let add_response = graph_manager.handle(add_intent, &mut scheduler);
-                
+
                 // Verify we got a snapshot response (not an error)
                 prop_assert!(is_snapshot(&add_response));
 
@@ -510,7 +537,7 @@ mod tests {
 
                 // Apply Undo intent
                 let undo_response = graph_manager.handle(Intent::Undo, &mut scheduler);
-                
+
                 // Verify we got a snapshot response
                 prop_assert!(is_snapshot(&undo_response));
 
@@ -527,7 +554,7 @@ mod tests {
 
                 // Apply Redo intent
                 let redo_response = graph_manager.handle(Intent::Redo, &mut scheduler);
-                
+
                 // Verify we got a snapshot response
                 prop_assert!(is_snapshot(&redo_response));
 
@@ -593,7 +620,7 @@ mod tests {
                     slot,
                 };
                 let connect_response = graph_manager.handle(connect_intent, &mut scheduler);
-                
+
                 // Verify we got a snapshot response
                 prop_assert!(is_snapshot(&connect_response));
 
@@ -606,7 +633,7 @@ mod tests {
 
                 // Apply Undo intent
                 let undo_response = graph_manager.handle(Intent::Undo, &mut scheduler);
-                
+
                 // Verify we got a snapshot response
                 prop_assert!(is_snapshot(&undo_response));
 
@@ -623,7 +650,7 @@ mod tests {
 
                 // Apply Redo intent
                 let redo_response = graph_manager.handle(Intent::Redo, &mut scheduler);
-                
+
                 // Verify we got a snapshot response
                 prop_assert!(is_snapshot(&redo_response));
 
@@ -699,7 +726,7 @@ mod tests {
                     slot,
                 };
                 let disconnect_response = graph_manager.handle(disconnect_intent, &mut scheduler);
-                
+
                 // Verify we got a snapshot response
                 prop_assert!(is_snapshot(&disconnect_response));
 
@@ -712,7 +739,7 @@ mod tests {
 
                 // Apply Undo intent
                 let undo_response = graph_manager.handle(Intent::Undo, &mut scheduler);
-                
+
                 // Verify we got a snapshot response
                 prop_assert!(is_snapshot(&undo_response));
 
@@ -729,7 +756,7 @@ mod tests {
 
                 // Apply Redo intent
                 let redo_response = graph_manager.handle(Intent::Redo, &mut scheduler);
-                
+
                 // Verify we got a snapshot response
                 prop_assert!(is_snapshot(&redo_response));
 
@@ -757,4 +784,3 @@ mod tests {
         }
     }
 }
-

@@ -16,8 +16,8 @@ use tokio_tungstenite::{accept_async, tungstenite::Message};
 use crate::graph_manager::{GraphManager, Intent, Response};
 use aether_core::{arena::NodeId, scheduler::Scheduler};
 use aether_midi::MidiEngine;
-use ringbuf::HeapCons;
 use ringbuf::traits::{Consumer, Observer};
+use ringbuf::HeapCons;
 
 /// Maximum WebSocket message size (1 MB)
 const MAX_MESSAGE_SIZE: usize = 1024 * 1024;
@@ -161,7 +161,7 @@ async fn handle_connection(stream: tokio::net::TcpStream, state: Arc<WsState>) {
                 }
 
                 let text = msg.to_text().unwrap_or("");
-                
+
                 // Security: Check message size limit
                 if text.len() > MAX_MESSAGE_SIZE {
                     let error_response = Response::Error {

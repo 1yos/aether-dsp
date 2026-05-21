@@ -18,8 +18,10 @@ fn main() {
     let yaman = TuningTable::indian_raga_yaman(440.0);
 
     println!("Comparing tuning systems for one octave (C4-C5):\n");
-    println!("{:4} | {:>10} | {:>10} | {:>10} | {:>10} | {:>8}",
-        "MIDI", "12-TET", "Tizita", "Rast", "Yaman", "Cents");
+    println!(
+        "{:4} | {:>10} | {:>10} | {:>10} | {:>10} | {:>8}",
+        "MIDI", "12-TET", "Tizita", "Rast", "Yaman", "Cents"
+    );
     println!("{}", "-".repeat(70));
 
     // Compare middle C octave (MIDI 60-72)
@@ -36,7 +38,8 @@ fn main() {
 
         let note_name = get_note_name(midi_note);
 
-        println!("{:4} | {:10.2} | {:10.2} | {:10.2} | {:10.2} | {:+8.1}",
+        println!(
+            "{:4} | {:10.2} | {:10.2} | {:10.2} | {:10.2} | {:+8.1}",
             format!("{} ({})", midi_note, note_name),
             freq_12tet,
             freq_tizita,
@@ -56,6 +59,8 @@ fn main() {
 }
 
 fn get_note_name(midi: u8) -> &'static str {
-    let note_names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    let note_names = [
+        "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+    ];
     note_names[(midi % 12) as usize]
 }

@@ -34,22 +34,18 @@ impl Inspector {
     }
 
     pub fn view<'a>(&self, node: Option<&'a GraphNode>) -> Element<'a, Message> {
-        let title = text("Inspector")
-            .size(16)
-            .style(|_theme| text::Style {
-                color: Some(AetherTheme::TEXT_PRIMARY),
-            });
+        let title = text("Inspector").size(16).style(|_theme| text::Style {
+            color: Some(AetherTheme::TEXT_PRIMARY),
+        });
 
         let content = if let Some(node) = node {
             self.view_node_properties(node)
         } else {
-            column![
-                text("No node selected")
-                    .size(12)
-                    .style(|_theme| text::Style {
-                        color: Some(AetherTheme::TEXT_DISABLED),
-                    })
-            ]
+            column![text("No node selected")
+                .size(12)
+                .style(|_theme| text::Style {
+                    color: Some(AetherTheme::TEXT_DISABLED),
+                })]
             .spacing(Spacing::MD)
             .into()
         };
@@ -86,21 +82,22 @@ impl Inspector {
                 color: Some(AetherTheme::TEXT_DISABLED),
             });
 
-        let position = text(format!("Position: ({:.0}, {:.0})", node.position.x, node.position.y))
-            .size(10)
-            .style(|_theme| text::Style {
-                color: Some(AetherTheme::TEXT_DISABLED),
-            });
+        let position = text(format!(
+            "Position: ({:.0}, {:.0})",
+            node.position.x, node.position.y
+        ))
+        .size(10)
+        .style(|_theme| text::Style {
+            color: Some(AetherTheme::TEXT_DISABLED),
+        });
 
         // Parameters section
-        let mut params: Vec<Element<'a, Message>> = vec![
-            text("Parameters")
-                .size(12)
-                .style(|_theme| text::Style {
-                    color: Some(AetherTheme::TEXT_SECONDARY),
-                })
-                .into(),
-        ];
+        let mut params: Vec<Element<'a, Message>> = vec![text("Parameters")
+            .size(12)
+            .style(|_theme| text::Style {
+                color: Some(AetherTheme::TEXT_SECONDARY),
+            })
+            .into()];
 
         // Add common parameters based on node type
         params.extend(self.get_node_parameters(&node.node_type));
@@ -113,18 +110,38 @@ impl Inspector {
 
     fn get_node_parameters<'a>(&self, node_type: &super::NodeType) -> Vec<Element<'a, Message>> {
         use super::NodeType;
-        
+
         match node_type {
-            NodeType::Gain => vec![
-                self.parameter_slider("Gain", 0.0, 2.0, self.get_param_value("Gain", 1.0)),
-            ],
+            NodeType::Gain => {
+                vec![self.parameter_slider("Gain", 0.0, 2.0, self.get_param_value("Gain", 1.0))]
+            }
             NodeType::Oscillator { .. } => vec![
-                self.parameter_slider("Frequency", 20.0, 20000.0, self.get_param_value("Frequency", 440.0)),
-                self.parameter_slider("Amplitude", 0.0, 1.0, self.get_param_value("Amplitude", 0.5)),
+                self.parameter_slider(
+                    "Frequency",
+                    20.0,
+                    20000.0,
+                    self.get_param_value("Frequency", 440.0),
+                ),
+                self.parameter_slider(
+                    "Amplitude",
+                    0.0,
+                    1.0,
+                    self.get_param_value("Amplitude", 0.5),
+                ),
             ],
             NodeType::LowPass | NodeType::HighPass | NodeType::BandPass => vec![
-                self.parameter_slider("Cutoff", 20.0, 20000.0, self.get_param_value("Cutoff", 1000.0)),
-                self.parameter_slider("Resonance", 0.0, 1.0, self.get_param_value("Resonance", 0.5)),
+                self.parameter_slider(
+                    "Cutoff",
+                    20.0,
+                    20000.0,
+                    self.get_param_value("Cutoff", 1000.0),
+                ),
+                self.parameter_slider(
+                    "Resonance",
+                    0.0,
+                    1.0,
+                    self.get_param_value("Resonance", 0.5),
+                ),
             ],
             NodeType::Delay => vec![
                 self.parameter_slider("Time", 0.0, 2.0, self.get_param_value("Time", 0.5)),
@@ -132,13 +149,28 @@ impl Inspector {
                 self.parameter_slider("Mix", 0.0, 1.0, self.get_param_value("Mix", 0.5)),
             ],
             NodeType::Compressor => vec![
-                self.parameter_slider("Threshold", -60.0, 0.0, self.get_param_value("Threshold", -20.0)),
+                self.parameter_slider(
+                    "Threshold",
+                    -60.0,
+                    0.0,
+                    self.get_param_value("Threshold", -20.0),
+                ),
                 self.parameter_slider("Ratio", 1.0, 20.0, self.get_param_value("Ratio", 4.0)),
                 self.parameter_slider("Attack", 0.0, 100.0, self.get_param_value("Attack", 10.0)),
-                self.parameter_slider("Release", 0.0, 1000.0, self.get_param_value("Release", 100.0)),
+                self.parameter_slider(
+                    "Release",
+                    0.0,
+                    1000.0,
+                    self.get_param_value("Release", 100.0),
+                ),
             ],
             NodeType::Reverb => vec![
-                self.parameter_slider("Room Size", 0.0, 1.0, self.get_param_value("Room Size", 0.5)),
+                self.parameter_slider(
+                    "Room Size",
+                    0.0,
+                    1.0,
+                    self.get_param_value("Room Size", 0.5),
+                ),
                 self.parameter_slider("Damping", 0.0, 1.0, self.get_param_value("Damping", 0.5)),
                 self.parameter_slider("Mix", 0.0, 1.0, self.get_param_value("Mix", 0.3)),
             ],
@@ -152,14 +184,12 @@ impl Inspector {
                 self.parameter_slider("Sustain", 0.0, 1.0, self.get_param_value("Sustain", 0.7)),
                 self.parameter_slider("Release", 0.0, 5.0, self.get_param_value("Release", 0.3)),
             ],
-            _ => vec![
-                text("No parameters")
-                    .size(10)
-                    .style(|_theme| text::Style {
-                        color: Some(AetherTheme::TEXT_DISABLED),
-                    })
-                    .into(),
-            ],
+            _ => vec![text("No parameters")
+                .size(10)
+                .style(|_theme| text::Style {
+                    color: Some(AetherTheme::TEXT_DISABLED),
+                })
+                .into()],
         }
     }
 
@@ -167,12 +197,16 @@ impl Inspector {
         self.parameter_values.get(name).copied().unwrap_or(default)
     }
 
-    fn parameter_slider<'a>(&self, name: &'a str, min: f32, max: f32, default: f32) -> Element<'a, Message> {
-        let label = text(name)
-            .size(10)
-            .style(|_theme| text::Style {
-                color: Some(AetherTheme::TEXT_SECONDARY),
-            });
+    fn parameter_slider<'a>(
+        &self,
+        name: &'a str,
+        min: f32,
+        max: f32,
+        default: f32,
+    ) -> Element<'a, Message> {
+        let label = text(name).size(10).style(|_theme| text::Style {
+            color: Some(AetherTheme::TEXT_SECONDARY),
+        });
 
         let value_text = text(format!("{:.2}", default))
             .size(10)

@@ -23,11 +23,20 @@ pub struct EnvelopeState {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum EnvPhase { Attack, Decay, Sustain, Release, Done }
+pub enum EnvPhase {
+    Attack,
+    Decay,
+    Sustain,
+    Release,
+    Done,
+}
 
 impl EnvelopeState {
     pub fn new() -> Self {
-        Self { level: 0.0, phase: EnvPhase::Attack }
+        Self {
+            level: 0.0,
+            phase: EnvPhase::Attack,
+        }
     }
 }
 
@@ -42,16 +51,25 @@ impl EnvelopeState {
         match self.phase {
             EnvPhase::Attack => {
                 self.level += attack_rate;
-                if self.level >= 1.0 { self.level = 1.0; self.phase = EnvPhase::Decay; }
+                if self.level >= 1.0 {
+                    self.level = 1.0;
+                    self.phase = EnvPhase::Decay;
+                }
             }
             EnvPhase::Decay => {
                 self.level -= decay_rate;
-                if self.level <= sustain { self.level = sustain; self.phase = EnvPhase::Sustain; }
+                if self.level <= sustain {
+                    self.level = sustain;
+                    self.phase = EnvPhase::Sustain;
+                }
             }
             EnvPhase::Sustain => {}
             EnvPhase::Release => {
                 self.level -= release_rate;
-                if self.level <= 0.0 { self.level = 0.0; self.phase = EnvPhase::Done; }
+                if self.level <= 0.0 {
+                    self.level = 0.0;
+                    self.phase = EnvPhase::Done;
+                }
             }
             EnvPhase::Done => {}
         }
@@ -63,7 +81,9 @@ impl EnvelopeState {
         }
     }
 
-    pub fn is_done(&self) -> bool { self.phase == EnvPhase::Done }
+    pub fn is_done(&self) -> bool {
+        self.phase == EnvPhase::Done
+    }
 }
 
 /// One active voice in the sampler.
@@ -106,7 +126,10 @@ impl SamplerVoice {
         zone: &SampleZone,
     ) -> Self {
         let (loop_start, loop_end) = match &zone.articulation {
-            ArticulationType::SustainLoop { loop_start, loop_end } => (*loop_start, *loop_end),
+            ArticulationType::SustainLoop {
+                loop_start,
+                loop_end,
+            } => (*loop_start, *loop_end),
             _ => (0, 0),
         };
         Self {
@@ -147,7 +170,10 @@ impl SamplerVoice {
         self.position += self.pitch_ratio;
 
         match &self.articulation {
-            ArticulationType::SustainLoop { loop_start, loop_end } => {
+            ArticulationType::SustainLoop {
+                loop_start,
+                loop_end,
+            } => {
                 if self.key_held && self.position >= *loop_end as f64 {
                     self.position = *loop_start as f64 + (self.position - *loop_end as f64);
                     self.phase = VoicePhase::Sustain;

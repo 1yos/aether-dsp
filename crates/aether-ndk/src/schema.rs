@@ -1,8 +1,8 @@
 //! JSON schema generation for registered nodes.
 //! Used by the CLI and manifest system.
 
-use serde::{Deserialize, Serialize};
 use crate::{node::NodeRegistry, ParamDef};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NodeSchema {

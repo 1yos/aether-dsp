@@ -26,13 +26,13 @@ use std::time::SystemTime;
 pub struct HotReloadConfig {
     /// Directory to watch for changes.
     pub watch_dir: PathBuf,
-    
+
     /// File extensions to watch (e.g., ".rs").
     pub watch_extensions: Vec<String>,
-    
+
     /// Debounce time in milliseconds (wait this long after last change before reloading).
     pub debounce_ms: u64,
-    
+
     /// Whether to preserve node state across reloads.
     pub preserve_state: bool,
 }
@@ -83,7 +83,7 @@ impl HotReloadManager {
                 if let Ok(metadata) = entry.metadata() {
                     if metadata.is_file() {
                         let path = entry.path();
-                        
+
                         // Check if file extension matches
                         if let Some(ext) = path.extension() {
                             let ext_str = format!(".{}", ext.to_string_lossy());
@@ -150,12 +150,12 @@ impl HotReloadManager {
     pub fn reload_node(&self, node_name: &str) -> Result<(), String> {
         // Placeholder implementation
         println!("Hot reload: Recompiling {}...", node_name);
-        
+
         // In a real implementation, this would:
         // 1. Run cargo build
         // 2. Load dynamic library
         // 3. Swap node implementation
-        
+
         Err("Hot reload not fully implemented (placeholder)".to_string())
     }
 
@@ -177,10 +177,10 @@ impl HotReloadManager {
 pub struct NodeStateSnapshot {
     /// Node type name.
     pub node_type: String,
-    
+
     /// Serialized state (JSON or binary).
     pub state_data: Vec<u8>,
-    
+
     /// Parameter values.
     pub param_values: Vec<f32>,
 }
@@ -241,7 +241,7 @@ mod tests {
     fn test_hotreload_reload_node_placeholder() {
         let config = HotReloadConfig::default();
         let manager = HotReloadManager::new(config);
-        
+
         // Should return error (placeholder implementation)
         let result = manager.reload_node("Oscillator");
         assert!(result.is_err());

@@ -3,11 +3,11 @@
 //! An instrument is a collection of sample zones.
 //! Each zone maps a note range + velocity range to an audio file.
 
-use std::path::Path;
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
 use crate::buffer::SampleBuffer;
 use aether_midi::tuning::TuningTable;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::Path;
 
 /// Round-robin selection strategy for zone groups.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -87,12 +87,7 @@ impl RoundRobinState {
 
     /// Select a zone index from a group according to the mode.
     /// Returns the index (0..group_len) of the selected zone.
-    pub fn select(
-        &mut self,
-        group_idx: usize,
-        group_len: usize,
-        mode: &RoundRobinMode,
-    ) -> usize {
+    pub fn select(&mut self, group_idx: usize, group_len: usize, mode: &RoundRobinMode) -> usize {
         if group_len == 0 {
             return 0;
         }
@@ -228,8 +223,10 @@ pub struct SampleZone {
 impl SampleZone {
     /// Does this zone respond to the given note and velocity?
     pub fn matches(&self, note: u8, velocity: u8) -> bool {
-        note >= self.note_low && note <= self.note_high
-            && velocity >= self.velocity_low && velocity <= self.velocity_high
+        note >= self.note_low
+            && note <= self.note_high
+            && velocity >= self.velocity_low
+            && velocity <= self.velocity_high
     }
 
     /// Pitch ratio to shift from root_note to target_note.
@@ -416,7 +413,10 @@ pub struct LoadedInstrument {
 
 impl LoadedInstrument {
     /// Load all audio files for an instrument.
-    pub fn load(instrument: SamplerInstrument, base_dir: &Path) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn load(
+        instrument: SamplerInstrument,
+        base_dir: &Path,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let mut buffers = HashMap::new();
         let mut release_buffers = HashMap::new();
 
@@ -434,7 +434,11 @@ impl LoadedInstrument {
             }
         }
 
-        Ok(Self { instrument, buffers, release_buffers })
+        Ok(Self {
+            instrument,
+            buffers,
+            release_buffers,
+        })
     }
 }
 
@@ -478,7 +482,7 @@ mod tests {
     #[test]
     fn test_round_robin_state_sequential() {
         let mut state = RoundRobinState::with_seed(12345);
-        
+
         let zones = vec![
             SampleZone {
                 id: "zone1".into(),
@@ -511,10 +515,10 @@ mod tests {
         // Sequential mode should cycle through zones
         let z1 = state.select_zone(0, &zones, &RoundRobinMode::Sequential);
         assert_eq!(z1.unwrap().id, "zone1");
-        
+
         let z2 = state.select_zone(0, &zones, &RoundRobinMode::Sequential);
         assert_eq!(z2.unwrap().id, "zone2");
-        
+
         let z3 = state.select_zone(0, &zones, &RoundRobinMode::Sequential);
         assert_eq!(z3.unwrap().id, "zone1");
     }
@@ -522,7 +526,7 @@ mod tests {
     #[test]
     fn test_sampler_instrument_normalize() {
         let mut instrument = SamplerInstrument::new("test");
-        
+
         let zone = SampleZone {
             id: "zone1".into(),
             file_path: "test.wav".into(),
@@ -536,10 +540,10 @@ mod tests {
             tune_cents: 0.0,
             release_file: None,
         };
-        
+
         instrument.zones.push(zone);
         instrument.normalize();
-        
+
         assert_eq!(instrument.zone_groups.len(), 1);
         assert_eq!(instrument.zone_groups[0].zones.len(), 1);
         assert_eq!(instrument.zone_groups[0].mode, RoundRobinMode::Sequential);
@@ -548,7 +552,7 @@ mod tests {
     #[test]
     fn test_find_zone_rr() {
         let mut instrument = SamplerInstrument::new("test");
-        
+
         let zone1 = SampleZone {
             id: "zone1".into(),
             file_path: "test1.wav".into(),
@@ -562,7 +566,7 @@ mod tests {
             tune_cents: 0.0,
             release_file: None,
         };
-        
+
         let zone2 = SampleZone {
             id: "zone2".into(),
             file_path: "test2.wav".into(),
@@ -576,18 +580,18 @@ mod tests {
             tune_cents: 0.0,
             release_file: None,
         };
-        
+
         instrument.zone_groups.push(ZoneGroup {
             zones: vec![zone1, zone2],
             mode: RoundRobinMode::Sequential,
         });
-        
+
         let mut rr_state = RoundRobinState::with_seed(12345);
-        
+
         let z1 = instrument.find_zone_rr(60, 100, &mut rr_state);
         assert!(z1.is_some());
         assert_eq!(z1.unwrap().id, "zone1");
-        
+
         let z2 = instrument.find_zone_rr(60, 100, &mut rr_state);
         assert!(z2.is_some());
         assert_eq!(z2.unwrap().id, "zone2");
@@ -644,14 +648,14 @@ mod tests {
             // Assert each zone index appears exactly once
             let mut sorted_indices = selected_indices.clone();
             sorted_indices.sort_unstable();
-            
+
             // Check that we have exactly N selections
             prop_assert_eq!(selected_indices.len(), n);
-            
+
             // Check that the sorted indices form the sequence [0, 1, 2, ..., n-1]
             let expected: Vec<usize> = (0..n).collect();
             prop_assert_eq!(sorted_indices, expected);
-            
+
             // Additionally verify that each index appears exactly once (no duplicates)
             for i in 0..n {
                 let count = selected_indices.iter().filter(|&&x| x == i).count();
@@ -737,10 +741,10 @@ mod tests {
                 let (note_low, note_high_offset) = note_ranges[i % note_ranges.len()];
                 let note_high = note_low.saturating_add(note_high_offset % 12);
                 let root_note = note_low + (note_high - note_low) / 2;
-                
+
                 let (vel_low, vel_high_offset) = velocity_ranges[i % velocity_ranges.len()];
                 let vel_high = vel_low.saturating_add(vel_high_offset);
-                
+
                 zones.push(SampleZone {
                     id: format!("zone_{}", i),
                     file_path: format!("sample_{}.wav", i),

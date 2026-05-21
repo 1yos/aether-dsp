@@ -13,23 +13,32 @@ use aether_core::{node::DspNode, param::ParamBlock, BUFFER_SIZE, MAX_INPUTS};
 /// Formant frequencies (Hz) for each vowel: [F1, F2, F3]
 /// Based on average male voice formants.
 const VOWEL_FORMANTS: [[f32; 3]; 5] = [
-    [800.0,  1200.0, 2500.0], // A
-    [400.0,  2000.0, 2800.0], // E
-    [350.0,  2800.0, 3300.0], // I
-    [450.0,  800.0,  2830.0], // O
-    [325.0,  700.0,  2700.0], // U
+    [800.0, 1200.0, 2500.0], // A
+    [400.0, 2000.0, 2800.0], // E
+    [350.0, 2800.0, 3300.0], // I
+    [450.0, 800.0, 2830.0],  // O
+    [325.0, 700.0, 2700.0],  // U
 ];
 
 /// Bandwidths (Hz) for each formant
 const FORMANT_BW: [f32; 3] = [80.0, 90.0, 120.0];
 
 struct BandpassFilter {
-    x1: f32, x2: f32,
-    y1: f32, y2: f32,
+    x1: f32,
+    x2: f32,
+    y1: f32,
+    y2: f32,
 }
 
 impl BandpassFilter {
-    fn new() -> Self { Self { x1: 0.0, x2: 0.0, y1: 0.0, y2: 0.0 } }
+    fn new() -> Self {
+        Self {
+            x1: 0.0,
+            x2: 0.0,
+            y1: 0.0,
+            y2: 0.0,
+        }
+    }
 
     #[inline(always)]
     fn process(&mut self, input: f32, freq: f32, bw: f32, sr: f32) -> f32 {
@@ -53,8 +62,16 @@ impl FormantFilter {
     pub fn new() -> Self {
         Self {
             bp: [
-                [BandpassFilter::new(), BandpassFilter::new(), BandpassFilter::new()],
-                [BandpassFilter::new(), BandpassFilter::new(), BandpassFilter::new()],
+                [
+                    BandpassFilter::new(),
+                    BandpassFilter::new(),
+                    BandpassFilter::new(),
+                ],
+                [
+                    BandpassFilter::new(),
+                    BandpassFilter::new(),
+                    BandpassFilter::new(),
+                ],
             ],
         }
     }
@@ -71,7 +88,9 @@ impl FormantFilter {
 }
 
 impl Default for FormantFilter {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DspNode for FormantFilter {
@@ -87,8 +106,8 @@ impl DspNode for FormantFilter {
 
         for (i, out) in output.iter_mut().enumerate() {
             let vowel_f = params.get(0).current.clamp(0.0, 4.0);
-            let shift   = params.get(1).current.clamp(-12.0, 12.0);
-            let wet     = params.get(2).current.clamp(0.0, 1.0);
+            let shift = params.get(1).current.clamp(-12.0, 12.0);
+            let wet = params.get(2).current.clamp(0.0, 1.0);
 
             let v0 = vowel_f as usize;
             let v1 = (v0 + 1).min(4);
@@ -110,5 +129,7 @@ impl DspNode for FormantFilter {
         }
     }
 
-    fn type_name(&self) -> &'static str { "FormantFilter" }
+    fn type_name(&self) -> &'static str {
+        "FormantFilter"
+    }
 }

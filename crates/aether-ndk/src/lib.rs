@@ -44,10 +44,7 @@ pub use aether_ndk_macro::aether_node;
 
 // Re-export core types so node authors don't need to depend on aether-core directly
 pub use aether_core::{
-    node::DspNode,
-    param::ParamBlock,
-    state::StateBlob,
-    BUFFER_SIZE, MAX_INPUTS,
+    node::DspNode, param::ParamBlock, state::StateBlob, BUFFER_SIZE, MAX_INPUTS,
 };
 
 /// A parameter definition — name, range, and default value.
@@ -77,7 +74,9 @@ pub trait DspProcess: Send {
         sample_rate: f32,
     );
 
-    fn capture_state(&self) -> StateBlob { StateBlob::EMPTY }
+    fn capture_state(&self) -> StateBlob {
+        StateBlob::EMPTY
+    }
     fn restore_state(&mut self, _state: StateBlob) {}
 }
 
@@ -114,9 +113,15 @@ impl<T: DspProcess + AetherNodeMeta + 'static> DspNode for NodeAdapter<T> {
         self.inner.process(&wrapped, output, params, sample_rate);
     }
 
-    fn capture_state(&self) -> StateBlob { self.inner.capture_state() }
-    fn restore_state(&mut self, state: StateBlob) { self.inner.restore_state(state); }
-    fn type_name(&self) -> &'static str { T::type_name() }
+    fn capture_state(&self) -> StateBlob {
+        self.inner.capture_state()
+    }
+    fn restore_state(&mut self, state: StateBlob) {
+        self.inner.restore_state(state);
+    }
+    fn type_name(&self) -> &'static str {
+        T::type_name()
+    }
 }
 
 /// Convenience function: wrap any `DspProcess + AetherNodeMeta` into a
@@ -131,8 +136,7 @@ where
 /// Prelude — import everything needed to write a node.
 pub mod prelude {
     pub use super::{
-        aether_node, into_node, AetherNodeMeta, DspProcess, NodeInputs,
-        NodeOutput, ParamDef,
+        aether_node, into_node, AetherNodeMeta, DspProcess, NodeInputs, NodeOutput, ParamDef,
     };
     pub use aether_core::param::ParamBlock;
     pub use aether_core::state::StateBlob;

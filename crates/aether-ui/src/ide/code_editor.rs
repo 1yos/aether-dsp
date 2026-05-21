@@ -30,11 +30,9 @@ impl CodeEditorView {
 
     pub fn view<'a>(&'a self, file_name: &'a str) -> Element<'a, Message> {
         let header = row![
-            text(file_name)
-                .size(14)
-                .style(|_theme| text::Style {
-                    color: Some(AetherTheme::TEXT_PRIMARY),
-                }),
+            text(file_name).size(14).style(|_theme| text::Style {
+                color: Some(AetherTheme::TEXT_PRIMARY),
+            }),
             text(format!(" • {}", self.language))
                 .size(12)
                 .style(|_theme| text::Style {
@@ -51,12 +49,11 @@ impl CodeEditorView {
                 .font(iced::Font::MONOSPACE)
                 .style(|_theme| text::Style {
                     color: Some(AetherTheme::TEXT_PRIMARY),
-                })
+                }),
         )
         .height(Length::Fill);
 
-        let content = column![header, code_display]
-            .spacing(0);
+        let content = column![header, code_display].spacing(0);
 
         container(content)
             .width(Length::Fill)

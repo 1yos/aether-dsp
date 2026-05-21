@@ -9,18 +9,14 @@
 //! each process() call (not held across the render loop), so contention
 //! is bounded and brief.
 
-use std::sync::{Arc, Mutex};
-use arc_swap::ArcSwap;
-use aether_core::{
-    node::DspNode,
-    param::ParamBlock,
-    BUFFER_SIZE, MAX_INPUTS,
-};
 use crate::{
     instrument::{LoadedInstrument, RoundRobinState},
     voice::SamplerVoice,
 };
+use aether_core::{node::DspNode, param::ParamBlock, BUFFER_SIZE, MAX_INPUTS};
 use aether_midi::event::{MidiEvent, MidiEventKind};
+use arc_swap::ArcSwap;
+use std::sync::{Arc, Mutex};
 
 /// A polyphonic sampler node.
 pub struct SamplerNode {
@@ -101,7 +97,9 @@ impl SamplerNode {
             }
         };
 
-        if events.is_empty() { return; }
+        if events.is_empty() {
+            return;
+        }
 
         // Load the current instrument — single atomic read, no lock.
         let inst_guard = self.instrument.load();
@@ -129,14 +127,22 @@ impl SamplerNode {
                     if self.voices.len() >= max_voices {
                         self.voices.remove(0);
                     }
-                    if let Some(zone) = inst.instrument.find_zone_rr(note, velocity, &mut self.rr_state) {
+                    if let Some(zone) =
+                        inst.instrument
+                            .find_zone_rr(note, velocity, &mut self.rr_state)
+                    {
                         if inst.buffers.contains_key(&zone.id) {
                             let vel_linear = velocity as f32 / 127.0;
-                            let pitch_ratio = zone.pitch_ratio(note, &inst.instrument.tuning) as f64;
+                            let pitch_ratio =
+                                zone.pitch_ratio(note, &inst.instrument.tuning) as f64;
                             let volume = zone.volume_linear() * vel_linear;
                             let voice = SamplerVoice::new(
-                                note, event.channel, vel_linear,
-                                pitch_ratio, volume, zone,
+                                note,
+                                event.channel,
+                                vel_linear,
+                                pitch_ratio,
+                                volume,
+                                zone,
                             );
                             self.voices.push(voice);
                         }
@@ -160,7 +166,8 @@ impl SamplerNode {
                         let held = value >= 64;
                         self.sustain_pedal[ch] = held;
                         if !held {
-                            let to_release: Vec<(u8, u8)> = self.sustained_notes.drain(..).collect();
+                            let to_release: Vec<(u8, u8)> =
+                                self.sustained_notes.drain(..).collect();
                             for (c, n) in to_release {
                                 for v in self.voices.iter_mut() {
                                     if v.note == n && v.channel == c && v.key_held {
@@ -172,7 +179,9 @@ impl SamplerNode {
                     }
                 }
                 MidiEventKind::AllNotesOff | MidiEventKind::AllSoundOff => {
-                    for v in self.voices.iter_mut() { v.release(); }
+                    for v in self.voices.iter_mut() {
+                        v.release();
+                    }
                     self.sustained_notes.clear();
                 }
                 _ => {}
@@ -189,19 +198,23 @@ impl SamplerNode {
         };
 
         let sr = self.sample_rate;
-        let attack_rate  = 1.0 / (inst.instrument.attack  * sr).max(1.0);
-        let decay_rate   = 1.0 / (inst.instrument.decay   * sr).max(1.0);
-        let sustain      = inst.instrument.sustain;
+        let attack_rate = 1.0 / (inst.instrument.attack * sr).max(1.0);
+        let decay_rate = 1.0 / (inst.instrument.decay * sr).max(1.0);
+        let sustain = inst.instrument.sustain;
         let release_rate = 1.0 / (inst.instrument.release * sr).max(1.0);
 
         for voice in self.voices.iter_mut() {
-            if voice.is_done() { continue; }
+            if voice.is_done() {
+                continue;
+            }
             let buf = match inst.buffers.get(&voice.zone_id) {
                 Some(b) => b,
                 None => continue,
             };
             for sample in output.iter_mut() {
-                voice.envelope.tick(attack_rate, decay_rate, sustain, release_rate);
+                voice
+                    .envelope
+                    .tick(attack_rate, decay_rate, sustain, release_rate);
                 let frame_pos = voice.advance(buf.frames);
                 let raw = buf.sample_at(frame_pos);
                 *sample += raw * voice.volume * voice.envelope.level;
@@ -224,5 +237,7 @@ impl DspNode for SamplerNode {
         self.render_voices(output);
     }
 
-    fn type_name(&self) -> &'static str { "SamplerNode" }
+    fn type_name(&self) -> &'static str {
+        "SamplerNode"
+    }
 }

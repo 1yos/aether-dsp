@@ -1,11 +1,11 @@
 // Aether Studio IDE - Professional audio development environment
 
-pub mod project_explorer;
 pub mod code_editor;
+pub mod code_generator;
 pub mod graph_view;
+pub mod project_explorer;
 pub mod terminal;
 pub mod toolbar;
-pub mod code_generator;
 
 use crate::project::ProjectConfig;
 use std::path::PathBuf;

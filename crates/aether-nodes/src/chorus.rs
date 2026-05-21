@@ -53,7 +53,9 @@ impl Chorus {
 }
 
 impl Default for Chorus {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DspNode for Chorus {
@@ -67,16 +69,16 @@ impl DspNode for Chorus {
         let silence = [0.0f32; BUFFER_SIZE];
         let input = inputs[0].unwrap_or(&silence);
 
-        let rate     = params.get(0).current.clamp(0.1, 10.0);
-        let depth    = params.get(1).current.clamp(0.0, 1.0);
+        let rate = params.get(0).current.clamp(0.1, 10.0);
+        let depth = params.get(1).current.clamp(0.0, 1.0);
         let feedback = params.get(2).current.clamp(0.0, 0.95);
-        let wet      = params.get(3).current.clamp(0.0, 1.0);
+        let wet = params.get(3).current.clamp(0.0, 1.0);
 
         let phase_inc = rate / sample_rate;
 
         // Base delay: 5ms center, depth modulates ±10ms
         let base_delay = 0.005 * sample_rate;
-        let mod_depth  = depth * 0.010 * sample_rate;
+        let mod_depth = depth * 0.010 * sample_rate;
 
         for (i, out) in output.iter_mut().enumerate() {
             let dry = input[i];
@@ -85,8 +87,10 @@ impl DspNode for Chorus {
             let lfo_l = (self.phase_l * TAU).sin();
             let lfo_r = (self.phase_r * TAU).sin();
 
-            let delay_l = (base_delay + lfo_l * mod_depth).clamp(1.0, (MAX_DELAY_SAMPLES - 2) as f32);
-            let delay_r = (base_delay + lfo_r * mod_depth).clamp(1.0, (MAX_DELAY_SAMPLES - 2) as f32);
+            let delay_l =
+                (base_delay + lfo_l * mod_depth).clamp(1.0, (MAX_DELAY_SAMPLES - 2) as f32);
+            let delay_r =
+                (base_delay + lfo_r * mod_depth).clamp(1.0, (MAX_DELAY_SAMPLES - 2) as f32);
 
             // Read from delay lines
             let delayed_l = Self::read_interp(&self.buf_l, self.write_pos, delay_l);
@@ -111,7 +115,9 @@ impl DspNode for Chorus {
         }
     }
 
-    fn type_name(&self) -> &'static str { "Chorus" }
+    fn type_name(&self) -> &'static str {
+        "Chorus"
+    }
 }
 
 #[cfg(test)]
@@ -122,13 +128,18 @@ mod tests {
     fn test_chorus_dry_passthrough() {
         let mut chorus = Chorus::new();
         let mut params = ParamBlock::new();
-        for &v in &[1.0f32, 0.5, 0.0, 0.0] { params.add(v); } // wet=0 → dry passthrough
+        for &v in &[1.0f32, 0.5, 0.0, 0.0] {
+            params.add(v);
+        } // wet=0 → dry passthrough
         let input = [0.5f32; BUFFER_SIZE];
         let inputs = [Some(&input); MAX_INPUTS];
         let mut output = [0.0f32; BUFFER_SIZE];
         chorus.process(&inputs, &mut output, &mut params, 48000.0);
         for s in &output {
-            assert!((s - 0.5).abs() < 1e-5, "wet=0 should pass dry signal unchanged");
+            assert!(
+                (s - 0.5).abs() < 1e-5,
+                "wet=0 should pass dry signal unchanged"
+            );
         }
     }
 
@@ -136,7 +147,9 @@ mod tests {
     fn test_chorus_bounded_output() {
         let mut chorus = Chorus::new();
         let mut params = ParamBlock::new();
-        for &v in &[2.0f32, 1.0, 0.9, 1.0] { params.add(v); }
+        for &v in &[2.0f32, 1.0, 0.9, 1.0] {
+            params.add(v);
+        }
         let input = [1.0f32; BUFFER_SIZE];
         let inputs = [Some(&input); MAX_INPUTS];
         let mut output = [0.0f32; BUFFER_SIZE];

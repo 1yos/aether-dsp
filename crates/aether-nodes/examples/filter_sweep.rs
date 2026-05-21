@@ -21,15 +21,14 @@
 //! becomes brighter as more harmonics pass through the filter.
 
 use aether_core::{
-    command::Command,
-    graph::DspGraph,
-    param::Param,
-    scheduler::Scheduler,
-    BUFFER_SIZE,
+    command::Command, graph::DspGraph, param::Param, scheduler::Scheduler, BUFFER_SIZE,
 };
 use aether_nodes::{filter::StateVariableFilter, oscillator::Oscillator};
 use hound::{WavSpec, WavWriter};
-use ringbuf::{traits::{Producer, Split}, HeapRb};
+use ringbuf::{
+    traits::{Producer, Split},
+    HeapRb,
+};
 
 const SAMPLE_RATE: f32 = 48_000.0;
 const DURATION_SECS: f32 = 5.0;
@@ -71,42 +70,62 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Send commands to scheduler
     producer.try_push(Command::AddNode { id: osc_id }).ok();
     producer.try_push(Command::AddNode { id: filter_id }).ok();
-    producer.try_push(Command::Connect { src: osc_id, dst: filter_id, slot: 0 }).ok();
-    producer.try_push(Command::SetOutputNode { id: filter_id }).ok();
+    producer
+        .try_push(Command::Connect {
+            src: osc_id,
+            dst: filter_id,
+            slot: 0,
+        })
+        .ok();
+    producer
+        .try_push(Command::SetOutputNode { id: filter_id })
+        .ok();
 
     // Set oscillator parameters: frequency=220Hz, amplitude=0.5, waveform=1 (sawtooth)
-    producer.try_push(Command::UpdateParam {
-        node: osc_id,
-        param_index: 0,
-        new_param: Param::new(220.0),  // frequency
-    }).ok();
-    producer.try_push(Command::UpdateParam {
-        node: osc_id,
-        param_index: 1,
-        new_param: Param::new(0.5),    // amplitude
-    }).ok();
-    producer.try_push(Command::UpdateParam {
-        node: osc_id,
-        param_index: 2,
-        new_param: Param::new(1.0),    // waveform (1=sawtooth)
-    }).ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: osc_id,
+            param_index: 0,
+            new_param: Param::new(220.0), // frequency
+        })
+        .ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: osc_id,
+            param_index: 1,
+            new_param: Param::new(0.5), // amplitude
+        })
+        .ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: osc_id,
+            param_index: 2,
+            new_param: Param::new(1.0), // waveform (1=sawtooth)
+        })
+        .ok();
 
     // Set filter parameters: cutoff=200Hz, Q=1.0, mode=0 (low-pass)
-    producer.try_push(Command::UpdateParam {
-        node: filter_id,
-        param_index: 0,
-        new_param: Param::new(200.0),  // cutoff
-    }).ok();
-    producer.try_push(Command::UpdateParam {
-        node: filter_id,
-        param_index: 1,
-        new_param: Param::new(1.0),    // Q (resonance)
-    }).ok();
-    producer.try_push(Command::UpdateParam {
-        node: filter_id,
-        param_index: 2,
-        new_param: Param::new(0.0),    // mode (0=LP)
-    }).ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: filter_id,
+            param_index: 0,
+            new_param: Param::new(200.0), // cutoff
+        })
+        .ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: filter_id,
+            param_index: 1,
+            new_param: Param::new(1.0), // Q (resonance)
+        })
+        .ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: filter_id,
+            param_index: 2,
+            new_param: Param::new(0.0), // mode (0=LP)
+        })
+        .ok();
 
     println!("  ✅ Oscillator (220 Hz sawtooth) → Filter (LP) → Output");
     println!();
@@ -140,11 +159,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Update filter cutoff parameter
         let new_cutoff = Param::new(current_cutoff);
-        producer.try_push(Command::UpdateParam {
-            node: filter_id,
-            param_index: 0,
-            new_param: new_cutoff,
-        }).ok();
+        producer
+            .try_push(Command::UpdateParam {
+                node: filter_id,
+                param_index: 0,
+                new_param: new_cutoff,
+            })
+            .ok();
 
         // Process one block
         scheduler.process_block(&mut consumer, &mut output_buffer);
@@ -160,8 +181,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Progress indicator
         if samples_rendered % (SAMPLE_RATE as usize) == 0 {
             let seconds = samples_rendered / SAMPLE_RATE as usize;
-            println!("  ⏱️  {} / {} seconds (cutoff: {:.0} Hz)", 
-                     seconds, DURATION_SECS as usize, current_cutoff);
+            println!(
+                "  ⏱️  {} / {} seconds (cutoff: {:.0} Hz)",
+                seconds, DURATION_SECS as usize, current_cutoff
+            );
         }
     }
 

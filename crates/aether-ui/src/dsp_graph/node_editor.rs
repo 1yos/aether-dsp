@@ -1,6 +1,6 @@
 // Node editor - main view combining canvas, library, and inspector
 
-use super::{GraphCanvas, NodeLibrary, Inspector, DspGraphState};
+use super::{DspGraphState, GraphCanvas, Inspector, NodeLibrary};
 use crate::theme::{AetherTheme, Spacing};
 use iced::widget::{button, container, row, text};
 use iced::{Element, Length};
@@ -31,24 +31,21 @@ impl NodeEditor {
 
     pub fn view(&self) -> Element<'_, Message> {
         let toolbar = self.view_toolbar();
-        
+
         let library_panel = self.library.view().map(Message::Library);
-        
+
         let canvas_view = self.canvas.view().map(Message::Canvas);
-        
-        let selected_node = self.canvas.state().selected_node
+
+        let selected_node = self
+            .canvas
+            .state()
+            .selected_node
             .and_then(|id| self.canvas.state().nodes.get(&id));
         let inspector_panel = self.inspector.view(selected_node).map(Message::Inspector);
 
-        let main_area = row![
-            library_panel,
-            canvas_view,
-            inspector_panel,
-        ]
-        .spacing(0);
+        let main_area = row![library_panel, canvas_view, inspector_panel,].spacing(0);
 
-        let content = iced::widget::column![toolbar, main_area]
-            .spacing(0);
+        let content = iced::widget::column![toolbar, main_area].spacing(0);
 
         container(content)
             .width(Length::Fill)
@@ -121,7 +118,7 @@ impl NodeEditor {
             Message::Library(library_msg) => {
                 // Update library state first
                 self.library.update(library_msg.clone());
-                
+
                 // Handle library interactions
                 if let super::node_library::Message::NodeSelected(node_type) = library_msg {
                     // Add node to canvas at center
@@ -138,7 +135,7 @@ impl NodeEditor {
                     super::inspector::Message::ParameterChanged(param_name, value) => {
                         // Update inspector's internal state
                         self.inspector.update_parameter(param_name.clone(), value);
-                        
+
                         // Update node's parameter
                         if let Some(node_id) = self.canvas.state().selected_node {
                             if let Some(node) = self.canvas.state_mut().nodes.get_mut(&node_id) {

@@ -17,11 +17,9 @@ pub struct WelcomeScreen;
 
 impl WelcomeScreen {
     pub fn view() -> Element<'static, Message> {
-        let title = text("AETHER STUDIO")
-            .size(32)
-            .style(|_theme| text::Style {
-                color: Some(AetherTheme::TEXT_PRIMARY),
-            });
+        let title = text("AETHER STUDIO").size(32).style(|_theme| text::Style {
+            color: Some(AetherTheme::TEXT_PRIMARY),
+        });
 
         let subtitle = text("What would you like to build today?")
             .size(18)
@@ -94,29 +92,21 @@ impl WelcomeScreen {
 
         let icon = text(icon_str).size(48);
 
-        let name = text(name_str)
-            .size(16)
-            .style(|_theme| text::Style {
-                color: Some(AetherTheme::TEXT_PRIMARY),
-            });
+        let name = text(name_str).size(16).style(|_theme| text::Style {
+            color: Some(AetherTheme::TEXT_PRIMARY),
+        });
 
-        let description = text(desc_str)
-            .size(12)
-            .style(|_theme| text::Style {
-                color: Some(AetherTheme::TEXT_SECONDARY),
-            });
+        let description = text(desc_str).size(12).style(|_theme| text::Style {
+            color: Some(AetherTheme::TEXT_SECONDARY),
+        });
 
-        let complexity = text(complexity_str)
-            .size(10)
-            .style(|_theme| text::Style {
-                color: Some(AetherTheme::TEXT_DISABLED),
-            });
+        let complexity = text(complexity_str).size(10).style(|_theme| text::Style {
+            color: Some(AetherTheme::TEXT_DISABLED),
+        });
 
-        let time = text(time_str)
-            .size(10)
-            .style(|_theme| text::Style {
-                color: Some(AetherTheme::TEXT_DISABLED),
-            });
+        let time = text(time_str).size(10).style(|_theme| text::Style {
+            color: Some(AetherTheme::TEXT_DISABLED),
+        });
 
         let create_button = button(text("New Project"))
             .on_press(Message::CreateProject(project_type))

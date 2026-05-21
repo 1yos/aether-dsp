@@ -9,12 +9,7 @@
 //! - oscillator_square_440hz.wav
 //! - oscillator_triangle_440hz.wav
 
-use aether_core::{
-    node::DspNode,
-    param::ParamBlock,
-    BUFFER_SIZE,
-    MAX_INPUTS,
-};
+use aether_core::{node::DspNode, param::ParamBlock, BUFFER_SIZE, MAX_INPUTS};
 use aether_nodes::oscillator::Oscillator;
 use hound::{WavSpec, WavWriter};
 
@@ -43,10 +38,10 @@ fn render_waveform(waveform: f32, waveform_name: &str, filename: &str) {
     let mut params = ParamBlock::new();
 
     // Parameters: frequency, amplitude, waveform, midi_note
-    params.add(440.0);    // A4
-    params.add(0.5);      // 50% amplitude
+    params.add(440.0); // A4
+    params.add(0.5); // 50% amplitude
     params.add(waveform); // Waveform type
-    params.add(-1.0);     // Use frequency param (not MIDI)
+    params.add(-1.0); // Use frequency param (not MIDI)
 
     let inputs = [None; MAX_INPUTS];
     let mut samples_rendered = 0;
@@ -75,9 +70,12 @@ fn main() {
     render_waveform(WAVEFORM_SINE, "Sine", "oscillator_sine_440hz.wav");
     render_waveform(WAVEFORM_SAW, "Saw", "oscillator_saw_440hz.wav");
     render_waveform(WAVEFORM_SQUARE, "Square", "oscillator_square_440hz.wav");
-    render_waveform(WAVEFORM_TRIANGLE, "Triangle", "oscillator_triangle_440hz.wav");
+    render_waveform(
+        WAVEFORM_TRIANGLE,
+        "Triangle",
+        "oscillator_triangle_440hz.wav",
+    );
 
     println!("\n✓ All waveforms rendered successfully!");
     println!("Play the files with: ffplay oscillator_sine_440hz.wav");
 }
-

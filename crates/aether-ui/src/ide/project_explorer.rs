@@ -37,11 +37,7 @@ impl ProjectExplorer {
             });
 
         let content = if let Some(root) = &self.root_path {
-            column![
-                title,
-                self.view_directory(root, 0)
-            ]
-            .spacing(Spacing::XS)
+            column![title, self.view_directory(root, 0)].spacing(Spacing::XS)
         } else {
             column![
                 title,
@@ -54,21 +50,19 @@ impl ProjectExplorer {
             .spacing(Spacing::SM)
         };
 
-        container(
-            scrollable(content.padding(Spacing::MD))
-        )
-        .width(250)
-        .height(Length::Fill)
-        .style(|_theme| container::Style {
-            background: Some(AetherTheme::PANEL_BACKGROUND.into()),
-            border: iced::Border {
-                color: AetherTheme::NODE_BACKGROUND,
-                width: 1.0,
-                radius: 0.0.into(),
-            },
-            ..Default::default()
-        })
-        .into()
+        container(scrollable(content.padding(Spacing::MD)))
+            .width(250)
+            .height(Length::Fill)
+            .style(|_theme| container::Style {
+                background: Some(AetherTheme::PANEL_BACKGROUND.into()),
+                border: iced::Border {
+                    color: AetherTheme::NODE_BACKGROUND,
+                    width: 1.0,
+                    radius: 0.0.into(),
+                },
+                ..Default::default()
+            })
+            .into()
     }
 
     fn view_directory(&self, _path: &PathBuf, _indent: usize) -> Element<'_, Message> {
@@ -87,13 +81,9 @@ impl ProjectExplorer {
         let mut col = column![].spacing(Spacing::XS);
 
         for (name, _is_folder) in items {
-            let btn = button(
-                text(name)
-                    .size(12)
-                    .style(|_theme| text::Style {
-                        color: Some(AetherTheme::TEXT_PRIMARY),
-                    })
-            )
+            let btn = button(text(name).size(12).style(|_theme| text::Style {
+                color: Some(AetherTheme::TEXT_PRIMARY),
+            }))
             .style(button::text)
             .padding(Spacing::XS);
 

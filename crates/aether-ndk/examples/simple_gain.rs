@@ -56,8 +56,10 @@ fn main() {
     println!("\nParameters:");
 
     for def in SimpleGain::param_defs() {
-        println!("  • {} [{:.1}–{:.1}] default={:.2}",
-            def.name, def.min, def.max, def.default);
+        println!(
+            "  • {} [{:.1}–{:.1}] default={:.2}",
+            def.name, def.min, def.max, def.default
+        );
     }
 
     // Wrap for use in the engine

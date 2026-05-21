@@ -25,15 +25,14 @@
 //! Each hit demonstrates how room size affects reverb tail length and density.
 
 use aether_core::{
-    command::Command,
-    graph::DspGraph,
-    param::Param,
-    scheduler::Scheduler,
-    BUFFER_SIZE,
+    command::Command, graph::DspGraph, param::Param, scheduler::Scheduler, BUFFER_SIZE,
 };
 use aether_nodes::{envelope::AdsrEnvelope, oscillator::Oscillator, reverb::Reverb};
 use hound::{WavSpec, WavWriter};
-use ringbuf::{traits::{Producer, Split}, HeapRb};
+use ringbuf::{
+    traits::{Producer, Split},
+    HeapRb,
+};
 
 const SAMPLE_RATE: f32 = 48_000.0;
 const DURATION_SECS: f32 = 12.0;
@@ -79,75 +78,113 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     producer.try_push(Command::AddNode { id: osc_id }).ok();
     producer.try_push(Command::AddNode { id: env_id }).ok();
     producer.try_push(Command::AddNode { id: reverb_id }).ok();
-    producer.try_push(Command::Connect { src: osc_id, dst: env_id, slot: 0 }).ok();
-    producer.try_push(Command::Connect { src: env_id, dst: reverb_id, slot: 0 }).ok();
-    producer.try_push(Command::SetOutputNode { id: reverb_id }).ok();
+    producer
+        .try_push(Command::Connect {
+            src: osc_id,
+            dst: env_id,
+            slot: 0,
+        })
+        .ok();
+    producer
+        .try_push(Command::Connect {
+            src: env_id,
+            dst: reverb_id,
+            slot: 0,
+        })
+        .ok();
+    producer
+        .try_push(Command::SetOutputNode { id: reverb_id })
+        .ok();
 
     // Set oscillator parameters: frequency=200Hz (low drum), amplitude=1.0, sine wave
-    producer.try_push(Command::UpdateParam {
-        node: osc_id,
-        param_index: 0,
-        new_param: Param::new(200.0),  // frequency
-    }).ok();
-    producer.try_push(Command::UpdateParam {
-        node: osc_id,
-        param_index: 1,
-        new_param: Param::new(1.0),    // amplitude
-    }).ok();
-    producer.try_push(Command::UpdateParam {
-        node: osc_id,
-        param_index: 2,
-        new_param: Param::new(0.0),    // waveform (0=sine)
-    }).ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: osc_id,
+            param_index: 0,
+            new_param: Param::new(200.0), // frequency
+        })
+        .ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: osc_id,
+            param_index: 1,
+            new_param: Param::new(1.0), // amplitude
+        })
+        .ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: osc_id,
+            param_index: 2,
+            new_param: Param::new(0.0), // waveform (0=sine)
+        })
+        .ok();
 
     // Set envelope parameters: very short for percussive sound
-    producer.try_push(Command::UpdateParam {
-        node: env_id,
-        param_index: 0,
-        new_param: Param::new(0.001),  // attack (1ms)
-    }).ok();
-    producer.try_push(Command::UpdateParam {
-        node: env_id,
-        param_index: 1,
-        new_param: Param::new(0.05),   // decay (50ms)
-    }).ok();
-    producer.try_push(Command::UpdateParam {
-        node: env_id,
-        param_index: 2,
-        new_param: Param::new(0.0),    // sustain (0 - no sustain)
-    }).ok();
-    producer.try_push(Command::UpdateParam {
-        node: env_id,
-        param_index: 3,
-        new_param: Param::new(0.1),    // release (100ms)
-    }).ok();
-    producer.try_push(Command::UpdateParam {
-        node: env_id,
-        param_index: 4,
-        new_param: Param::new(0.0),    // gate (off)
-    }).ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: env_id,
+            param_index: 0,
+            new_param: Param::new(0.001), // attack (1ms)
+        })
+        .ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: env_id,
+            param_index: 1,
+            new_param: Param::new(0.05), // decay (50ms)
+        })
+        .ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: env_id,
+            param_index: 2,
+            new_param: Param::new(0.0), // sustain (0 - no sustain)
+        })
+        .ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: env_id,
+            param_index: 3,
+            new_param: Param::new(0.1), // release (100ms)
+        })
+        .ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: env_id,
+            param_index: 4,
+            new_param: Param::new(0.0), // gate (off)
+        })
+        .ok();
 
     // Set initial reverb parameters: room=0.3, damping=0.5, wet=0.8, width=1.0
-    producer.try_push(Command::UpdateParam {
-        node: reverb_id,
-        param_index: 0,
-        new_param: Param::new(0.3),    // room size
-    }).ok();
-    producer.try_push(Command::UpdateParam {
-        node: reverb_id,
-        param_index: 1,
-        new_param: Param::new(0.5),    // damping
-    }).ok();
-    producer.try_push(Command::UpdateParam {
-        node: reverb_id,
-        param_index: 2,
-        new_param: Param::new(0.8),    // wet
-    }).ok();
-    producer.try_push(Command::UpdateParam {
-        node: reverb_id,
-        param_index: 3,
-        new_param: Param::new(1.0),    // width
-    }).ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: reverb_id,
+            param_index: 0,
+            new_param: Param::new(0.3), // room size
+        })
+        .ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: reverb_id,
+            param_index: 1,
+            new_param: Param::new(0.5), // damping
+        })
+        .ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: reverb_id,
+            param_index: 2,
+            new_param: Param::new(0.8), // wet
+        })
+        .ok();
+    producer
+        .try_push(Command::UpdateParam {
+            node: reverb_id,
+            param_index: 3,
+            new_param: Param::new(1.0), // width
+        })
+        .ok();
 
     println!("  ✅ Oscillator → Envelope → Reverb → Output");
     println!("  🥁 Percussive sound: A=1ms, D=50ms, S=0, R=100ms");
@@ -187,26 +224,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             if current_time >= trigger_time && current_time < trigger_time + 0.01 {
                 // Update room size
-                producer.try_push(Command::UpdateParam {
-                    node: reverb_id,
-                    param_index: 0,
-                    new_param: Param::new(room_size),
-                }).ok();
+                producer
+                    .try_push(Command::UpdateParam {
+                        node: reverb_id,
+                        param_index: 0,
+                        new_param: Param::new(room_size),
+                    })
+                    .ok();
 
                 // Trigger gate ON then OFF
-                producer.try_push(Command::UpdateParam {
-                    node: env_id,
-                    param_index: 4,
-                    new_param: Param::new(1.0),  // gate ON
-                }).ok();
-                producer.try_push(Command::UpdateParam {
-                    node: env_id,
-                    param_index: 4,
-                    new_param: Param::new(0.0),  // gate OFF
-                }).ok();
+                producer
+                    .try_push(Command::UpdateParam {
+                        node: env_id,
+                        param_index: 4,
+                        new_param: Param::new(1.0), // gate ON
+                    })
+                    .ok();
+                producer
+                    .try_push(Command::UpdateParam {
+                        node: env_id,
+                        param_index: 4,
+                        new_param: Param::new(0.0), // gate OFF
+                    })
+                    .ok();
 
-                println!("  🥁 Hit {} @ {:.1}s - {} (size={:.1})", 
-                         current_hit + 1, current_time, description, room_size);
+                println!(
+                    "  🥁 Hit {} @ {:.1}s - {} (size={:.1})",
+                    current_hit + 1,
+                    current_time,
+                    description,
+                    room_size
+                );
 
                 current_hit += 1;
             }

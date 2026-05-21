@@ -1,7 +1,7 @@
 //! MIDI router — dispatches events to registered instrument handlers.
 
-use std::collections::HashMap;
 use crate::event::MidiEvent;
+use std::collections::HashMap;
 
 /// A function that handles a MIDI event.
 pub type MidiHandler = Box<dyn Fn(&MidiEvent) + Send + Sync>;
@@ -14,7 +14,9 @@ pub struct MidiRouter {
 
 impl MidiRouter {
     pub fn new() -> Self {
-        Self { handlers: HashMap::new() }
+        Self {
+            handlers: HashMap::new(),
+        }
     }
 
     /// Register a handler for a specific MIDI channel (0–15).
@@ -27,11 +29,15 @@ impl MidiRouter {
     pub fn dispatch(&self, event: &MidiEvent) {
         // Channel-specific handlers
         if let Some(handlers) = self.handlers.get(&event.channel) {
-            for h in handlers { h(event); }
+            for h in handlers {
+                h(event);
+            }
         }
         // All-channel handlers
         if let Some(handlers) = self.handlers.get(&255) {
-            for h in handlers { h(event); }
+            for h in handlers {
+                h(event);
+            }
         }
     }
 
@@ -42,5 +48,7 @@ impl MidiRouter {
 }
 
 impl Default for MidiRouter {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

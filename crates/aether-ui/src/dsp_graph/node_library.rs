@@ -1,6 +1,6 @@
 // Node library panel - browsable list of available DSP nodes
 
-use super::{NodeType, NodeCategory, Waveform};
+use super::{NodeCategory, NodeType, Waveform};
 use crate::theme::{AetherTheme, Spacing};
 use iced::widget::{button, column, container, scrollable, text, text_input};
 use iced::{Element, Length};
@@ -41,11 +41,9 @@ impl NodeLibrary {
     }
 
     pub fn view(&self) -> Element<'_, Message> {
-        let title = text("Node Library")
-            .size(16)
-            .style(|_theme| text::Style {
-                color: Some(AetherTheme::TEXT_PRIMARY),
-            });
+        let title = text("Node Library").size(16).style(|_theme| text::Style {
+            color: Some(AetherTheme::TEXT_PRIMARY),
+        });
 
         let search = text_input("Search nodes...", &self.search_query)
             .on_input(Message::SearchChanged)
@@ -110,9 +108,7 @@ impl NodeLibrary {
             category_buttons.push(btn.into());
         }
 
-        column(category_buttons)
-            .spacing(Spacing::XS)
-            .into()
+        column(category_buttons).spacing(Spacing::XS).into()
     }
 
     fn view_nodes(&self) -> Element<'_, Message> {
@@ -122,13 +118,9 @@ impl NodeLibrary {
             .into_iter()
             .map(|node_type| {
                 let name = node_type.name().to_string();
-                let btn = button(
-                    text(name)
-                        .size(12)
-                        .style(|_theme| text::Style {
-                            color: Some(AetherTheme::TEXT_PRIMARY),
-                        })
-                )
+                let btn = button(text(name).size(12).style(|_theme| text::Style {
+                    color: Some(AetherTheme::TEXT_PRIMARY),
+                }))
                 .on_press(Message::NodeSelected(node_type))
                 .width(Length::Fill)
                 .padding(Spacing::SM)
@@ -178,7 +170,9 @@ impl NodeLibrary {
             NodeType::MidiInput,
             NodeType::MidiOutput,
             // Generators
-            NodeType::Oscillator { waveform: Waveform::Sine },
+            NodeType::Oscillator {
+                waveform: Waveform::Sine,
+            },
             NodeType::NoiseGenerator,
             NodeType::SamplePlayer,
             NodeType::Wavetable,

@@ -38,17 +38,21 @@ use std::collections::HashMap;
 pub struct ValidationError {
     /// JSON path where error occurred (e.g., "/nodes/0/params/gain").
     pub path: String,
-    
+
     /// Error message.
     pub message: String,
-    
+
     /// Error kind.
     pub kind: ValidationErrorKind,
 }
 
 impl ValidationError {
     /// Creates a new validation error.
-    pub fn new(path: impl Into<String>, message: impl Into<String>, kind: ValidationErrorKind) -> Self {
+    pub fn new(
+        path: impl Into<String>,
+        message: impl Into<String>,
+        kind: ValidationErrorKind,
+    ) -> Self {
         Self {
             path: path.into(),
             message: message.into(),
@@ -188,7 +192,7 @@ impl SchemaValidator {
 
                 for (i, node) in nodes_array.iter().enumerate() {
                     let path = format!("/nodes/{}", i);
-                    
+
                     if !node.is_object() {
                         errors.push(ValidationError::new(
                             &path,
@@ -250,7 +254,7 @@ impl SchemaValidator {
 
                 for (i, conn) in connections_array.iter().enumerate() {
                     let path = format!("/connections/{}", i);
-                    
+
                     if !conn.is_object() {
                         errors.push(ValidationError::new(
                             &path,
@@ -284,7 +288,11 @@ impl SchemaValidator {
     }
 
     /// Validates a node configuration.
-    pub fn validate_node_config(&self, node_type: &str, config: &Value) -> Result<(), Vec<ValidationError>> {
+    pub fn validate_node_config(
+        &self,
+        node_type: &str,
+        config: &Value,
+    ) -> Result<(), Vec<ValidationError>> {
         let mut errors = Vec::new();
 
         if let Some(schema) = self.node_schemas.get(node_type) {
@@ -299,7 +307,10 @@ impl SchemaValidator {
                                 if value_f32 < param_schema.min || value_f32 > param_schema.max {
                                     errors.push(ValidationError::new(
                                         format!("/params/{}", param_name),
-                                        format!("Value {} out of range [{}, {}]", value_f32, param_schema.min, param_schema.max),
+                                        format!(
+                                            "Value {} out of range [{}, {}]",
+                                            value_f32, param_schema.min, param_schema.max
+                                        ),
                                         ValidationErrorKind::OutOfRange,
                                     ));
                                 }
@@ -335,13 +346,13 @@ impl Default for SchemaValidator {
 pub struct NodeSchema {
     /// Node type name.
     pub node_type: String,
-    
+
     /// Parameter schemas.
     pub params: HashMap<String, ParamSchema>,
-    
+
     /// Number of inputs.
     pub num_inputs: usize,
-    
+
     /// Number of outputs.
     pub num_outputs: usize,
 }
@@ -368,16 +379,16 @@ impl NodeSchema {
 pub struct ParamSchema {
     /// Parameter name.
     pub name: String,
-    
+
     /// Minimum value.
     pub min: f32,
-    
+
     /// Maximum value.
     pub max: f32,
-    
+
     /// Default value.
     pub default: f32,
-    
+
     /// Unit (e.g., "Hz", "dB").
     pub unit: Option<String>,
 }
@@ -408,7 +419,7 @@ mod tests {
     #[test]
     fn test_validate_preset_valid() {
         let validator = SchemaValidator::new();
-        
+
         let json = r#"{
             "name": "Test Preset",
             "nodes": [
@@ -428,7 +439,7 @@ mod tests {
     #[test]
     fn test_validate_preset_missing_name() {
         let validator = SchemaValidator::new();
-        
+
         let json = r#"{
             "nodes": [],
             "connections": []
@@ -436,7 +447,7 @@ mod tests {
 
         let result = validator.validate_preset(json);
         assert!(result.is_err());
-        
+
         let errors = result.unwrap_err();
         assert_eq!(errors.len(), 1);
         assert_eq!(errors[0].kind, ValidationErrorKind::MissingField);
@@ -446,7 +457,7 @@ mod tests {
     #[test]
     fn test_validate_preset_duplicate_node_id() {
         let validator = SchemaValidator::new();
-        
+
         let json = r#"{
             "name": "Test",
             "nodes": [
@@ -458,20 +469,22 @@ mod tests {
 
         let result = validator.validate_preset(json);
         assert!(result.is_err());
-        
+
         let errors = result.unwrap_err();
-        assert!(errors.iter().any(|e| e.kind == ValidationErrorKind::Duplicate));
+        assert!(errors
+            .iter()
+            .any(|e| e.kind == ValidationErrorKind::Duplicate));
     }
 
     #[test]
     fn test_validate_preset_invalid_json() {
         let validator = SchemaValidator::new();
-        
+
         let json = "{ invalid json }";
 
         let result = validator.validate_preset(json);
         assert!(result.is_err());
-        
+
         let errors = result.unwrap_err();
         assert_eq!(errors.len(), 1);
         assert_eq!(errors[0].kind, ValidationErrorKind::InvalidFormat);
@@ -480,9 +493,12 @@ mod tests {
     #[test]
     fn test_validate_node_config_param_out_of_range() {
         let mut validator = SchemaValidator::new();
-        
+
         let mut schema = NodeSchema::new("Oscillator", 0, 1);
-        schema.add_param("frequency", ParamSchema::new("frequency", 20.0, 20000.0, 440.0));
+        schema.add_param(
+            "frequency",
+            ParamSchema::new("frequency", 20.0, 20000.0, 440.0),
+        );
         validator.register_node_schema("Oscillator", schema);
 
         let config = serde_json::json!({
@@ -493,7 +509,7 @@ mod tests {
 
         let result = validator.validate_node_config("Oscillator", &config);
         assert!(result.is_err());
-        
+
         let errors = result.unwrap_err();
         assert_eq!(errors.len(), 1);
         assert_eq!(errors[0].kind, ValidationErrorKind::OutOfRange);
@@ -502,7 +518,10 @@ mod tests {
     #[test]
     fn test_node_schema_builder() {
         let mut schema = NodeSchema::new("Filter", 1, 1);
-        schema.add_param("cutoff", ParamSchema::new("cutoff", 20.0, 20000.0, 1000.0).with_unit("Hz"));
+        schema.add_param(
+            "cutoff",
+            ParamSchema::new("cutoff", 20.0, 20000.0, 1000.0).with_unit("Hz"),
+        );
         schema.add_param("resonance", ParamSchema::new("resonance", 0.0, 1.0, 0.5));
 
         assert_eq!(schema.node_type, "Filter");

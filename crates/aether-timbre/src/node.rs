@@ -9,8 +9,8 @@
 //! Params:
 //!   0: Amount (0.0 = dry, 1.0 = full transfer)
 
-use aether_core::{node::DspNode, param::ParamBlock, BUFFER_SIZE, MAX_INPUTS};
 use crate::{analysis::TimbreProfile, transfer::TimbreTransfer};
+use aether_core::{node::DspNode, param::ParamBlock, BUFFER_SIZE, MAX_INPUTS};
 use std::sync::{Arc, Mutex};
 
 /// A real-time timbre transfer node.

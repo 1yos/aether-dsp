@@ -3,9 +3,9 @@
 //! The `NodeRegistry` maps type name strings → constructor functions,
 //! enabling the manifest system and CLI to instantiate nodes by name.
 
-use std::collections::HashMap;
-use aether_core::node::DspNode;
 use crate::ParamDef;
+use aether_core::node::DspNode;
+use std::collections::HashMap;
 
 /// A constructor that produces a boxed DspNode.
 pub type NodeFactory = fn() -> Box<dyn DspNode>;
@@ -25,7 +25,9 @@ pub struct NodeRegistry {
 
 impl NodeRegistry {
     pub fn new() -> Self {
-        Self { entries: HashMap::new() }
+        Self {
+            entries: HashMap::new(),
+        }
     }
 
     /// Register a node type.
@@ -50,12 +52,18 @@ impl NodeRegistry {
         self.entries.get(type_name).map(|e| e.param_defs)
     }
 
-    pub fn len(&self) -> usize { self.entries.len() }
-    pub fn is_empty(&self) -> bool { self.entries.is_empty() }
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
 }
 
 impl Default for NodeRegistry {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// Register a node type into a `NodeRegistry`.
@@ -67,7 +75,7 @@ impl Default for NodeRegistry {
 #[macro_export]
 macro_rules! register_node {
     ($registry:expr, $ty:ty) => {{
-        use $crate::{AetherNodeMeta, DspProcess, into_node};
+        use $crate::{into_node, AetherNodeMeta, DspProcess};
         $registry.register($crate::node::NodeEntry {
             type_name: <$ty as AetherNodeMeta>::type_name(),
             param_defs: <$ty as AetherNodeMeta>::param_defs(),

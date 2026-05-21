@@ -31,8 +31,8 @@
 use midir::{Ignore, MidiInput};
 use std::error::Error;
 use std::io::{stdin, stdout, Write};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!("🎹 MIDI Input Example");
@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Get available MIDI input ports
     let in_ports = midi_in.ports();
-    
+
     if in_ports.is_empty() {
         println!("❌ No MIDI input devices found!");
         println!();
@@ -138,8 +138,13 @@ fn handle_midi_message(message: &[u8]) {
             if message.len() >= 3 {
                 let note = message[1];
                 let velocity = message[2];
-                println!("  🎵 Note OFF  | Ch:{:2} | Note:{:3} ({:>3}) | Vel:{:3}",
-                         channel, note, note_name(note), velocity);
+                println!(
+                    "  🎵 Note OFF  | Ch:{:2} | Note:{:3} ({:>3}) | Vel:{:3}",
+                    channel,
+                    note,
+                    note_name(note),
+                    velocity
+                );
             }
         }
         0x90 => {
@@ -148,11 +153,21 @@ fn handle_midi_message(message: &[u8]) {
                 let note = message[1];
                 let velocity = message[2];
                 if velocity == 0 {
-                    println!("  🎵 Note OFF  | Ch:{:2} | Note:{:3} ({:>3}) | Vel:{:3}",
-                             channel, note, note_name(note), velocity);
+                    println!(
+                        "  🎵 Note OFF  | Ch:{:2} | Note:{:3} ({:>3}) | Vel:{:3}",
+                        channel,
+                        note,
+                        note_name(note),
+                        velocity
+                    );
                 } else {
-                    println!("  🎵 Note ON   | Ch:{:2} | Note:{:3} ({:>3}) | Vel:{:3}",
-                             channel, note, note_name(note), velocity);
+                    println!(
+                        "  🎵 Note ON   | Ch:{:2} | Note:{:3} ({:>3}) | Vel:{:3}",
+                        channel,
+                        note,
+                        note_name(note),
+                        velocity
+                    );
                 }
             }
         }
@@ -161,8 +176,13 @@ fn handle_midi_message(message: &[u8]) {
             if message.len() >= 3 {
                 let note = message[1];
                 let pressure = message[2];
-                println!("  🎹 Poly AT   | Ch:{:2} | Note:{:3} ({:>3}) | Pressure:{:3}",
-                         channel, note, note_name(note), pressure);
+                println!(
+                    "  🎹 Poly AT   | Ch:{:2} | Note:{:3} ({:>3}) | Pressure:{:3}",
+                    channel,
+                    note,
+                    note_name(note),
+                    pressure
+                );
             }
         }
         0xB0 => {
@@ -171,24 +191,27 @@ fn handle_midi_message(message: &[u8]) {
                 let controller = message[1];
                 let value = message[2];
                 let cc_name = control_change_name(controller);
-                println!("  🎛️  CC        | Ch:{:2} | CC:{:3} ({:<20}) | Val:{:3}",
-                         channel, controller, cc_name, value);
+                println!(
+                    "  🎛️  CC        | Ch:{:2} | CC:{:3} ({:<20}) | Val:{:3}",
+                    channel, controller, cc_name, value
+                );
             }
         }
         0xC0 => {
             // Program Change
             if message.len() >= 2 {
                 let program = message[1];
-                println!("  🎼 Program   | Ch:{:2} | Program:{:3}",
-                         channel, program);
+                println!("  🎼 Program   | Ch:{:2} | Program:{:3}", channel, program);
             }
         }
         0xD0 => {
             // Channel Aftertouch
             if message.len() >= 2 {
                 let pressure = message[1];
-                println!("  🎹 Chan AT   | Ch:{:2} | Pressure:{:3}",
-                         channel, pressure);
+                println!(
+                    "  🎹 Chan AT   | Ch:{:2} | Pressure:{:3}",
+                    channel, pressure
+                );
             }
         }
         0xE0 => {
@@ -198,8 +221,10 @@ fn handle_midi_message(message: &[u8]) {
                 let msb = message[2] as i32;
                 let bend = (msb << 7) | lsb;
                 let bend_normalized = (bend - 8192) as f32 / 8192.0;
-                println!("  🎚️  Pitch Bend| Ch:{:2} | Value:{:5} | Normalized:{:+.3}",
-                         channel, bend, bend_normalized);
+                println!(
+                    "  🎚️  Pitch Bend| Ch:{:2} | Value:{:5} | Normalized:{:+.3}",
+                    channel, bend, bend_normalized
+                );
             }
         }
         0xF0 => {
@@ -207,11 +232,11 @@ fn handle_midi_message(message: &[u8]) {
             match status {
                 0xF0 => println!("  📦 SysEx Start"),
                 0xF7 => println!("  📦 SysEx End"),
-                0xF8 => {}, // Timing clock (too frequent to print)
+                0xF8 => {} // Timing clock (too frequent to print)
                 0xFA => println!("  ▶️  Start"),
                 0xFB => println!("  ⏸️  Continue"),
                 0xFC => println!("  ⏹️  Stop"),
-                0xFE => {}, // Active sensing (too frequent to print)
+                0xFE => {} // Active sensing (too frequent to print)
                 0xFF => println!("  🔄 Reset"),
                 _ => println!("  ❓ Unknown system message: 0x{:02X}", status),
             }
@@ -224,7 +249,9 @@ fn handle_midi_message(message: &[u8]) {
 
 /// Convert MIDI note number to note name
 fn note_name(note: u8) -> String {
-    let note_names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    let note_names = [
+        "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+    ];
     let octave = (note / 12) as i32 - 1;
     let name = note_names[(note % 12) as usize];
     format!("{}{}", name, octave)

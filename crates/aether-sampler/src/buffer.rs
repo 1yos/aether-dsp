@@ -43,15 +43,20 @@ impl SampleBuffer {
             hound::SampleFormat::Int => {
                 let max = (1i64 << (spec.bits_per_sample - 1)) as f32;
                 match spec.bits_per_sample {
-                    16 => reader.samples::<i16>()
+                    16 => reader
+                        .samples::<i16>()
                         .map(|s| s.unwrap_or(0) as f32 / max)
                         .collect(),
-                    24 | 32 => reader.samples::<i32>()
+                    24 | 32 => reader
+                        .samples::<i32>()
                         .map(|s| s.unwrap_or(0) as f32 / max)
                         .collect(),
-                    _ => return Err(BufferError::Format(
-                        format!("Unsupported bit depth: {}", spec.bits_per_sample)
-                    )),
+                    _ => {
+                        return Err(BufferError::Format(format!(
+                            "Unsupported bit depth: {}",
+                            spec.bits_per_sample
+                        )))
+                    }
                 }
             }
         };
@@ -106,9 +111,7 @@ impl SampleBuffer {
         let sample_rate = spec.sample_rate;
 
         let samples: Vec<f32> = match spec.sample_format {
-            hound::SampleFormat::Float => {
-                wav.samples::<f32>().map(|s| s.unwrap_or(0.0)).collect()
-            }
+            hound::SampleFormat::Float => wav.samples::<f32>().map(|s| s.unwrap_or(0.0)).collect(),
             hound::SampleFormat::Int => {
                 let max = (1i64 << (spec.bits_per_sample - 1)) as f32;
                 match spec.bits_per_sample {

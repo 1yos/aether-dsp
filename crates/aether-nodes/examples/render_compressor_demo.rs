@@ -7,12 +7,7 @@
 //! - compressor_before.wav (uncompressed)
 //! - compressor_after.wav (compressed)
 
-use aether_core::{
-    node::DspNode,
-    param::ParamBlock,
-    BUFFER_SIZE,
-    MAX_INPUTS,
-};
+use aether_core::{node::DspNode, param::ParamBlock, BUFFER_SIZE, MAX_INPUTS};
 use aether_nodes::Compressor;
 use hound::{WavSpec, WavWriter};
 
@@ -22,20 +17,20 @@ const NUM_SAMPLES: usize = (SAMPLE_RATE as f32 * DURATION_SECS) as usize;
 
 fn generate_dynamic_signal(num_samples: usize, sample_rate: f32) -> Vec<f32> {
     let mut signal = Vec::with_capacity(num_samples);
-    
+
     for i in 0..num_samples {
         let t = i as f32 / sample_rate;
-        
+
         // 440 Hz sine wave
         let sine = (t * 440.0 * 2.0 * std::f32::consts::PI).sin();
-        
+
         // Amplitude envelope: quiet -> loud -> quiet -> loud
         let envelope_freq = 0.5; // 0.5 Hz (2 second period)
         let envelope = 0.2 + 0.6 * (t * envelope_freq * 2.0 * std::f32::consts::PI).sin().abs();
-        
+
         signal.push(sine * envelope);
     }
-    
+
     signal
 }
 
@@ -71,11 +66,11 @@ fn main() {
 
     // Parameters: threshold, ratio, attack, release, makeup, knee
     params.add(-20.0); // -20 dB threshold
-    params.add(4.0);   // 4:1 ratio
-    params.add(5.0);   // 5 ms attack
+    params.add(4.0); // 4:1 ratio
+    params.add(5.0); // 5 ms attack
     params.add(100.0); // 100 ms release
-    params.add(6.0);   // 6 dB makeup gain
-    params.add(3.0);   // 3 dB soft knee
+    params.add(6.0); // 6 dB makeup gain
+    params.add(3.0); // 3 dB soft knee
 
     let mut sample_idx = 0;
     let mut input_buffer = [0.0f32; BUFFER_SIZE];

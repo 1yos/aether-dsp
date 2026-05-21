@@ -31,11 +31,9 @@ impl Terminal {
     }
 
     pub fn view(&self) -> Element<'_, Message> {
-        let title = text("TERMINAL")
-            .size(12)
-            .style(|_theme| text::Style {
-                color: Some(AetherTheme::TEXT_SECONDARY),
-            });
+        let title = text("TERMINAL").size(12).style(|_theme| text::Style {
+            color: Some(AetherTheme::TEXT_SECONDARY),
+        });
 
         let output_display = scrollable(
             text(&self.output)
@@ -43,7 +41,7 @@ impl Terminal {
                 .font(iced::Font::MONOSPACE)
                 .style(|_theme| text::Style {
                     color: Some(AetherTheme::TEXT_PRIMARY),
-                })
+                }),
         )
         .height(Length::Fill);
 

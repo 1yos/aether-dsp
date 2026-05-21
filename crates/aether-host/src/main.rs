@@ -44,7 +44,14 @@ fn main() -> anyhow::Result<()> {
             dsn,
             sentry::ClientOptions {
                 release: sentry::release_name!(),
-                environment: Some(if cfg!(debug_assertions) { "development" } else { "production" }.into()),
+                environment: Some(
+                    if cfg!(debug_assertions) {
+                        "development"
+                    } else {
+                        "production"
+                    }
+                    .into(),
+                ),
                 ..Default::default()
             },
         )))
@@ -52,7 +59,9 @@ fn main() -> anyhow::Result<()> {
         None
     };
     let host = cpal::default_host();
-    let device = host.default_output_device().expect("No audio output device");
+    let device = host
+        .default_output_device()
+        .expect("No audio output device");
     let config = device.default_output_config()?;
     let sample_rate = config.sample_rate().0 as f32;
 
@@ -125,12 +134,15 @@ fn main() -> anyhow::Result<()> {
         // access the map without blocking the async runtime.
         let queues = Arc::clone(&midi_queues);
         let router = engine.router();
-        router.lock().unwrap().register(255, Box::new(move |event| {
-            let qs = queues.lock().unwrap();
-            for queue in qs.values() {
-                queue.lock().unwrap().push(event.clone());
-            }
-        }));
+        router.lock().unwrap().register(
+            255,
+            Box::new(move |event| {
+                let qs = queues.lock().unwrap();
+                for queue in qs.values() {
+                    queue.lock().unwrap().push(event.clone());
+                }
+            }),
+        );
     }
 
     let ws_state = Arc::new(WsState {
@@ -141,9 +153,12 @@ fn main() -> anyhow::Result<()> {
     });
 
     let stream = match config.sample_format() {
-        cpal::SampleFormat::F32 => {
-            build_stream::<f32>(&device, &config.into(), Arc::clone(&scheduler), Arc::clone(&midi_engine))?
-        }
+        cpal::SampleFormat::F32 => build_stream::<f32>(
+            &device,
+            &config.into(),
+            Arc::clone(&scheduler),
+            Arc::clone(&midi_engine),
+        )?,
         _ => anyhow::bail!("Unsupported sample format"),
     };
 

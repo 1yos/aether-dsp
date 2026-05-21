@@ -38,13 +38,17 @@ impl Limiter {
 
     #[inline(always)]
     fn linear_to_db(linear: f32) -> f32 {
-        if linear <= 1e-10 { return -200.0; }
+        if linear <= 1e-10 {
+            return -200.0;
+        }
         20.0 * linear.log10()
     }
 }
 
 impl Default for Limiter {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DspNode for Limiter {
@@ -59,16 +63,16 @@ impl DspNode for Limiter {
         let input = inputs[0].unwrap_or(&silence);
 
         let threshold_db = params.get(0).current.clamp(-24.0, 0.0);
-        let release_ms   = params.get(1).current.clamp(10.0, 1000.0);
-        let ceiling_db   = params.get(2).current.clamp(-12.0, 0.0);
+        let release_ms = params.get(1).current.clamp(10.0, 1000.0);
+        let ceiling_db = params.get(2).current.clamp(-12.0, 0.0);
 
         let threshold_linear = Self::db_to_linear(threshold_db);
-        let ceiling_linear   = Self::db_to_linear(ceiling_db);
-        let release_coeff    = (-1.0 / (release_ms * 0.001 * sample_rate)).exp();
+        let ceiling_linear = Self::db_to_linear(ceiling_db);
+        let release_coeff = (-1.0 / (release_ms * 0.001 * sample_rate)).exp();
 
         // Update lookahead size based on sample rate
-        self.lookahead_samples = ((LOOKAHEAD_MS * 0.001 * sample_rate) as usize)
-            .min(MAX_LOOKAHEAD_SAMPLES);
+        self.lookahead_samples =
+            ((LOOKAHEAD_MS * 0.001 * sample_rate) as usize).min(MAX_LOOKAHEAD_SAMPLES);
 
         for i in 0..BUFFER_SIZE {
             let x = input[i];
@@ -103,12 +107,14 @@ impl DspNode for Limiter {
             // Apply gain reduction and ceiling
             let limited = delayed * self.gain_env;
             output[i] = limited.clamp(-ceiling_linear, ceiling_linear);
-            
+
             params.tick_all();
         }
     }
 
-    fn type_name(&self) -> &'static str { "Limiter" }
+    fn type_name(&self) -> &'static str {
+        "Limiter"
+    }
 }
 
 #[cfg(test)]
@@ -120,12 +126,16 @@ mod tests {
         let mut limiter = Limiter::new();
         let mut params = ParamBlock::new();
         // threshold=0dB, release=100ms, ceiling=0dB
-        for &v in &[-0.0f32, 100.0, 0.0] { params.add(v); }
+        for &v in &[-0.0f32, 100.0, 0.0] {
+            params.add(v);
+        }
         let input = [0.0f32; BUFFER_SIZE];
         let inputs = [Some(&input); MAX_INPUTS];
         let mut output = [0.0f32; BUFFER_SIZE];
         limiter.process(&inputs, &mut output, &mut params, 48000.0);
-        for s in &output { assert!(s.abs() < 1e-6, "silence should pass through"); }
+        for s in &output {
+            assert!(s.abs() < 1e-6, "silence should pass through");
+        }
     }
 
     #[test]
@@ -133,21 +143,26 @@ mod tests {
         let mut limiter = Limiter::new();
         let mut params = ParamBlock::new();
         // threshold=-6dB, release=100ms, ceiling=0dB
-        for &v in &[-6.0f32, 100.0, 0.0] { params.add(v); }
-        
+        for &v in &[-6.0f32, 100.0, 0.0] {
+            params.add(v);
+        }
+
         // Create signal with peaks above threshold
         let mut input = [0.0f32; BUFFER_SIZE];
         for i in 0..BUFFER_SIZE {
             input[i] = if i % 64 < 32 { 0.8 } else { 0.2 }; // Peaks at 0.8 (~-2dB)
         }
-        
+
         let inputs = [Some(&input); MAX_INPUTS];
         let mut output = [0.0f32; BUFFER_SIZE];
         limiter.process(&inputs, &mut output, &mut params, 48000.0);
-        
+
         // After settling, peaks should be reduced
         let max_output = output.iter().map(|&x| x.abs()).fold(0.0f32, f32::max);
-        assert!(max_output < 0.8, "limiter should reduce peaks, got {max_output}");
+        assert!(
+            max_output < 0.8,
+            "limiter should reduce peaks, got {max_output}"
+        );
     }
 
     #[test]
@@ -155,15 +170,20 @@ mod tests {
         let mut limiter = Limiter::new();
         let mut params = ParamBlock::new();
         // threshold=-12dB, release=50ms, ceiling=-3dB
-        for &v in &[-12.0f32, 50.0, -3.0] { params.add(v); }
-        
+        for &v in &[-12.0f32, 50.0, -3.0] {
+            params.add(v);
+        }
+
         let input = [1.0f32; BUFFER_SIZE]; // Very loud signal
         let inputs = [Some(&input); MAX_INPUTS];
         let mut output = [0.0f32; BUFFER_SIZE];
         limiter.process(&inputs, &mut output, &mut params, 48000.0);
-        
+
         let ceiling_linear = 10.0f32.powf(-3.0 / 20.0); // -3dB in linear
         let max_output = output.iter().map(|&x| x.abs()).fold(0.0f32, f32::max);
-        assert!(max_output <= ceiling_linear + 0.01, "output should not exceed ceiling");
+        assert!(
+            max_output <= ceiling_linear + 0.01,
+            "output should not exceed ceiling"
+        );
     }
 }

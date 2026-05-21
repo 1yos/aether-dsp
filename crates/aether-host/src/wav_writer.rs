@@ -23,7 +23,10 @@ impl WavWriterThread {
         let handle = thread::spawn(move || {
             writer_loop(consumer, path, sample_rate, flag_clone);
         });
-        Self { stop_flag, thread: Some(handle) }
+        Self {
+            stop_flag,
+            thread: Some(handle),
+        }
     }
 
     /// Signal the writer to stop, wait for it to finish.
@@ -49,13 +52,18 @@ fn writer_loop(
     };
     let mut writer = match HoundWriter::create(&path, spec) {
         Ok(w) => w,
-        Err(e) => { eprintln!("WavWriter: failed to create '{}': {e}", path); return; }
+        Err(e) => {
+            eprintln!("WavWriter: failed to create '{}': {e}", path);
+            return;
+        }
     };
 
     let mut scratch = Vec::<f32>::with_capacity(4096);
 
     loop {
-        while let Some(s) = consumer.try_pop() { scratch.push(s); }
+        while let Some(s) = consumer.try_pop() {
+            scratch.push(s);
+        }
         for &s in &scratch {
             let v = (s * 32767.0).clamp(-32768.0, 32767.0) as i16;
             if let Err(e) = writer.write_sample(v) {
@@ -66,7 +74,9 @@ fn writer_loop(
 
         if stop_flag.load(Ordering::Acquire) {
             // Final drain
-            while let Some(s) = consumer.try_pop() { scratch.push(s); }
+            while let Some(s) = consumer.try_pop() {
+                scratch.push(s);
+            }
             for &s in &scratch {
                 let v = (s * 32767.0).clamp(-32768.0, 32767.0) as i16;
                 let _ = writer.write_sample(v);

@@ -4,18 +4,11 @@
 //! Run with: cargo bench -p aether-core
 
 use aether_core::{
-    arena::NodeId,
-    command::Command,
-    node::DspNode,
-    param::ParamBlock,
-    scheduler::Scheduler,
+    arena::NodeId, command::Command, node::DspNode, param::ParamBlock, scheduler::Scheduler,
     BUFFER_SIZE, MAX_INPUTS,
 };
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use ringbuf::{
-    traits::Split,
-    HeapRb,
-};
+use ringbuf::{traits::Split, HeapRb};
 
 /// Minimal no-op node for pure scheduler overhead measurement.
 struct NoopNode;

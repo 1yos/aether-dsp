@@ -106,10 +106,7 @@ fn main() {
     println!("✓ Processed {} samples", output.len());
 
     // Analyze output
-    let max_amplitude = output
-        .iter()
-        .map(|s| s.abs())
-        .fold(0.0f32, |a, b| a.max(b));
+    let max_amplitude = output.iter().map(|s| s.abs()).fold(0.0f32, |a, b| a.max(b));
 
     println!("\nOutput analysis:");
     println!("  Max amplitude: {:.4}", max_amplitude);

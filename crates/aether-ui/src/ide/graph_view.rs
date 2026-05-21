@@ -20,11 +20,9 @@ impl GraphView {
     }
 
     pub fn view(&self) -> Element<'_, Message> {
-        let title = text("GRAPH VIEW")
-            .size(12)
-            .style(|_theme| text::Style {
-                color: Some(AetherTheme::TEXT_SECONDARY),
-            });
+        let title = text("GRAPH VIEW").size(12).style(|_theme| text::Style {
+            color: Some(AetherTheme::TEXT_SECONDARY),
+        });
 
         let info = text("Visual representation of DSP graph\n(Synchronized with code)")
             .size(12)

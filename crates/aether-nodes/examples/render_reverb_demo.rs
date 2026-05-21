@@ -7,12 +7,7 @@
 //! - reverb_dry.wav (dry impulse)
 //! - reverb_wet.wav (with reverb)
 
-use aether_core::{
-    node::DspNode,
-    param::ParamBlock,
-    BUFFER_SIZE,
-    MAX_INPUTS,
-};
+use aether_core::{node::DspNode, param::ParamBlock, BUFFER_SIZE, MAX_INPUTS};
 use aether_nodes::reverb::Reverb;
 use hound::{WavSpec, WavWriter};
 
@@ -22,16 +17,16 @@ const NUM_SAMPLES: usize = (SAMPLE_RATE as f32 * DURATION_SECS) as usize;
 
 fn generate_impulse_train(num_samples: usize, sample_rate: f32) -> Vec<f32> {
     let mut signal = vec![0.0f32; num_samples];
-    
+
     // Generate impulses every 0.5 seconds
     let impulse_interval = (sample_rate * 0.5) as usize;
-    
+
     for i in (0..num_samples).step_by(impulse_interval) {
         if i < num_samples {
             signal[i] = 0.8; // Impulse
         }
     }
-    
+
     signal
 }
 
@@ -66,11 +61,11 @@ fn main() {
     let mut params = ParamBlock::new();
 
     // Parameters: room_size, damping, wet_level, dry_level, width
-    params.add(0.8);  // Large room
-    params.add(0.5);  // Moderate damping
-    params.add(0.7);  // 70% wet
-    params.add(0.3);  // 30% dry
-    params.add(1.0);  // Full stereo width
+    params.add(0.8); // Large room
+    params.add(0.5); // Moderate damping
+    params.add(0.7); // 70% wet
+    params.add(0.3); // 30% dry
+    params.add(1.0); // Full stereo width
 
     let mut sample_idx = 0;
     let mut input_buffer = [0.0f32; BUFFER_SIZE];

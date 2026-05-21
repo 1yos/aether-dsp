@@ -22,11 +22,11 @@
 //!   without recording the actual instrument
 
 pub mod analysis;
-pub mod transfer;
 pub mod node;
 pub mod synthesizer;
+pub mod transfer;
 
 pub use analysis::{SpectralEnvelope, TimbreProfile};
-pub use transfer::TimbreTransfer;
 pub use node::TimbreTransferNode;
 pub use synthesizer::InstrumentSynthesizer;
+pub use transfer::TimbreTransfer;

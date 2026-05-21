@@ -15,7 +15,9 @@ const SR: f32 = 48_000.0;
 
 fn make_params(values: &[f32]) -> ParamBlock {
     let mut p = ParamBlock::new();
-    for &v in values { p.add(v); }
+    for &v in values {
+        p.add(v);
+    }
     p
 }
 
@@ -56,7 +58,10 @@ fn regression_oscillator_silence_at_zero_amplitude() {
     let inputs = [None; MAX_INPUTS];
     let mut output = [0.0f32; BUFFER_SIZE];
     osc.process(&inputs, &mut output, &mut params, SR);
-    assert!(max_abs(&output) < 1e-6, "Zero amplitude should produce silence");
+    assert!(
+        max_abs(&output) < 1e-6,
+        "Zero amplitude should produce silence"
+    );
 }
 
 // ── Gain ──────────────────────────────────────────────────────────────────────
@@ -75,7 +80,10 @@ fn regression_gain_unity() {
     let mut output = [0.0f32; BUFFER_SIZE];
     gain.process(&inputs, &mut output, &mut params, SR);
     for (i, (&o, &inp)) in output.iter().zip(input.iter()).enumerate() {
-        assert!((o - inp).abs() < 1e-6, "Unity gain mismatch at sample {i}: {o} != {inp}");
+        assert!(
+            (o - inp).abs() < 1e-6,
+            "Unity gain mismatch at sample {i}: {o} != {inp}"
+        );
     }
 }
 
@@ -94,7 +102,10 @@ fn regression_gain_half() {
     gain.process(&inputs, &mut output, &mut params, SR);
     // After smoothing settles, output should approach 0.5
     let last = output[BUFFER_SIZE - 1];
-    assert!((last - 0.5).abs() < 0.01, "Half gain should produce ~0.5, got {last}");
+    assert!(
+        (last - 0.5).abs() < 0.01,
+        "Half gain should produce ~0.5, got {last}"
+    );
 }
 
 // ── Mixer ─────────────────────────────────────────────────────────────────────
@@ -127,7 +138,10 @@ fn regression_mixer_silence_passthrough() {
     let inputs = [None; MAX_INPUTS];
     let mut output = [0.0f32; BUFFER_SIZE];
     mixer.process(&inputs, &mut output, &mut params, SR);
-    assert!(max_abs(&output) < 1e-6, "Mixer with no inputs should output silence");
+    assert!(
+        max_abs(&output) < 1e-6,
+        "Mixer with no inputs should output silence"
+    );
 }
 
 // ── Compressor ────────────────────────────────────────────────────────────────
@@ -148,7 +162,10 @@ fn regression_compressor_below_threshold_passthrough() {
     comp.process(&inputs, &mut output, &mut params, SR);
     // Below threshold — gain reduction should be minimal
     let last = output[BUFFER_SIZE - 1];
-    assert!(last > 0.08, "Below-threshold signal should pass through, got {last}");
+    assert!(
+        last > 0.08,
+        "Below-threshold signal should pass through, got {last}"
+    );
 }
 
 #[test]
@@ -166,7 +183,10 @@ fn regression_compressor_above_threshold_reduces() {
     let mut output = [0.0f32; BUFFER_SIZE];
     comp.process(&inputs, &mut output, &mut params, SR);
     let last = output[BUFFER_SIZE - 1];
-    assert!(last < 0.4, "Above-threshold signal should be reduced, got {last}");
+    assert!(
+        last < 0.4,
+        "Above-threshold signal should be reduced, got {last}"
+    );
 }
 
 // ── Delay ─────────────────────────────────────────────────────────────────────
@@ -187,7 +207,10 @@ fn regression_delay_dry_signal() {
     delay.process(&inputs, &mut output, &mut params, SR);
     // With wet=0, output should equal input
     for (i, (&o, &inp)) in output.iter().zip(input.iter()).enumerate() {
-        assert!((o - inp).abs() < 1e-5, "Dry delay mismatch at {i}: {o} != {inp}");
+        assert!(
+            (o - inp).abs() < 1e-5,
+            "Dry delay mismatch at {i}: {o} != {inp}"
+        );
     }
 }
 
@@ -208,7 +231,10 @@ fn regression_waveshaper_zero_drive_passthrough() {
     let mut output = [0.0f32; BUFFER_SIZE];
     ws.process(&inputs, &mut output, &mut params, SR);
     let last = output[BUFFER_SIZE - 1];
-    assert!((last - 0.3).abs() < 0.05, "Zero drive waveshaper should pass through, got {last}");
+    assert!(
+        (last - 0.3).abs() < 0.05,
+        "Zero drive waveshaper should pass through, got {last}"
+    );
 }
 
 #[test]
@@ -225,7 +251,10 @@ fn regression_waveshaper_hard_clip_bounds() {
     };
     let mut output = [0.0f32; BUFFER_SIZE];
     ws.process(&inputs, &mut output, &mut params, SR);
-    assert!(max_abs(&output) <= 1.001, "Hard clip should not exceed ±1.0");
+    assert!(
+        max_abs(&output) <= 1.001,
+        "Hard clip should not exceed ±1.0"
+    );
 }
 
 // ── Chorus ────────────────────────────────────────────────────────────────────
@@ -243,7 +272,11 @@ fn regression_chorus_bounded_output() {
     };
     let mut output = [0.0f32; BUFFER_SIZE];
     chorus.process(&inputs, &mut output, &mut params, SR);
-    assert!(max_abs(&output) <= 1.5, "Chorus output should be bounded, got {}", max_abs(&output));
+    assert!(
+        max_abs(&output) <= 1.5,
+        "Chorus output should be bounded, got {}",
+        max_abs(&output)
+    );
 }
 
 // ── Reverb ────────────────────────────────────────────────────────────────────
@@ -256,7 +289,10 @@ fn regression_reverb_silence_passthrough() {
     let inputs = [None; MAX_INPUTS];
     let mut output = [0.0f32; BUFFER_SIZE];
     reverb.process(&inputs, &mut output, &mut params, SR);
-    assert!(max_abs(&output) < 1e-5, "Reverb with silence input should output silence");
+    assert!(
+        max_abs(&output) < 1e-5,
+        "Reverb with silence input should output silence"
+    );
 }
 
 #[test]
@@ -279,5 +315,9 @@ fn regression_reverb_adds_tail() {
     // After warmup, output should be non-zero
     let mut output = [0.0f32; BUFFER_SIZE];
     reverb.process(&inputs, &mut output, &mut params, SR);
-    assert!(rms(&output) > 0.01, "Reverb output should be non-zero during signal, got {}", rms(&output));
+    assert!(
+        rms(&output) > 0.01,
+        "Reverb output should be non-zero during signal, got {}",
+        rms(&output)
+    );
 }

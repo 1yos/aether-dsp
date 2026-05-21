@@ -15,8 +15,10 @@ fn main() {
         let defs = registry.param_defs(name).unwrap_or(&[]);
         println!("  {name}");
         for d in defs {
-            println!("    • {:<16} [{:>7.1} – {:>7.1}]  default: {:.3}",
-                d.name, d.min, d.max, d.default);
+            println!(
+                "    • {:<16} [{:>7.1} – {:>7.1}]  default: {:.3}",
+                d.name, d.min, d.max, d.default
+            );
         }
     }
 

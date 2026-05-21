@@ -1,7 +1,7 @@
 //! Parameter utilities for node authors.
 
-use aether_core::param::ParamBlock;
 use crate::ParamDef;
+use aether_core::param::ParamBlock;
 
 /// Initialize a `ParamBlock` from a slice of `ParamDef`s.
 /// Called automatically by the engine when a node is added to the graph.

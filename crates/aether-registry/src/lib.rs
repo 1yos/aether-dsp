@@ -3,9 +3,9 @@
 //! Tracks installed node packages and resolves them for the manifest system.
 //! Packages are stored as JSON index files in `~/.aether/registry/`.
 
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -41,7 +41,10 @@ impl PackageRegistry {
     pub fn open() -> Result<Self, RegistryError> {
         let root = dirs_home().join(".aether").join("registry");
         std::fs::create_dir_all(&root)?;
-        let mut reg = Self { root: root.clone(), packages: HashMap::new() };
+        let mut reg = Self {
+            root: root.clone(),
+            packages: HashMap::new(),
+        };
         reg.load_index()?;
         Ok(reg)
     }
@@ -49,7 +52,10 @@ impl PackageRegistry {
     /// Open a registry at a custom path (for testing).
     pub fn open_at(root: PathBuf) -> Result<Self, RegistryError> {
         std::fs::create_dir_all(&root)?;
-        let mut reg = Self { root, packages: HashMap::new() };
+        let mut reg = Self {
+            root,
+            packages: HashMap::new(),
+        };
         reg.load_index()?;
         Ok(reg)
     }
@@ -103,8 +109,12 @@ impl PackageRegistry {
         pkgs
     }
 
-    pub fn len(&self) -> usize { self.packages.len() }
-    pub fn is_empty(&self) -> bool { self.packages.is_empty() }
+    pub fn len(&self) -> usize {
+        self.packages.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.packages.is_empty()
+    }
 }
 
 fn dirs_home() -> PathBuf {

@@ -123,7 +123,11 @@ pub enum Command {
     ///     slot: 0,
     /// };
     /// ```
-    Connect { src: NodeId, dst: NodeId, slot: usize },
+    Connect {
+        src: NodeId,
+        dst: NodeId,
+        slot: usize,
+    },
 
     /// Disconnect input slot `slot` of `dst`.
     ///
@@ -179,7 +183,11 @@ pub enum Command {
     ///     new_param: Param::new(1000.0),
     /// };
     /// ```
-    UpdateParam { node: NodeId, param_index: usize, new_param: Param },
+    UpdateParam {
+        node: NodeId,
+        param_index: usize,
+        new_param: Param,
+    },
 
     /// Swap the output node.
     ///

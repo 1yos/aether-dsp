@@ -1,14 +1,14 @@
 // DSP Graph Mode - Visual node editor + code editor
 
 pub mod canvas;
-pub mod node_editor;
 pub mod code_editor;
-pub mod node_library;
 pub mod inspector;
+pub mod node_editor;
+pub mod node_library;
 
 pub use canvas::GraphCanvas;
-pub use node_library::NodeLibrary;
 pub use inspector::Inspector;
+pub use node_library::NodeLibrary;
 
 use iced::{Point, Size};
 use serde::{Deserialize, Serialize};
@@ -109,13 +109,15 @@ pub enum NodeType {
     AudioOutput,
     MidiInput,
     MidiOutput,
-    
+
     // Generators
-    Oscillator { waveform: Waveform },
+    Oscillator {
+        waveform: Waveform,
+    },
     NoiseGenerator,
     SamplePlayer,
     Wavetable,
-    
+
     // Filters
     LowPass,
     HighPass,
@@ -124,39 +126,41 @@ pub enum NodeType {
     AllPass,
     StateVariable,
     MoogLadder,
-    
+
     // Dynamics
     Compressor,
     Limiter,
     Gate,
     Expander,
-    
+
     // Time-based
     Delay,
     Reverb,
     Chorus,
     Flanger,
     Phaser,
-    
+
     // Distortion
     Waveshaper,
     Saturation,
     BitCrusher,
-    
+
     // Utilities
     Gain,
     Mixer,
     Pan,
     Scope,
     Analyzer,
-    
+
     // Modulators
     #[allow(clippy::upper_case_acronyms)]
     LFO,
     Envelope,
-    
+
     // Custom (user-defined)
-    Custom { name: String },
+    Custom {
+        name: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -211,13 +215,37 @@ impl NodeType {
 
     pub fn category(&self) -> NodeCategory {
         match self {
-            NodeType::AudioInput | NodeType::AudioOutput | NodeType::MidiInput | NodeType::MidiOutput => NodeCategory::AudioIO,
-            NodeType::Oscillator { .. } | NodeType::NoiseGenerator | NodeType::SamplePlayer | NodeType::Wavetable => NodeCategory::Generator,
-            NodeType::LowPass | NodeType::HighPass | NodeType::BandPass | NodeType::Notch | NodeType::AllPass | NodeType::StateVariable | NodeType::MoogLadder => NodeCategory::Filter,
-            NodeType::Compressor | NodeType::Limiter | NodeType::Gate | NodeType::Expander => NodeCategory::Dynamics,
-            NodeType::Delay | NodeType::Reverb | NodeType::Chorus | NodeType::Flanger | NodeType::Phaser => NodeCategory::TimeBased,
-            NodeType::Waveshaper | NodeType::Saturation | NodeType::BitCrusher => NodeCategory::Distortion,
-            NodeType::Gain | NodeType::Mixer | NodeType::Pan | NodeType::Scope | NodeType::Analyzer => NodeCategory::Utility,
+            NodeType::AudioInput
+            | NodeType::AudioOutput
+            | NodeType::MidiInput
+            | NodeType::MidiOutput => NodeCategory::AudioIO,
+            NodeType::Oscillator { .. }
+            | NodeType::NoiseGenerator
+            | NodeType::SamplePlayer
+            | NodeType::Wavetable => NodeCategory::Generator,
+            NodeType::LowPass
+            | NodeType::HighPass
+            | NodeType::BandPass
+            | NodeType::Notch
+            | NodeType::AllPass
+            | NodeType::StateVariable
+            | NodeType::MoogLadder => NodeCategory::Filter,
+            NodeType::Compressor | NodeType::Limiter | NodeType::Gate | NodeType::Expander => {
+                NodeCategory::Dynamics
+            }
+            NodeType::Delay
+            | NodeType::Reverb
+            | NodeType::Chorus
+            | NodeType::Flanger
+            | NodeType::Phaser => NodeCategory::TimeBased,
+            NodeType::Waveshaper | NodeType::Saturation | NodeType::BitCrusher => {
+                NodeCategory::Distortion
+            }
+            NodeType::Gain
+            | NodeType::Mixer
+            | NodeType::Pan
+            | NodeType::Scope
+            | NodeType::Analyzer => NodeCategory::Utility,
             NodeType::LFO | NodeType::Envelope => NodeCategory::Modulator,
             NodeType::Custom { .. } => NodeCategory::Custom,
         }
@@ -307,12 +335,18 @@ impl DspGraphState {
     pub fn remove_node(&mut self, id: NodeId) {
         self.nodes.remove(&id);
         // Remove all connections to/from this node
-        self.connections.retain(|_, conn| {
-            conn.from_node != id && conn.to_node != id
-        });
+        self.connections
+            .retain(|_, conn| conn.from_node != id && conn.to_node != id);
     }
 
-    pub fn add_connection(&mut self, from_node: NodeId, from_port: PortId, to_node: NodeId, to_port: PortId, cable_type: CableType) -> ConnectionId {
+    pub fn add_connection(
+        &mut self,
+        from_node: NodeId,
+        from_port: PortId,
+        to_node: NodeId,
+        to_port: PortId,
+        cable_type: CableType,
+    ) -> ConnectionId {
         let id = ConnectionId(self.next_connection_id);
         self.next_connection_id += 1;
 

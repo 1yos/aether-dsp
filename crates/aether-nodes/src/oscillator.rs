@@ -44,7 +44,10 @@ pub struct Oscillator {
 
 impl Oscillator {
     pub fn new() -> Self {
-        Self { phase: 0.0, tuning: None }
+        Self {
+            phase: 0.0,
+            tuning: None,
+        }
     }
 
     /// Load a tuning table into this oscillator.
@@ -90,7 +93,7 @@ impl DspNode for Oscillator {
     ) {
         // Snapshot params once — they are stable or slowly ramping.
         // Reading inside the loop would prevent auto-vectorization.
-        let amp  = params.get(1).current.clamp(0.0, 1.0);
+        let amp = params.get(1).current.clamp(0.0, 1.0);
         let wave = params.get(2).current as u32;
 
         let freq = if let Some(ref tuning) = self.tuning {

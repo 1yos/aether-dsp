@@ -20,9 +20,11 @@
 
 pub mod buffer;
 pub mod instrument;
-pub mod voice;
 pub mod node;
+pub mod voice;
 
-pub use instrument::{SamplerInstrument, SampleZone, ArticulationType, RoundRobinState, RoundRobinMode, ZoneGroup};
+pub use instrument::{
+    ArticulationType, RoundRobinMode, RoundRobinState, SampleZone, SamplerInstrument, ZoneGroup,
+};
 pub use node::SamplerNode;
 pub use voice::SamplerVoice;

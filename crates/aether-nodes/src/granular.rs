@@ -20,16 +20,23 @@ const INPUT_BUF_SIZE: usize = 48_000 * 4; // 4 seconds of input
 
 struct Grain {
     active: bool,
-    pos: f64,       // current read position in input buffer
-    speed: f64,     // playback speed (pitch)
-    age: usize,     // samples since grain started
+    pos: f64,        // current read position in input buffer
+    speed: f64,      // playback speed (pitch)
+    age: usize,      // samples since grain started
     duration: usize, // grain duration in samples
     amplitude: f32,
 }
 
 impl Grain {
     fn new() -> Self {
-        Self { active: false, pos: 0.0, speed: 1.0, age: 0, duration: 1024, amplitude: 0.0 }
+        Self {
+            active: false,
+            pos: 0.0,
+            speed: 1.0,
+            age: 0,
+            duration: 1024,
+            amplitude: 0.0,
+        }
     }
 
     #[inline(always)]
@@ -42,7 +49,9 @@ impl Grain {
 
     #[inline(always)]
     fn next_sample(&mut self, input_buf: &[f32]) -> f32 {
-        if !self.active { return 0.0; }
+        if !self.active {
+            return 0.0;
+        }
         let env = self.envelope();
         let idx = self.pos as usize % input_buf.len();
         let frac = (self.pos - self.pos.floor()) as f32;
@@ -51,7 +60,9 @@ impl Grain {
         let sample = s0 + (s1 - s0) * frac;
         self.pos += self.speed;
         self.age += 1;
-        if self.age >= self.duration { self.active = false; }
+        if self.age >= self.duration {
+            self.active = false;
+        }
         sample * env
     }
 }
@@ -82,13 +93,23 @@ impl Granular {
         self.rng as f32 / u32::MAX as f32
     }
 
-    fn spawn_grain(&mut self, grain_size_ms: f32, pitch_scatter: f32, position: f32, pos_scatter: f32, sr: f32) {
+    fn spawn_grain(
+        &mut self,
+        grain_size_ms: f32,
+        pitch_scatter: f32,
+        position: f32,
+        pos_scatter: f32,
+        sr: f32,
+    ) {
         let duration = ((grain_size_ms / 1000.0) * sr) as usize;
         let duration = duration.clamp(64, MAX_GRAIN_SAMPLES);
 
         // Find an inactive grain slot
         let slot = self.grains.iter().position(|g| !g.active);
-        let slot = match slot { Some(s) => s, None => return };
+        let slot = match slot {
+            Some(s) => s,
+            None => return,
+        };
 
         // Position in input buffer
         let pos_center = (position + (self.rand_f32() - 0.5) * pos_scatter).clamp(0.0, 1.0);
@@ -110,7 +131,9 @@ impl Granular {
 }
 
 impl Default for Granular {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DspNode for Granular {
@@ -125,12 +148,12 @@ impl DspNode for Granular {
         let input = inputs[0].unwrap_or(&silence);
 
         for (i, out) in output.iter_mut().enumerate() {
-            let grain_size  = params.get(0).current.clamp(10.0, 500.0);
-            let density     = params.get(1).current.clamp(1.0, 50.0);
-            let pitch_scat  = params.get(2).current.clamp(0.0, 2.0);
-            let position    = params.get(3).current.clamp(0.0, 1.0);
-            let pos_scat    = params.get(4).current.clamp(0.0, 1.0);
-            let wet         = params.get(5).current.clamp(0.0, 1.0);
+            let grain_size = params.get(0).current.clamp(10.0, 500.0);
+            let density = params.get(1).current.clamp(1.0, 50.0);
+            let pitch_scat = params.get(2).current.clamp(0.0, 2.0);
+            let position = params.get(3).current.clamp(0.0, 1.0);
+            let pos_scat = params.get(4).current.clamp(0.0, 1.0);
+            let wet = params.get(5).current.clamp(0.0, 1.0);
 
             // Write input into circular buffer
             self.input_buf[self.write_pos] = input[i];
@@ -155,5 +178,7 @@ impl DspNode for Granular {
         }
     }
 
-    fn type_name(&self) -> &'static str { "Granular" }
+    fn type_name(&self) -> &'static str {
+        "Granular"
+    }
 }

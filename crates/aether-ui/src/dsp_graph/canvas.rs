@@ -1,6 +1,6 @@
 // Graph canvas for visual node editing
 
-use super::{DspGraphState, GraphNode, Connection, NodeId, ConnectionId, CableType};
+use super::{CableType, Connection, ConnectionId, DspGraphState, GraphNode, NodeId};
 use crate::theme::AetherTheme;
 use iced::widget::canvas::{self, Canvas, Frame, Geometry, Path, Stroke, Text};
 use iced::{mouse, Color, Element, Length, Point, Rectangle, Renderer, Size, Theme, Vector};
@@ -65,11 +65,7 @@ impl<Message> canvas::Program<Message> for GraphCanvas {
     ) -> Vec<Geometry> {
         let geometry = self.cache.draw(renderer, bounds.size(), |frame| {
             // Draw background
-            frame.fill_rectangle(
-                Point::ORIGIN,
-                bounds.size(),
-                AetherTheme::CANVAS_BACKGROUND,
-            );
+            frame.fill_rectangle(Point::ORIGIN, bounds.size(), AetherTheme::CANVAS_BACKGROUND);
 
             // Draw grid
             self.draw_grid(frame, bounds.size());
@@ -226,9 +222,7 @@ impl GraphCanvas {
         let cable_color = self.get_cable_color(connection.cable_type);
         frame.stroke(
             &path,
-            Stroke::default()
-                .with_color(cable_color)
-                .with_width(2.0),
+            Stroke::default().with_color(cable_color).with_width(2.0),
         );
     }
 

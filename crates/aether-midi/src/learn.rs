@@ -11,19 +11,19 @@ use std::collections::HashMap;
 pub struct MidiMapping {
     /// MIDI channel (1-16).
     pub channel: u8,
-    
+
     /// MIDI CC number (0-127).
     pub cc: u8,
-    
+
     /// Parameter identifier (e.g., "filter_cutoff", "gain").
     pub param_id: String,
-    
+
     /// Minimum parameter value.
     pub min_value: f32,
-    
+
     /// Maximum parameter value.
     pub max_value: f32,
-    
+
     /// Optional curve (linear, exponential, logarithmic).
     pub curve: MappingCurve,
 }
@@ -44,7 +44,7 @@ pub enum MappingCurve {
 pub struct MidiLearn {
     /// All active mappings: (channel, cc) -> MidiMapping
     mappings: HashMap<(u8, u8), MidiMapping>,
-    
+
     /// Learn mode state.
     learn_mode: Option<LearnState>,
 }
@@ -54,11 +54,11 @@ pub struct MidiLearn {
 struct LearnState {
     /// Parameter ID waiting to be mapped.
     param_id: String,
-    
+
     /// Min/max values for the parameter.
     min_value: f32,
     max_value: f32,
-    
+
     /// Curve type.
     curve: MappingCurve,
 }
@@ -173,7 +173,7 @@ impl MidiLearn {
             };
 
             self.mappings.insert((channel, cc), mapping.clone());
-            
+
             // Apply the mapping immediately
             let mapped_value = Self::map_value(value, &mapping);
             return Some((mapping.param_id, mapped_value));
@@ -302,7 +302,7 @@ mod tests {
     #[test]
     fn test_midi_learn_basic() {
         let mut learn = MidiLearn::new();
-        
+
         // Enter learn mode
         learn.start_learn("gain", 0.0, 1.0, MappingCurve::Linear);
         assert!(learn.is_learning());
@@ -324,7 +324,7 @@ mod tests {
     #[test]
     fn test_midi_learn_cancel() {
         let mut learn = MidiLearn::new();
-        
+
         learn.start_learn("gain", 0.0, 1.0, MappingCurve::Linear);
         assert!(learn.is_learning());
 
@@ -339,7 +339,7 @@ mod tests {
     #[test]
     fn test_midi_learn_apply_mapping() {
         let mut learn = MidiLearn::new();
-        
+
         // Create mapping manually
         learn.add_mapping(1, 7, "gain", 0.0, 1.0, MappingCurve::Linear);
 
@@ -358,7 +358,7 @@ mod tests {
     #[test]
     fn test_midi_learn_exponential_curve() {
         let mut learn = MidiLearn::new();
-        
+
         learn.add_mapping(1, 7, "cutoff", 20.0, 20000.0, MappingCurve::Exponential);
 
         // Exponential curve: more resolution at low end
@@ -372,7 +372,7 @@ mod tests {
     #[test]
     fn test_midi_learn_remove_mapping() {
         let mut learn = MidiLearn::new();
-        
+
         learn.add_mapping(1, 7, "gain", 0.0, 1.0, MappingCurve::Linear);
         assert!(learn.get_mapping(1, 7).is_some());
 
@@ -384,7 +384,7 @@ mod tests {
     #[test]
     fn test_midi_learn_json_serialization() {
         let mut learn = MidiLearn::new();
-        
+
         learn.add_mapping(1, 7, "gain", 0.0, 1.0, MappingCurve::Linear);
         learn.add_mapping(1, 74, "cutoff", 20.0, 20000.0, MappingCurve::Exponential);
 
