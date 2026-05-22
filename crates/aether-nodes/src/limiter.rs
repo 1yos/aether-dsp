@@ -36,6 +36,8 @@ impl Limiter {
         10.0f32.powf(db / 20.0)
     }
 
+    // Kept for potential future metering/display features
+    #[allow(dead_code)]
     #[inline(always)]
     fn linear_to_db(linear: f32) -> f32 {
         if linear <= 1e-10 {

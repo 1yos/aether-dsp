@@ -14,6 +14,8 @@ pub enum Message {
 #[derive(Debug)]
 pub struct ProjectExplorer {
     root_path: Option<PathBuf>,
+    // TODO: Implement folder expansion/collapse functionality
+    #[allow(dead_code)]
     expanded_folders: Vec<PathBuf>,
 }
 

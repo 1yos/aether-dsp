@@ -103,11 +103,10 @@ mod tests {
         #[test]
         fn prop_wav_round_trip(
             samples in prop::collection::vec(
-                prop::num::f32::NORMAL | prop::num::f32::ZERO,
+                // Generate values in the valid audio range [-1.0, 1.0]
+                -1.0f32..=1.0f32,
                 64..=4096
-            ).prop_filter("values in [-1.0, 1.0]", |v| {
-                v.iter().all(|&s| s >= -1.0 && s <= 1.0)
-            })
+            )
         ) {
             // Write samples to an in-memory WAV buffer
             let spec = WavSpec {
