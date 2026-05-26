@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-05-26
+
+### Changed
+
+- Updated author attribution to "Yoseph Abebe"
+- All tests passing (100% pass rate)
+- Zero Clippy warnings with `-D warnings`
+- Code quality improvements and documentation polish
+
+### Fixed
+
+- Property test assertions in graph operations (more flexible edge count checks)
+- All compiler and Clippy warnings resolved
+
 ## [0.1.4] - 2026-05-13
 
 ### Added

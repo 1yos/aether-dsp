@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-05-26
+
+### Changed
+
+- Updated author attribution to "Yoseph Abebe"
+- Code quality improvements - zero Clippy warnings
+
+### Fixed
+
+- Documented unused `linear_to_db` function in Limiter (kept for future metering features)
+- All Clippy warnings resolved
+
 ## [0.2.3] - 2026-05-13
 
 ### Added
