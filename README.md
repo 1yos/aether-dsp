@@ -3,7 +3,11 @@
 [![Rust](https://img.shields.io/badge/Rust-1.78+-orange)](https://www.rust-lang.org)
 [![CI](https://github.com/1yos/aether-dsp/actions/workflows/ci.yml/badge.svg)](https://github.com/1yos/aether-dsp/actions)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
-[![crates.io](https://img.shields.io/crates/v/aetherdsp-core.svg)](https://crates.io/crates/aetherdsp-core)
+
+[![aetherdsp-core](https://img.shields.io/crates/v/aetherdsp-core.svg?label=core)](https://crates.io/crates/aetherdsp-core)
+[![aetherdsp-nodes](https://img.shields.io/crates/v/aetherdsp-nodes.svg?label=nodes)](https://crates.io/crates/aetherdsp-nodes)
+[![aetherdsp-midi](https://img.shields.io/crates/v/aetherdsp-midi.svg?label=midi)](https://crates.io/crates/aetherdsp-midi)
+[![Downloads](https://img.shields.io/crates/d/aetherdsp-core.svg)](https://crates.io/crates/aetherdsp-core)
 [![Benchmark](https://img.shields.io/badge/param%20fill-51.7%20ns-yellow)](#benchmarks)
 
 **A hard real-time modular DSP engine and world music production studio.**
@@ -22,17 +26,17 @@ AetherDSP is two things at once: a production-grade audio engine library for Rus
 
 | Crate                                                                 | Version | Description                                                                                              |
 | --------------------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------- |
-| [`aetherdsp-core`](https://crates.io/crates/aetherdsp-core)           | 0.1.4   | RT scheduler, generational arena, lock-free graph, buffer pool                                           |
-| [`aetherdsp-nodes`](https://crates.io/crates/aetherdsp-nodes)         | 0.2.3   | 17 DSP nodes: oscillator, filters, reverb, LFO, granular, Karplus-Strong, compressor, waveshaper, chorus |
-| [`aetherdsp-ndk`](https://crates.io/crates/aetherdsp-ndk)             | 0.1.4   | Node Development Kit — build custom nodes with `#[aether_node]`                                          |
-| [`aetherdsp-ndk-macro`](https://crates.io/crates/aetherdsp-ndk-macro) | 0.1.4   | Proc-macro behind the NDK                                                                                |
-| [`aetherdsp-midi`](https://crates.io/crates/aetherdsp-midi)           | 0.1.4   | MIDI engine with 13 tuning systems including Ethiopian, Arabic, Gamelan                                  |
+| [`aetherdsp-core`](https://crates.io/crates/aetherdsp-core)           | 0.1.6   | RT scheduler, generational arena, lock-free graph, buffer pool                                           |
+| [`aetherdsp-nodes`](https://crates.io/crates/aetherdsp-nodes)         | 0.2.4   | 17 DSP nodes: oscillator, filters, reverb, LFO, granular, Karplus-Strong, compressor, waveshaper, chorus |
+| [`aetherdsp-ndk`](https://crates.io/crates/aetherdsp-ndk)             | 0.1.6   | Node Development Kit — build custom nodes with `#[aether_node]`                                          |
+| [`aetherdsp-ndk-macro`](https://crates.io/crates/aetherdsp-ndk-macro) | 0.1.6   | Proc-macro behind the NDK                                                                                |
+| [`aetherdsp-midi`](https://crates.io/crates/aetherdsp-midi)           | 0.1.5   | MIDI engine with 13 tuning systems including Ethiopian, Arabic, Gamelan                                  |
 | [`aetherdsp-sampler`](https://crates.io/crates/aetherdsp-sampler)     | 0.2.1   | Polyphonic sampler with ArcSwap lock-free instrument loading                                             |
-| [`aetherdsp-timbre`](https://crates.io/crates/aetherdsp-timbre)       | 0.1.4   | FFT-based spectral timbre analysis and transfer                                                          |
-| [`aetherdsp-manifest`](https://crates.io/crates/aetherdsp-manifest)   | 0.1.4   | Node package manifest format                                                                             |
-| [`aetherdsp-registry`](https://crates.io/crates/aetherdsp-registry)   | 0.1.4   | Runtime node type registry                                                                               |
-| `aether-samples`                                                      | 0.1.4   | On-demand sample pack download and management                                                            |
-| `aether-ui`                                                           | 0.1.4   | Native GPU-accelerated DAW (Iced + wgpu) — not published                                                 |
+| [`aetherdsp-timbre`](https://crates.io/crates/aetherdsp-timbre)       | 0.1.6   | FFT-based spectral timbre analysis and transfer                                                          |
+| [`aetherdsp-manifest`](https://crates.io/crates/aetherdsp-manifest)   | 0.1.6   | Node package manifest format                                                                             |
+| [`aetherdsp-registry`](https://crates.io/crates/aetherdsp-registry)   | 0.1.6   | Runtime node type registry                                                                               |
+| `aether-samples`                                                      | 0.1.6   | On-demand sample pack download and management                                                            |
+| `aether-ui`                                                           | 0.1.6   | Native GPU-accelerated DAW (Iced + wgpu) — not published                                                 |
 
 ### The Studio (Aether Studio v0.3)
 
@@ -153,15 +157,15 @@ See the complete [Tutorial Index](docs/tutorials/README.md) for more.
 
 ```toml
 [dependencies]
-aetherdsp-core = "0.1.4"
-aetherdsp-nodes = "0.2.3"
+aetherdsp-core = "0.1.6"
+aetherdsp-nodes = "0.2.4"
 ```
 
 ### Build a custom DSP node
 
 ```toml
 [dependencies]
-aetherdsp-ndk = "0.1.4"
+aetherdsp-ndk = "0.1.6"
 ```
 
 ```rust
