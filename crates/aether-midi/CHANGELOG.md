@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-06-04
+
 ### Added
 
 - `ethiopian_tizita_minor()` - Nostalgic, melancholic pentatonic variant (C-D-Eb-G-Ab)
@@ -22,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated README with all 17 tuning systems and complete Ethiopian qenet examples
 
 **Total tuning systems: 17** (7 Ethiopian, 3 Arabic, 1 Indian, 3 Gamelan, 3 Western)
+
+**Sources:** Wikipedia (Qenet, Ambassel scale), PubPub 2022 (Ethiopian music modes),
+Scribd (Ethiopian music theory), pianoencyclopedia.com (Tizita minor)
 
 ## [0.1.5] - 2026-05-21
 
