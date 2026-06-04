@@ -24,19 +24,34 @@ typedef struct AetherTuningTable {
 } AetherTuningTable;
 
 /**
- * Create Ethiopian Tizita tuning (pentatonic, characteristic of Ethiopian blues)
+ * Create Ethiopian Tizita major tuning (pentatonic, characteristic of Ethiopian blues)
  */
 struct AetherTuningTable *aether_tuning_ethiopian_tizita(void);
 
 /**
- * Create Ethiopian Bati tuning (minor pentatonic variant)
+ * Create Ethiopian Tizita minor tuning (nostalgic, melancholic pentatonic variant)
+ */
+struct AetherTuningTable *aether_tuning_ethiopian_tizita_minor(void);
+
+/**
+ * Create Ethiopian Bati minor tuning (standard minor pentatonic variant)
  */
 struct AetherTuningTable *aether_tuning_ethiopian_bati(void);
 
 /**
- * Create Ethiopian Ambassel tuning (pentatonic with raised 4th)
+ * Create Ethiopian Bati major tuning (bright, uplifting pentatonic variant)
+ */
+struct AetherTuningTable *aether_tuning_ethiopian_bati_major(void);
+
+/**
+ * Create Ethiopian Ambassel tuning (pentatonic with flat 2nd)
  */
 struct AetherTuningTable *aether_tuning_ethiopian_ambassel(void);
+
+/**
+ * Create Ethiopian Anchihoye tuning (pentatonic without 3rd degree)
+ */
+struct AetherTuningTable *aether_tuning_ethiopian_anchihoye(void);
 
 /**
  * Create Arabic Maqam Rast tuning (quarter-tone flats on 3rd and 7th)
@@ -144,7 +159,7 @@ const char *aether_version(void);
  * Get the number of available tuning systems
  *
  * # Returns
- * The total count of built-in tuning systems (currently 13)
+ * The total count of built-in tuning systems (currently 17)
  */
 uint32_t aether_tuning_count(void);
 

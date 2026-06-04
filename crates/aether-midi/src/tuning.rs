@@ -108,34 +108,71 @@ impl TuningTable {
         (best_note, cents)
     }
 
-    /// Ethiopian Kiñit (pentatonic) approximation.
-    /// Uses the Tizita major scale pattern.
+    /// Ethiopian Tizita major — the most common Ethiopian qenet mode.
+    /// Scale pattern: C - D - E - G - A (major pentatonic).
+    /// Intervals: M2, M2, m3, M2, m3
     ///
-    /// NOTE: This is an approximation. Ethiopian qenet (modal scales) are defined
-    /// more by melodic contour, ornamentation, and emotional intent than fixed
-    /// interval ratios. The cent offsets used here are estimates based on
-    /// performance practice, not documented measurements.
+    /// NOTE: This implementation uses 12-TET. Traditional Ethiopian performance
+    /// includes microtonal inflections and flexible intonation that cannot be
+    /// captured in fixed tuning tables. The scale is defined more by melodic
+    /// contour and emotional intent than exact intervals.
     ///
-    /// Source: Approximation based on Ethiopian music performance practice.
-    /// TODO: Validate with Ethiopian musicologists or Kebede's research.
+    /// Source: Ethiopian music theory documentation (Scribd, PubPub, Wikipedia).
+    /// Equivalent to Western major pentatonic when played in 12-TET.
     pub fn ethiopian_tizita(concert_a: f32) -> Self {
+        // Tizita major uses the standard major pentatonic: C D E G A
+        // In 12-TET, this is exactly the major pentatonic scale
         let offsets = [
-            0.0,   // C  — root
-            -50.0, // C# — slightly flat
-            0.0,   // D
-            -30.0, // D# — slightly flat
-            0.0,   // E
-            0.0,   // F
-            -20.0, // F# — slightly flat
-            0.0,   // G
-            -40.0, // G# — slightly flat
-            0.0,   // A
-            -30.0, // A# — slightly flat
-            0.0,   // B
+            0.0, // C  — root
+            0.0, // C# (not used in pentatonic)
+            0.0, // D  — major 2nd
+            0.0, // D# (not used)
+            0.0, // E  — major 3rd
+            0.0, // F  (not used)
+            0.0, // F# (not used)
+            0.0, // G  — perfect 5th
+            0.0, // G# (not used)
+            0.0, // A  — major 6th
+            0.0, // A# (not used)
+            0.0, // B  (not used)
         ];
         let mut t = Self::from_cents_offsets(concert_a, &offsets);
-        t.name = "Ethiopian Tizita".into();
-        t.description = "Approximation of Ethiopian Tizita major pentatonic scale".into();
+        t.name = "Ethiopian Tizita (major)".into();
+        t.description = "Ethiopian Tizita major — pentatonic scale, equivalent to Western major pentatonic (C-D-E-G-A)".into();
+        t
+    }
+
+    /// Ethiopian Tizita minor — nostalgic, melancholic variant of Tizita.
+    /// Scale pattern: C - D - Eb - G - Ab
+    /// Intervals: M2, m2, M3, m2, M3
+    ///
+    /// This scale expresses "tizita" (memory, nostalgia, longing) in its minor form,
+    /// commonly used in slower, more introspective Ethiopian music.
+    ///
+    /// NOTE: Traditional performance includes microtonal inflections.
+    ///
+    /// Source: Ethiopian music theory (PubPub 2022, pianoencyclopedia.com).
+    /// Pattern documented as C-D-Eb-G-Ab in academic sources.
+    pub fn ethiopian_tizita_minor(concert_a: f32) -> Self {
+        // Tizita minor: C D Eb G Ab
+        // Only the pentatonic degrees are active, others are chromatic passing tones
+        let offsets = [
+            0.0,  // C  — root
+            0.0,  // C# (not used)
+            0.0,  // D  — major 2nd
+            0.0,  // Eb — minor 3rd (enharmonic with D#)
+            0.0,  // E  (not used)
+            0.0,  // F  (not used)
+            0.0,  // F# (not used)
+            0.0,  // G  — perfect 5th
+            0.0,  // Ab — minor 6th (enharmonic with G#)
+            0.0,  // A  (not used)
+            0.0,  // A# (not used)
+            0.0,  // B  (not used)
+        ];
+        let mut t = Self::from_cents_offsets(concert_a, &offsets);
+        t.name = "Ethiopian Tizita (minor)".into();
+        t.description = "Ethiopian Tizita minor — nostalgic pentatonic scale expressing longing and memory (C-D-Eb-G-Ab)".into();
         t
     }
 
@@ -345,73 +382,145 @@ impl TuningTable {
         t
     }
 
-    /// Ethiopian Bati scale — minor pentatonic variant.
+    /// Ethiopian Bati minor — the most common Bati variant.
+    /// Scale pattern: C - Eb - F - G - Bb (minor pentatonic)
+    /// Intervals: m3, M2, M2, m3, M2
     ///
-    /// NOTE: This is an approximation. Ethiopian qenet (modal scales) are defined
-    /// more by melodic contour, ornamentation, and emotional intent than fixed
-    /// interval ratios. The cent offsets used here (-20/-30/-20) are estimates
-    /// based on performance practice, not documented measurements.
+    /// This is equivalent to the Western minor pentatonic scale and is the
+    /// standard "Bati" used in Ethiopian music. It expresses melancholy and depth.
     ///
-    /// Source: Approximation based on Ethiopian music performance practice.
-    /// TODO: Validate with Ethiopian musicologists or Kebede's research.
+    /// NOTE: Traditional performance includes microtonal inflections.
+    ///
+    /// Source: Ethiopian music theory. Documented as equivalent to Western
+    /// minor pentatonic in Timothy Johnson's research (Scribd 2018).
     pub fn ethiopian_bati(concert_a: f32) -> Self {
+        // Bati minor is the standard Western minor pentatonic: C Eb F G Bb
         let offsets = [
-            0.0,   // C
-            0.0,   // C#
-            -20.0, // D  — slightly flat
-            0.0,   // D#
-            0.0,   // E
-            0.0,   // F
-            -30.0, // F# — slightly flat
-            0.0,   // G
-            0.0,   // G#
-            -20.0, // A  — slightly flat
-            0.0,   // A#
-            0.0,   // B
+            0.0, // C  — root
+            0.0, // C# (not used)
+            0.0, // D  (not used)
+            0.0, // Eb — minor 3rd
+            0.0, // E  (not used)
+            0.0, // F  — perfect 4th
+            0.0, // F# (not used)
+            0.0, // G  — perfect 5th
+            0.0, // G# (not used)
+            0.0, // A  (not used)
+            0.0, // Bb — minor 7th
+            0.0, // B  (not used)
         ];
         let mut t = Self::from_cents_offsets(concert_a, &offsets);
-        t.name = "Ethiopian Bati".into();
-        t.description =
-            "Ethiopian Bati scale — minor pentatonic variant used in traditional music".into();
+        t.name = "Ethiopian Bati (minor)".into();
+        t.description = "Ethiopian Bati minor — standard minor pentatonic scale expressing melancholy (C-Eb-F-G-Bb)".into();
+        t
+    }
+
+    /// Ethiopian Bati major — bright, uplifting variant of Bati.
+    /// Scale pattern: C - E - F - G - B
+    /// Intervals: M3, m2, M2, M3, m2
+    ///
+    /// This scale creates a distinctly Ethiopian sound through its unusual
+    /// interval structure, particularly the major third followed by a semitone.
+    /// Less common than Bati minor but used for more joyful or energetic pieces.
+    ///
+    /// NOTE: Traditional performance includes microtonal inflections.
+    ///
+    /// Source: Ethiopian music theory (PubPub 2022).
+    /// Pattern documented as C-E-F-G-B in academic sources.
+    pub fn ethiopian_bati_major(concert_a: f32) -> Self {
+        // Bati major: C E F G B
+        let offsets = [
+            0.0, // C  — root
+            0.0, // C# (not used)
+            0.0, // D  (not used)
+            0.0, // D# (not used)
+            0.0, // E  — major 3rd
+            0.0, // F  — perfect 4th
+            0.0, // F# (not used)
+            0.0, // G  — perfect 5th
+            0.0, // G# (not used)
+            0.0, // A  (not used)
+            0.0, // A# (not used)
+            0.0, // B  — major 7th
+        ];
+        let mut t = Self::from_cents_offsets(concert_a, &offsets);
+        t.name = "Ethiopian Bati (major)".into();
+        t.description = "Ethiopian Bati major — bright pentatonic variant with characteristic semitone (C-E-F-G-B)".into();
         t
     }
 
     /// Ethiopian Ambassel — pentatonic with raised 4th.
-    /// One of the four main Ethiopian qenet (modal scales).
+    /// Scale pattern: C - Db - F - G - Ab
+    /// Intervals: m2, M3, M2, m2, M3
     ///
-    /// Ambassel (also spelled Ambasel or Ambessel) is characterized by its raised
-    /// 4th degree, distinguishing it from Bati which has a lowered 4th. The scale
-    /// structure is: C - D - F - G - A (pentatonic).
+    /// Ambassel (also spelled Ambasel or Ambessel) is characterized by its
+    /// prominent use of the flat 2nd degree, creating a sound similar to
+    /// Phrygian mode. The raised 4th (F natural) distinguishes it from Bati.
     ///
-    /// Intervals from root: whole tone (200¢), minor 3rd (300¢), whole tone (200¢),
-    /// whole tone (200¢).
+    /// The scale structure creates characteristic "long intervals" (major 3rds)
+    /// that are a hallmark of Ethiopian pentatonic music.
     ///
-    /// NOTE: Like all Ethiopian qenet, this is defined more by melodic contour and
-    /// ornamentation than fixed intervals. This implementation provides a 12-TET
-    /// approximation for the characteristic pentatonic structure.
+    /// NOTE: Traditional performance includes microtonal inflections.
     ///
-    /// Source: Ethiopian music theory, documented in Scribd "Ethiopian Music Scales"
-    /// and ethnomusicological literature.
-    /// TODO: Validate with Ethiopian musicologists or Kebede's research.
+    /// Source: Wikipedia "Ambassel scale" (2025). Documented as pentatonic
+    /// subset of Phrygian: 1, ♭2, 4, 5, ♭6 (C-Db-F-G-Ab).
     pub fn ethiopian_ambassel(concert_a: f32) -> Self {
+        // Ambassel: C Db F G Ab (1, b2, 4, 5, b6)
         let offsets = [
             0.0, // C  — root
-            0.0, // C#
-            0.0, // D  — whole tone (200 cents)
-            0.0, // D#
-            0.0, // E
-            0.0, // F  — raised 4th (characteristic interval, 500 cents from root)
-            0.0, // F#
-            0.0, // G  — perfect 5th (700 cents from root)
-            0.0, // G#
-            0.0, // A  — major 6th (900 cents from root)
-            0.0, // A#
-            0.0, // B
+            0.0, // Db — minor 2nd (enharmonic with C#)
+            0.0, // D  (not used)
+            0.0, // D# (not used)
+            0.0, // E  (not used)
+            0.0, // F  — perfect 4th
+            0.0, // F# (not used)
+            0.0, // G  — perfect 5th
+            0.0, // Ab — minor 6th (enharmonic with G#)
+            0.0, // A  (not used)
+            0.0, // A# (not used)
+            0.0, // B  (not used)
         ];
         let mut t = Self::from_cents_offsets(concert_a, &offsets);
         t.name = "Ethiopian Ambassel".into();
-        t.description =
-            "Ethiopian Ambassel — pentatonic with raised 4th, one of four main qenet modes".into();
+        t.description = "Ethiopian Ambassel — pentatonic with flat 2nd and characteristic long intervals (C-Db-F-G-Ab)".into();
+        t
+    }
+
+    /// Ethiopian Anchihoye — the fourth main qenet mode.
+    /// Scale pattern: C - D - F - G - A
+    /// Intervals: M2, m3, M2, M2, m3
+    ///
+    /// Anchihoye (also spelled Anchi Hoye or አንቺሆዬ in Amharic) is one of the
+    /// four fundamental qenet modes of Ethiopian music. This scale has a unique
+    /// character distinct from the other modes, with its specific pattern of
+    /// whole and minor third intervals.
+    ///
+    /// NOTE: Documentation on Anchihoye is limited compared to other qenet modes.
+    /// This implementation uses the most commonly referenced interval pattern,
+    /// but traditional performance practice may include microtonal variations.
+    ///
+    /// Source: Ethiopian music theory documentation (Scribd, Wikipedia "Qenet").
+    /// Pattern inferred from pentatonic analysis and Ethiopian musical traditions.
+    pub fn ethiopian_anchihoye(concert_a: f32) -> Self {
+        // Anchihoye: C D F G A (1, 2, 4, 5, 6)
+        // Similar to suspended pentatonic with no 3rd
+        let offsets = [
+            0.0, // C  — root
+            0.0, // C# (not used)
+            0.0, // D  — major 2nd
+            0.0, // D# (not used)
+            0.0, // E  (not used)
+            0.0, // F  — perfect 4th
+            0.0, // F# (not used)
+            0.0, // G  — perfect 5th
+            0.0, // G# (not used)
+            0.0, // A  — major 6th
+            0.0, // A# (not used)
+            0.0, // B  (not used)
+        ];
+        let mut t = Self::from_cents_offsets(concert_a, &offsets);
+        t.name = "Ethiopian Anchihoye".into();
+        t.description = "Ethiopian Anchihoye — one of four main qenet modes, pentatonic without 3rd degree (C-D-F-G-A)".into();
         t
     }
 

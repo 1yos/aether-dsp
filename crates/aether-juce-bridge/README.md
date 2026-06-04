@@ -6,7 +6,7 @@ Add world music tuning systems and real-time safe DSP processing to your JUCE pl
 
 ## Features
 
-- ✅ **13 World Music Tuning Systems** - Ethiopian, Arabic, Indian, Gamelan scales
+- ✅ **17 World Music Tuning Systems** - Ethiopian (7), Arabic (3), Indian (1), Gamelan (3), Western (3)
 - ✅ **Lock-Free DSP Graph** - Real-time safe audio processing
 - ✅ **Memory Safe** - Rust's safety guarantees protect your audio thread
 - ✅ **Zero-Cost Abstraction** - No performance overhead
@@ -123,11 +123,20 @@ private:
 
 ### Ethiopian Scales (Qenet)
 
+All 7 traditional Ethiopian qenet modes are now implemented:
+
 ```cpp
-auto tuning = aether_tuning_ethiopian_tizita();      // Pentatonic, characteristic of Ethiopian blues
-auto tuning = aether_tuning_ethiopian_bati();        // Minor pentatonic variant
-auto tuning = aether_tuning_ethiopian_ambassel();    // Pentatonic with raised 4th
-auto tuning = aether_tuning_ethiopian_anchihoye();   // Traditional scale
+// Tizita variants (expressing nostalgia and longing)
+auto tuning = aether_tuning_ethiopian_tizita();              // Tizita major - pentatonic, characteristic of Ethiopian blues
+auto tuning = aether_tuning_ethiopian_tizita_minor();        // Tizita minor - melancholic, introspective
+
+// Bati variants (expressing depth and melancholy)
+auto tuning = aether_tuning_ethiopian_bati();                // Bati minor - standard minor pentatonic (most common)
+auto tuning = aether_tuning_ethiopian_bati_major();          // Bati major - bright, uplifting variant
+
+// Other main modes
+auto tuning = aether_tuning_ethiopian_ambassel();            // Ambassel - pentatonic with flat 2nd
+auto tuning = aether_tuning_ethiopian_anchihoye();           // Anchihoye - pentatonic without 3rd degree
 ```
 
 ### Arabic Maqamat

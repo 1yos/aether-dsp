@@ -62,24 +62,45 @@ const CONCERT_A: f32 = 440.0;
 // TUNING SYSTEMS
 // ============================================================================
 
-/// Create Ethiopian Tizita tuning (pentatonic, characteristic of Ethiopian blues)
+/// Create Ethiopian Tizita major tuning (pentatonic, characteristic of Ethiopian blues)
 #[no_mangle]
 pub extern "C" fn aether_tuning_ethiopian_tizita() -> *mut AetherTuningTable {
     let tuning = Box::new(TuningTable::ethiopian_tizita(CONCERT_A));
     Box::into_raw(tuning) as *mut AetherTuningTable
 }
 
-/// Create Ethiopian Bati tuning (minor pentatonic variant)
+/// Create Ethiopian Tizita minor tuning (nostalgic, melancholic pentatonic variant)
+#[no_mangle]
+pub extern "C" fn aether_tuning_ethiopian_tizita_minor() -> *mut AetherTuningTable {
+    let tuning = Box::new(TuningTable::ethiopian_tizita_minor(CONCERT_A));
+    Box::into_raw(tuning) as *mut AetherTuningTable
+}
+
+/// Create Ethiopian Bati minor tuning (standard minor pentatonic variant)
 #[no_mangle]
 pub extern "C" fn aether_tuning_ethiopian_bati() -> *mut AetherTuningTable {
     let tuning = Box::new(TuningTable::ethiopian_bati(CONCERT_A));
     Box::into_raw(tuning) as *mut AetherTuningTable
 }
 
-/// Create Ethiopian Ambassel tuning (pentatonic with raised 4th)
+/// Create Ethiopian Bati major tuning (bright, uplifting pentatonic variant)
+#[no_mangle]
+pub extern "C" fn aether_tuning_ethiopian_bati_major() -> *mut AetherTuningTable {
+    let tuning = Box::new(TuningTable::ethiopian_bati_major(CONCERT_A));
+    Box::into_raw(tuning) as *mut AetherTuningTable
+}
+
+/// Create Ethiopian Ambassel tuning (pentatonic with flat 2nd)
 #[no_mangle]
 pub extern "C" fn aether_tuning_ethiopian_ambassel() -> *mut AetherTuningTable {
     let tuning = Box::new(TuningTable::ethiopian_ambassel(CONCERT_A));
+    Box::into_raw(tuning) as *mut AetherTuningTable
+}
+
+/// Create Ethiopian Anchihoye tuning (pentatonic without 3rd degree)
+#[no_mangle]
+pub extern "C" fn aether_tuning_ethiopian_anchihoye() -> *mut AetherTuningTable {
+    let tuning = Box::new(TuningTable::ethiopian_anchihoye(CONCERT_A));
     Box::into_raw(tuning) as *mut AetherTuningTable
 }
 
@@ -246,10 +267,10 @@ pub extern "C" fn aether_version() -> *const c_char {
 /// Get the number of available tuning systems
 ///
 /// # Returns
-/// The total count of built-in tuning systems (currently 13)
+/// The total count of built-in tuning systems (currently 17)
 #[no_mangle]
 pub extern "C" fn aether_tuning_count() -> u32 {
-    13
+    17
 }
 
 // ============================================================================
@@ -335,6 +356,6 @@ mod tests {
 
     #[test]
     fn test_tuning_count() {
-        assert_eq!(aether_tuning_count(), 13);
+        assert_eq!(aether_tuning_count(), 17);
     }
 }

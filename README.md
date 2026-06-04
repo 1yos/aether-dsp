@@ -30,7 +30,7 @@ AetherDSP is two things at once: a production-grade audio engine library for Rus
 | [`aetherdsp-nodes`](https://crates.io/crates/aetherdsp-nodes)         | 0.2.4   | 17 DSP nodes: oscillator, filters, reverb, LFO, granular, Karplus-Strong, compressor, waveshaper, chorus |
 | [`aetherdsp-ndk`](https://crates.io/crates/aetherdsp-ndk)             | 0.1.6   | Node Development Kit — build custom nodes with `#[aether_node]`                                          |
 | [`aetherdsp-ndk-macro`](https://crates.io/crates/aetherdsp-ndk-macro) | 0.1.6   | Proc-macro behind the NDK                                                                                |
-| [`aetherdsp-midi`](https://crates.io/crates/aetherdsp-midi)           | 0.1.5   | MIDI engine with 13 tuning systems including Ethiopian, Arabic, Gamelan                                  |
+| [`aetherdsp-midi`](https://crates.io/crates/aetherdsp-midi)           | 0.1.5   | MIDI engine with 17 tuning systems including Ethiopian, Arabic, Gamelan                                  |
 | [`aetherdsp-juce-bridge`](crates/aether-juce-bridge)                  | 0.1.6   | **NEW:** C FFI bridge for using AetherDSP tuning systems in JUCE plugins                                 |
 | [`aetherdsp-sampler`](https://crates.io/crates/aetherdsp-sampler)     | 0.2.1   | Polyphonic sampler with ArcSwap lock-free instrument loading                                             |
 | [`aetherdsp-timbre`](https://crates.io/crates/aetherdsp-timbre)       | 0.1.6   | FFT-based spectral timbre analysis and transfer                                                          |
@@ -102,8 +102,11 @@ AetherDSP treats tuning as a first-class feature. Every instrument loads with it
 | --------------------------- | -------------------------------------------------- |
 | 12-TET                      | Standard equal temperament                         |
 | Ethiopian Tizita (major)    | Pentatonic major variant with characteristic flats |
-| Ethiopian Bati (minor)      | Pentatonic minor variant                           |
-| Ethiopian Ambassel          | Pentatonic with raised 4th                         |
+| Ethiopian Tizita (minor)    | Nostalgic, melancholic pentatonic variant          |
+| Ethiopian Bati (minor)      | Standard minor pentatonic — most common Bati form  |
+| Ethiopian Bati (major)      | Bright, uplifting pentatonic variant               |
+| Ethiopian Ambassel          | Pentatonic with flat 2nd degree                    |
+| Ethiopian Anchihoye         | Pentatonic without 3rd degree                      |
 | Arabic Maqam Rast           | Quarter-tone flats on 3rd and 7th                  |
 | Arabic Maqam Bayati         | Half-flat on 2nd degree                            |
 | Arabic Maqam Hijaz          | Augmented 2nd between 2nd and 3rd degrees          |
@@ -114,9 +117,9 @@ AetherDSP treats tuning as a first-class feature. Every instrument loads with it
 | Just Intonation (5-limit)   | Pure harmonic ratios (traditional)                 |
 | Just Intonation (7-limit)   | Pure ratios with septimal intervals (blues)        |
 
-**Total: 13 tuning systems** covering Ethiopian, Arabic, Indian, and Javanese musical traditions.
+**Total: 17 tuning systems** covering Ethiopian (7 modes), Arabic (3 maqamat), Indian, Javanese, and Western traditions.
 
-**Note:** Ethiopian qenet traditionally has 7 modes (Tizita major/minor, Bati/major/minor, Ambassel, Anchihoye). Currently 3 are implemented. Full coverage planned for future releases.
+**Ethiopian qenet:** All 7 traditional modes now implemented — Tizita major/minor, Bati minor/major, Ambassel, and Anchihoye. These pentatonic scales form the backbone of Ethiopian music from liturgical chants to Ethio-jazz.
 
 For detailed information about tuning system implementation, precision, and pitch-bend interaction, see the [Tuning Systems Tutorial](docs/tutorials/tuning-systems.md).
 
@@ -165,9 +168,9 @@ myOscillator.setFrequency(freq);
 aether_tuning_free(tuning);
 ```
 
-**Available tuning systems:** Ethiopian (3), Arabic (3), Indian (1), Gamelan (3), Western (3)
+**Available tuning systems:** Ethiopian (7), Arabic (3), Indian (1), Gamelan (3), Western (3)
 
-**Total: 13 tuning systems**
+**Total: 17 tuning systems**
 
 See [`crates/aether-juce-bridge`](crates/aether-juce-bridge) for complete documentation and examples.
 
