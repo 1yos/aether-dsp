@@ -98,23 +98,25 @@ Compressor gain reduction → Reverb wet level
 
 AetherDSP treats tuning as a first-class feature. Every instrument loads with its correct tuning system by default.
 
-| System                      | Description                                   |
-| --------------------------- | --------------------------------------------- |
-| 12-TET                      | Standard equal temperament                    |
-| Ethiopian Tizita            | Pentatonic with characteristic flat intervals |
-| Ethiopian Bati              | Minor pentatonic variant                      |
-| Ethiopian Ambassel          | Pentatonic with raised 4th                    |
-| Arabic Maqam Rast           | Quarter-tone flats on 3rd and 7th             |
-| Arabic Maqam Bayati         | Half-flat on 2nd degree                       |
-| Arabic Maqam Hijaz          | Augmented 2nd between 2nd and 3rd degrees     |
-| Indian Raga Yaman           | Just intonation, raised 4th (Kalyan thaat)    |
-| Gamelan Slendro             | 5-tone Javanese scale                         |
-| Gamelan Slendro (Stretched) | 5-tone with stretched octave (~1210 cents)    |
-| Gamelan Pelog               | 7-tone Javanese scale with unequal intervals  |
-| Just Intonation (5-limit)   | Pure harmonic ratios (traditional)            |
-| Just Intonation (7-limit)   | Pure ratios with septimal intervals (blues)   |
+| System                      | Description                                        |
+| --------------------------- | -------------------------------------------------- |
+| 12-TET                      | Standard equal temperament                         |
+| Ethiopian Tizita (major)    | Pentatonic major variant with characteristic flats |
+| Ethiopian Bati (minor)      | Pentatonic minor variant                           |
+| Ethiopian Ambassel          | Pentatonic with raised 4th                         |
+| Arabic Maqam Rast           | Quarter-tone flats on 3rd and 7th                  |
+| Arabic Maqam Bayati         | Half-flat on 2nd degree                            |
+| Arabic Maqam Hijaz          | Augmented 2nd between 2nd and 3rd degrees          |
+| Indian Raga Yaman           | Just intonation, raised 4th (Kalyan thaat)         |
+| Gamelan Slendro             | 5-tone Javanese scale                              |
+| Gamelan Slendro (Stretched) | 5-tone with stretched octave (~1210 cents)         |
+| Gamelan Pelog               | 7-tone Javanese scale with unequal intervals       |
+| Just Intonation (5-limit)   | Pure harmonic ratios (traditional)                 |
+| Just Intonation (7-limit)   | Pure ratios with septimal intervals (blues)        |
 
 **Total: 13 tuning systems** covering Ethiopian, Arabic, Indian, and Javanese musical traditions.
+
+**Note:** Ethiopian qenet traditionally has 7 modes (Tizita major/minor, Bati/major/minor, Ambassel, Anchihoye). Currently 3 are implemented. Full coverage planned for future releases.
 
 For detailed information about tuning system implementation, precision, and pitch-bend interaction, see the [Tuning Systems Tutorial](docs/tutorials/tuning-systems.md).
 
@@ -163,7 +165,9 @@ myOscillator.setFrequency(freq);
 aether_tuning_free(tuning);
 ```
 
-**Available tuning systems:** Ethiopian (4), Arabic (3), Indian (1), Gamelan (3), Western (3)
+**Available tuning systems:** Ethiopian (3), Arabic (3), Indian (1), Gamelan (3), Western (3)
+
+**Total: 13 tuning systems**
 
 See [`crates/aether-juce-bridge`](crates/aether-juce-bridge) for complete documentation and examples.
 

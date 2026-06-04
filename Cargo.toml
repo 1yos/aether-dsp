@@ -12,8 +12,9 @@ members = [
     "crates/aether-sampler",
     "crates/aether-timbre",
     "crates/aether-samples",
-    "crates/aether-ui",      # Native GPU UI (gpui)
-    # "crates/aether-plugin",  # Build separately
+    "crates/aether-ui",              # Native GPU UI (gpui)
+    "crates/aether-juce-bridge",     # JUCE FFI bridge
+    # "crates/aether-plugin",        # Build separately
 ]
 resolver = "2"
 
