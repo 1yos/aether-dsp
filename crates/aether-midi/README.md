@@ -14,6 +14,7 @@ MIDI engine for [AetherDSP](https://crates.io/crates/aether-core) — device rou
 - **MIDI clock** — sync BPM to external MIDI clock source
 - **Tuning tables** — 13 microtonal tuning systems including Ethiopian scales (Tizita, Bati, Ambassel), Arabic maqam (Rast, Bayati, Hijaz), Indian raga, Gamelan (Slendro, Pelog), and Just Intonation (5-limit, 7-limit)
 - **Event system** — typed MIDI events (NoteOn, NoteOff, CC, PitchBend, Clock)
+- **JUCE Integration** — Use these tuning systems in C++ JUCE plugins via [`aetherdsp-juce-bridge`](../aether-juce-bridge)
 
 ## Tuning systems
 

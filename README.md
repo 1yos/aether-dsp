@@ -31,6 +31,7 @@ AetherDSP is two things at once: a production-grade audio engine library for Rus
 | [`aetherdsp-ndk`](https://crates.io/crates/aetherdsp-ndk)             | 0.1.6   | Node Development Kit — build custom nodes with `#[aether_node]`                                          |
 | [`aetherdsp-ndk-macro`](https://crates.io/crates/aetherdsp-ndk-macro) | 0.1.6   | Proc-macro behind the NDK                                                                                |
 | [`aetherdsp-midi`](https://crates.io/crates/aetherdsp-midi)           | 0.1.5   | MIDI engine with 13 tuning systems including Ethiopian, Arabic, Gamelan                                  |
+| [`aetherdsp-juce-bridge`](crates/aether-juce-bridge)                  | 0.1.6   | **NEW:** C FFI bridge for using AetherDSP tuning systems in JUCE plugins                                 |
 | [`aetherdsp-sampler`](https://crates.io/crates/aetherdsp-sampler)     | 0.2.1   | Polyphonic sampler with ArcSwap lock-free instrument loading                                             |
 | [`aetherdsp-timbre`](https://crates.io/crates/aetherdsp-timbre)       | 0.1.6   | FFT-based spectral timbre analysis and transfer                                                          |
 | [`aetherdsp-manifest`](https://crates.io/crates/aetherdsp-manifest)   | 0.1.6   | Node package manifest format                                                                             |
@@ -138,6 +139,33 @@ For detailed information about tuning system implementation, precision, and pitc
 | `param_fill_buffer_64`      | **51.7 ns** |
 | Arena insert/remove ×1000   | < 5 µs      |
 | Scheduler (1000 noop nodes) | < 100 µs    |
+
+---
+
+## JUCE Integration
+
+**NEW:** Use AetherDSP's world music tuning systems in your JUCE plugins!
+
+```cpp
+#include "aetherdsp_juce_bridge.h"
+
+// Create Ethiopian Tizita tuning
+AetherTuningTable* tuning = aether_tuning_ethiopian_tizita();
+
+// Get frequency for MIDI note 60 (Middle C)
+float freq;
+aether_tuning_get_frequency(tuning, 60, &freq);
+
+// Use in your oscillator
+myOscillator.setFrequency(freq);
+
+// Clean up
+aether_tuning_free(tuning);
+```
+
+**Available tuning systems:** Ethiopian (4), Arabic (3), Indian (1), Gamelan (3), Western (3)
+
+See [`crates/aether-juce-bridge`](crates/aether-juce-bridge) for complete documentation and examples.
 
 ---
 
@@ -267,6 +295,7 @@ aether-dsp/
 │   ├── aether-core/        # RT engine: arena, graph, scheduler, params
 │   ├── aether-nodes/       # 17 DSP nodes including compressor, waveshaper, chorus
 │   ├── aether-midi/        # MIDI engine + 13 tuning systems
+│   ├── aether-juce-bridge/ # **NEW:** C FFI for JUCE integration
 │   ├── aether-sampler/     # Polyphonic sampler with ArcSwap
 │   ├── aether-timbre/      # Spectral timbre analysis and transfer
 │   ├── aether-samples/     # Sample pack download and management
