@@ -5,6 +5,23 @@ All notable changes to the AetherDSP JUCE Bridge will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `aether_tuning_ethiopian_tizita_minor()` - Tizita minor variant
+- `aether_tuning_ethiopian_bati_major()` - Bati major variant
+- `aether_tuning_ethiopian_anchihoye()` - Anchihoye mode
+
+### Changed
+
+- Increased total tuning systems from 13 to 17
+- Updated documentation to reflect all 7 Ethiopian qenet modes
+- Updated `aether_tuning_count()` to return 17
+- Regenerated C header with all new functions
+
+**Total tuning systems: 17** (7 Ethiopian, 3 Arabic, 1 Indian, 3 Gamelan, 3 Western)
+
 ## [0.1.6] - 2026-06-04
 
 ### Added
@@ -12,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release of AetherDSP JUCE Bridge
 - C FFI API for integrating AetherDSP world music tuning systems with JUCE plugins
 - Support for 13 world music tuning systems:
-  - Ethiopian: Tizita, Bati, Ambassel (3 systems)
+  - Ethiopian: Tizita major, Bati minor, Ambassel (3 systems)
   - Arabic: Rast, Bayati, Hijaz (3 systems)
   - Indian: Yaman (1 system)
   - Gamelan: Slendro, Slendro Stretched, Pelog (3 systems)

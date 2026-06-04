@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `ethiopian_tizita_minor()` - Nostalgic, melancholic pentatonic variant (C-D-Eb-G-Ab)
+- `ethiopian_bati_major()` - Bright, uplifting pentatonic variant (C-E-F-G-B)
+- `ethiopian_anchihoye()` - Pentatonic without 3rd degree (C-D-F-G-A), completing the 7 traditional qenet modes
+
+### Changed
+
+- Rewrote `ethiopian_tizita()` documentation to clarify it's the major variant (C-D-E-G-A)
+- Rewrote `ethiopian_bati()` documentation to clarify it's the minor variant (C-Eb-F-G-Bb)
+- Rewrote `ethiopian_ambassel()` with accurate interval pattern (C-Db-F-G-Ab) based on Wikipedia
+- All Ethiopian scales now use proper 12-TET approximations with academic source citations
+- Updated README with all 17 tuning systems and complete Ethiopian qenet examples
+
+**Total tuning systems: 17** (7 Ethiopian, 3 Arabic, 1 Indian, 3 Gamelan, 3 Western)
+
 ## [0.1.5] - 2026-05-21
 
 ### Added

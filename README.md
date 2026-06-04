@@ -301,7 +301,7 @@ aether-dsp/
 ├── crates/
 │   ├── aether-core/        # RT engine: arena, graph, scheduler, params
 │   ├── aether-nodes/       # 17 DSP nodes including compressor, waveshaper, chorus
-│   ├── aether-midi/        # MIDI engine + 13 tuning systems
+│   ├── aether-midi/        # MIDI engine + 17 tuning systems
 │   ├── aether-juce-bridge/ # **NEW:** C FFI for JUCE integration
 │   ├── aether-sampler/     # Polyphonic sampler with ArcSwap
 │   ├── aether-timbre/      # Spectral timbre analysis and transfer

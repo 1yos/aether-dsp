@@ -14,7 +14,7 @@
 
 ## ✅ Documentation
 
-- [x] README.md updated with all 13 tuning systems
+- [x] README.md updated with all 17 tuning systems (7 Ethiopian, 3 Arabic, 1 Indian, 3 Gamelan, 3 Western)
 - [x] Code examples show new functions
 - [x] Module-level docs explain precision and pitch-bend
 - [x] All tunings have source attribution comments
@@ -38,7 +38,7 @@ New version: **0.1.5** (minor feature addition)
 - Added `just_intonation_7_limit()` - Septimal intervals for blues/barbershop
 - Added comprehensive source attribution to all tuning systems
 - Documented f32 precision limits and pitch-bend behavior
-- Total: 13 tuning systems (was 9)
+- Total: 17 tuning systems — all 7 Ethiopian qenet modes implemented (was 13)
 
 ## 📋 Pre-Publish Commands
 
