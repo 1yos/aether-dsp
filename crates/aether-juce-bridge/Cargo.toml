@@ -1,0 +1,29 @@
+[package]
+name = "aetherdsp-juce-bridge"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+readme = "README.md"
+description = "C FFI bridge for integrating AetherDSP with JUCE"
+keywords = ["audio", "dsp", "juce", "ffi", "bridge"]
+categories = ["multimedia::audio", "api-bindings"]
+
+[lib]
+name = "aetherdsp_juce_bridge"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+aetherdsp-core = { path = "../aether-core", version = "0.1.6" }
+aetherdsp-nodes = { path = "../aether-nodes", version = "0.2.4" }
+aetherdsp-midi = { path = "../aether-midi", version = "0.1.5" }
+crossbeam = { workspace = true }
+
+[build-dependencies]
+cbindgen = "0.27"
+
+[features]
+default = []
