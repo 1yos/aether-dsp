@@ -10,8 +10,8 @@ fn main() {
         .with_crate(crate_dir)
         .with_language(cbindgen::Language::C)
         .with_include_guard("AETHERDSP_JUCE_BRIDGE_H")
+        .with_cpp_compat(true)  // Add extern "C" for C++ compatibility
         .with_documentation(true)
-        .with_namespace("aetherdsp")
         .generate()
         .expect("Unable to generate C bindings")
         .write_to_file(output_dir.join("aetherdsp_juce_bridge.h"));

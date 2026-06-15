@@ -23,6 +23,10 @@ typedef struct AetherTuningTable {
   uint8_t _private[0];
 } AetherTuningTable;
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 /**
  * Create Ethiopian Tizita major tuning (pentatonic, characteristic of Ethiopian blues)
  */
@@ -162,5 +166,9 @@ const char *aether_version(void);
  * The total count of built-in tuning systems (currently 17)
  */
 uint32_t aether_tuning_count(void);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif  // __cplusplus
 
 #endif  /* AETHERDSP_JUCE_BRIDGE_H */

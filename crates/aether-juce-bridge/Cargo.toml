@@ -1,6 +1,6 @@
 [package]
 name = "aetherdsp-juce-bridge"
-version.workspace = true
+version = "0.1.7"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -19,7 +19,7 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 [dependencies]
 aetherdsp-core = { path = "../aether-core", version = "0.1.6" }
 aetherdsp-nodes = { path = "../aether-nodes", version = "0.2.4" }
-aetherdsp-midi = { path = "../aether-midi", version = "0.1.5" }
+aetherdsp-midi = { version = "0.1.7" }
 crossbeam = { workspace = true }
 
 [build-dependencies]

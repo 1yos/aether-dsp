@@ -7,18 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-06-15
+
 ### Added
 
 - `aether_tuning_ethiopian_tizita_minor()` - Tizita minor variant
 - `aether_tuning_ethiopian_bati_major()` - Bati major variant
 - `aether_tuning_ethiopian_anchihoye()` - Anchihoye mode
+- `extern "C"` blocks in header for proper C++ compatibility
+- Complete Ethiopian qenet system (all 7 traditional modes)
 
 ### Changed
 
 - Increased total tuning systems from 13 to 17
 - Updated documentation to reflect all 7 Ethiopian qenet modes
 - Updated `aether_tuning_count()` to return 17
-- Regenerated C header with all new functions
+- Regenerated C header with all new functions and C++ compatibility
+- Updated dependency to `aetherdsp-midi` 0.1.7
+
+### Fixed
+
+- C++ name mangling issues - added `extern "C"` guards to header
+- JUCE 7.x compatibility verified with test plugin
 
 **Total tuning systems: 17** (7 Ethiopian, 3 Arabic, 1 Indian, 3 Gamelan, 3 Western)
 
