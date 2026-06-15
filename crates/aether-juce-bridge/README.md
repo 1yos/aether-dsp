@@ -314,7 +314,6 @@ Contributions welcome! Please see [CONTRIBUTING.md](../../CONTRIBUTING.md).
 ## Support
 
 - **GitHub Issues**: [github.com/1yos/aether-dsp/issues](https://github.com/1yos/aether-dsp/issues)
-- **Email**: yoseph@aetherdsp.dev
 - **Documentation**: [docs.rs/aetherdsp-juce-bridge](https://docs.rs/aetherdsp-juce-bridge)
 
 ---
