@@ -18,7 +18,7 @@ We actively support the following versions with security updates:
 
 ### How to Report
 
-**Email:** security@aetherdsp.dev  
+**Email:** yosephabebem@gmail.com  
 **PGP Key:** Available on request
 
 ### What to Include
@@ -375,7 +375,7 @@ Credits:
 
 ## Contact
 
-**Security Email:** security@aetherdsp.dev  
+**Security Email:** yosephabebem@gmail.com  
 **General Issues:** https://github.com/1yos/aether-dsp/issues  
 **Discussions:** https://github.com/1yos/aether-dsp/discussions
 
