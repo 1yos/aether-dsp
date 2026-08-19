@@ -218,7 +218,7 @@ impl Inspector {
         let slider_widget = slider(min..=max, default, move |value| {
             Message::ParameterChanged(name_owned.clone(), value)
         })
-        .step(0.01);
+        .step(0.01_f32);
 
         column![label, slider_widget, value_text]
             .spacing(Spacing::XS)
