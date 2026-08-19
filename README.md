@@ -368,6 +368,8 @@ Every push runs on **Windows, macOS, and Linux**:
 
 Based in Addis Ababa, Ethiopia
 
+**Email:** yosephabebem@gmail.com 
+
 GitHub: [@1yos](https://github.com/1yos)
 
 ---
