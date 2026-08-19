@@ -377,7 +377,7 @@ Credits:
 
 **Security Email:** yosephabebem@gmail.com  
 **General Issues:** https://github.com/1yos/aether-dsp/issues  
-**Discussions:** https://github.com/1yos/aether-dsp/discussions
+
 
 ---
 
