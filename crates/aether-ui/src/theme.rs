@@ -1,64 +1,56 @@
-// Aether Studio theme and styling
+//! Aether Studio design system — colors, spacing, typography.
 
 use iced::Color;
 
-/// Professional Dark Studio theme colors
-pub struct AetherTheme;
+pub struct Theme;
 
-impl AetherTheme {
-    // Background hierarchy
-    pub const APP_BACKGROUND: Color = Color::from_rgb(0.102, 0.102, 0.102); // #1a1a1a
-    pub const PANEL_BACKGROUND: Color = Color::from_rgb(0.141, 0.141, 0.141); // #242424
-    pub const CANVAS_BACKGROUND: Color = Color::from_rgb(0.118, 0.118, 0.118); // #1e1e1e
-    pub const NODE_BACKGROUND: Color = Color::from_rgb(0.176, 0.176, 0.176); // #2d2d2d
-    pub const HOVER_STATE: Color = Color::from_rgb(0.208, 0.208, 0.208); // #353535
-    pub const ACTIVE_STATE: Color = Color::from_rgb(0.239, 0.239, 0.239); // #3d3d3d
+impl Theme {
+    // ── Backgrounds ──────────────────────────────────────────────────────────
+    pub const APP_BG: Color        = Color { r: 0.051, g: 0.051, b: 0.051, a: 1.0 }; // #0D0D0D
+    pub const PANEL_BG: Color      = Color { r: 0.078, g: 0.078, b: 0.078, a: 1.0 }; // #141414
+    pub const SURFACE: Color       = Color { r: 0.110, g: 0.110, b: 0.110, a: 1.0 }; // #1C1C1C
+    pub const BORDER: Color        = Color { r: 0.165, g: 0.165, b: 0.165, a: 1.0 }; // #2A2A2A
 
-    // Accent colors
-    pub const PRIMARY: Color = Color::from_rgb(0.290, 0.624, 1.0); // #4a9eff (blue)
-    pub const SUCCESS: Color = Color::from_rgb(0.290, 0.867, 0.502); // #4ade80 (green)
-    pub const WARNING: Color = Color::from_rgb(0.984, 0.573, 0.235); // #fb923c (orange)
-    pub const ERROR: Color = Color::from_rgb(0.937, 0.267, 0.267); // #ef4444 (red)
-    pub const INFO: Color = Color::from_rgb(0.655, 0.545, 0.980); // #a78bfa (purple)
+    // ── Accent (Ethiopian gold/amber) ─────────────────────────────────────────
+    pub const ACCENT: Color        = Color { r: 0.788, g: 0.588, b: 0.227, a: 1.0 }; // #C9963A
+    pub const ACCENT_DIM: Color    = Color { r: 0.541, g: 0.392, b: 0.125, a: 1.0 }; // #8A6420
 
-    // Text colors
-    pub const TEXT_PRIMARY: Color = Color::from_rgb(0.898, 0.898, 0.898); // #e5e5e5
-    pub const TEXT_SECONDARY: Color = Color::from_rgb(0.639, 0.639, 0.639); // #a3a3a3
-    pub const TEXT_DISABLED: Color = Color::from_rgb(0.322, 0.322, 0.322); // #525252
-    pub const TEXT_LINK: Color = Color::from_rgb(0.376, 0.647, 0.980); // #60a5fa
+    // ── Text ──────────────────────────────────────────────────────────────────
+    pub const TEXT_PRIMARY: Color  = Color { r: 0.941, g: 0.929, b: 0.910, a: 1.0 }; // #F0EDE8
+    pub const TEXT_SECONDARY: Color= Color { r: 0.541, g: 0.518, b: 0.502, a: 1.0 }; // #8A8480
+    pub const TEXT_DISABLED: Color = Color { r: 0.267, g: 0.267, b: 0.267, a: 1.0 }; // #444444
 
-    // Node type colors (subtle, desaturated)
-    pub const NODE_AUDIO_IO: Color = Color::from_rgb(0.231, 0.510, 0.965); // #3b82f6
-    pub const NODE_GENERATOR: Color = Color::from_rgb(0.063, 0.725, 0.506); // #10b981
-    pub const NODE_EFFECT: Color = Color::from_rgb(0.545, 0.361, 0.965); // #8b5cf6
-    pub const NODE_MODULATOR: Color = Color::from_rgb(0.961, 0.620, 0.043); // #f59e0b
-    pub const NODE_UTILITY: Color = Color::from_rgb(0.420, 0.451, 0.502); // #6b7280
-    pub const NODE_PARAMETER: Color = Color::from_rgb(0.925, 0.286, 0.600); // #ec4899
-
-    // Cable colors (based on data type)
-    pub const CABLE_AUDIO: Color = Color::from_rgb(0.290, 0.867, 0.502); // #4ade80 (green)
-    pub const CABLE_CONTROL: Color = Color::from_rgb(0.984, 0.749, 0.141); // #fbbf24 (yellow)
-    pub const CABLE_MIDI: Color = Color::from_rgb(0.655, 0.545, 0.980); // #a78bfa (purple)
-    pub const CABLE_MODULATION: Color = Color::from_rgb(0.984, 0.573, 0.235); // #fb923c (orange)
+    // ── Status ────────────────────────────────────────────────────────────────
+    pub const GREEN: Color         = Color { r: 0.290, g: 0.867, b: 0.502, a: 1.0 }; // #4ADE80
+    pub const RED: Color           = Color { r: 0.937, g: 0.267, b: 0.267, a: 1.0 }; // #EF4444
+    pub const BLUE: Color          = Color { r: 0.376, g: 0.647, b: 0.980, a: 1.0 }; // #60A5FA
 }
 
-/// Spacing system (base unit: 4px)
+// ── Spacing ───────────────────────────────────────────────────────────────────
+
 pub struct Spacing;
 
 impl Spacing {
-    pub const XS: f32 = 4.0;
-    pub const SM: f32 = 8.0;
-    pub const MD: f32 = 12.0;
-    pub const LG: f32 = 16.0;
-    pub const XL: f32 = 24.0;
-    pub const XXL: f32 = 32.0;
+    pub const XS: u16 = 4;
+    pub const SM: u16 = 8;
+    pub const MD: u16 = 16;
+    pub const LG: u16 = 24;
+    pub const XL: u16 = 32;
 }
 
-/// Border radius
-pub struct BorderRadius;
+// ── Track colors (randomized palette) ────────────────────────────────────────
 
-impl BorderRadius {
-    pub const SMALL: f32 = 4.0;
-    pub const MEDIUM: f32 = 6.0;
-    pub const LARGE: f32 = 8.0;
+pub const TRACK_COLORS: &[Color] = &[
+    Color { r: 0.788, g: 0.588, b: 0.227, a: 1.0 }, // amber
+    Color { r: 0.290, g: 0.624, b: 1.000, a: 1.0 }, // blue
+    Color { r: 0.290, g: 0.867, b: 0.502, a: 1.0 }, // green
+    Color { r: 0.655, g: 0.545, b: 0.980, a: 1.0 }, // purple
+    Color { r: 0.984, g: 0.573, b: 0.235, a: 1.0 }, // orange
+    Color { r: 0.925, g: 0.286, b: 0.600, a: 1.0 }, // pink
+    Color { r: 0.063, g: 0.725, b: 0.506, a: 1.0 }, // teal
+    Color { r: 0.961, g: 0.620, b: 0.043, a: 1.0 }, // yellow
+];
+
+pub fn track_color(index: usize) -> Color {
+    TRACK_COLORS[index % TRACK_COLORS.len()]
 }
