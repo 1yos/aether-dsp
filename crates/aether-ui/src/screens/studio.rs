@@ -65,13 +65,35 @@ impl Studio {
                 transport::Message::Play => {
                     self.transport.is_playing = true;
                     if let Some(e) = engine {
-                        e.set_mute(false);
+                        // Collect all MIDI notes from all tracks into ScheduledNotes
+                        let mut notes: Vec<crate::engine::ScheduledNote> = Vec::new();
+                        for track in &self.project.tracks {
+                            for clip in &track.clips {
+                                if let crate::project::ClipContent::MidiNotes(ref midi) =
+                                    clip.content
+                                {
+                                    for note in midi {
+                                        // Offset note by clip start position
+                                        let beats_per_bar = 4.0_f32;
+                                        notes.push(crate::engine::ScheduledNote {
+                                            track_id: track.id,
+                                            pitch: note.pitch,
+                                            start_beat: clip.start_bar * beats_per_bar
+                                                + note.start_beat,
+                                            length_beats: note.length_beats,
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        e.start_playback(notes, self.project.bpm);
                     }
                 }
                 transport::Message::Stop => {
                     self.transport.is_playing = false;
                     self.playhead_bar = 0.0;
                     if let Some(e) = engine {
+                        e.stop_playback();
                         e.set_mute(true);
                     }
                 }
