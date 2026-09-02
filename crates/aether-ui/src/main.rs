@@ -1,13 +1,20 @@
 //! Aether Studio — World Music Production
 //! Entry point: starts the audio engine, then launches the Iced UI.
 
+mod components;
 mod engine;
 mod plugin_gui;
 mod project;
+mod screens;
 mod theme;
 
 use engine::Engine;
 use iced::{Element, Task};
+use project::Project;
+use screens::{
+    launch::{self, LaunchScreen},
+    studio::{self, Studio},
+};
 
 fn main() -> iced::Result {
     iced::application("Aether Studio", AetherStudio::update, AetherStudio::view)
@@ -16,60 +23,106 @@ fn main() -> iced::Result {
         .run_with(AetherStudio::new)
 }
 
+// ── App state ─────────────────────────────────────────────────────────────────
+
+enum Screen {
+    Launch(LaunchScreen),
+    Studio(Studio),
+}
+
 struct AetherStudio {
+    screen: Screen,
     engine: Option<Engine>,
-    engine_status: String,
 }
 
 #[derive(Debug, Clone)]
-enum Message {}
+enum Message {
+    Launch(launch::Message),
+    Studio(studio::Message),
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
 
 impl AetherStudio {
     fn new() -> (Self, Task<Message>) {
-        // Start the audio engine before the first frame renders.
-        let (engine, status) = match Engine::start() {
+        let engine = match Engine::start() {
             Ok(e) => {
-                let sr = e.sample_rate();
-                (Some(e), format!("Audio engine running at {sr} Hz"))
+                println!("[app] audio engine running at {} Hz", e.sample_rate());
+                Some(e)
             }
-            Err(err) => (
-                None,
-                format!("Audio engine failed to start: {err}"),
-            ),
+            Err(err) => {
+                eprintln!("[app] audio engine failed to start: {err}");
+                None
+            }
         };
 
         (
-            Self { engine, engine_status: status },
+            Self {
+                screen: Screen::Launch(LaunchScreen::default()),
+                engine,
+            },
             Task::none(),
         )
     }
+}
 
-    fn update(&mut self, _message: Message) -> Task<Message> {
+// ── Update ────────────────────────────────────────────────────────────────────
+
+impl AetherStudio {
+    fn update(&mut self, message: Message) -> Task<Message> {
+        match message {
+            Message::Launch(msg) => {
+                if let Screen::Launch(ref mut launch) = self.screen {
+                    match msg {
+                        launch::Message::NewProject => {
+                            launch.show_dialog = true;
+                        }
+                        launch::Message::OpenProject => {
+                            // No file picker yet — open empty project
+                            let project = Project::new("New Project", 120.0);
+                            self.screen = Screen::Studio(Studio::new(project));
+                        }
+                        launch::Message::OpenRecent(name) => {
+                            let project = Project::new(&name, 120.0);
+                            self.screen = Screen::Studio(Studio::new(project));
+                        }
+                        launch::Message::ProjectNameChanged(s) => {
+                            launch.project_name = s;
+                        }
+                        launch::Message::BpmChanged(s) => {
+                            launch.bpm_str = s;
+                        }
+                        launch::Message::TuningSelected(t) => {
+                            launch.selected_tuning = t;
+                        }
+                        launch::Message::ConfirmCreate => {
+                            let bpm = launch.bpm_str.parse::<f32>().unwrap_or(120.0);
+                            let project = Project::new(&launch.project_name, bpm.max(1.0));
+                            self.screen = Screen::Studio(Studio::new(project));
+                        }
+                        launch::Message::CancelCreate => {
+                            launch.show_dialog = false;
+                        }
+                    }
+                }
+            }
+            Message::Studio(msg) => {
+                if let Screen::Studio(ref mut studio) = self.screen {
+                    studio.update(msg, &mut self.engine);
+                }
+            }
+        }
         Task::none()
     }
+}
 
+// ── View ──────────────────────────────────────────────────────────────────────
+
+impl AetherStudio {
     fn view(&self) -> Element<'_, Message> {
-        use iced::widget::{center, column, text};
-
-        let title = text("Aether Studio")
-            .size(40)
-            .style(|_theme| iced::widget::text::Style {
-                color: Some(theme::Theme::ACCENT),
-            });
-
-        let status = text(&self.engine_status)
-            .size(14)
-            .style(|_theme| iced::widget::text::Style {
-                color: Some(if self.engine.is_some() {
-                    theme::Theme::GREEN
-                } else {
-                    theme::Theme::RED
-                }),
-            });
-
-        center(
-            column![title, status].spacing(12).align_x(iced::Alignment::Center),
-        )
-        .into()
+        match &self.screen {
+            Screen::Launch(launch) => launch.view().map(Message::Launch),
+            Screen::Studio(studio) => studio.view().map(Message::Studio),
+        }
     }
 }
