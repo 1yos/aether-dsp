@@ -4,13 +4,23 @@ use iced::widget::{column, container, row};
 use iced::{Element, Length};
 
 use crate::components::{
-    add_track,
-    arrangement, mixer, piano_roll, step_seq, track_list, transport,
-    track_strip,
+    add_track, arrangement, mixer, piano_roll, step_seq, track_list, track_strip, transport,
 };
 use crate::engine::Engine;
 use crate::project::{ClipContent, Project, TrackId};
 use crate::theme;
+
+// ── Public helpers used by main.rs for keyboard shortcuts ─────────────────────
+
+pub fn transport_play_msg() -> transport::Message {
+    transport::Message::Play
+}
+
+pub fn transport_stop_msg() -> transport::Message {
+    transport::Message::Stop
+}
+
+// ── Messages ──────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -23,6 +33,8 @@ pub enum Message {
     Mixer(mixer::Message),
 }
 
+// ── State ─────────────────────────────────────────────────────────────────────
+
 struct OpenClip {
     track_id: TrackId,
     clip_idx: usize,
@@ -30,7 +42,7 @@ struct OpenClip {
 
 pub struct Studio {
     pub project: Project,
-    transport: transport::Transport,
+    pub transport: transport::Transport,
     mixer: mixer::Mixer,
     selected_track: Option<TrackId>,
     show_add_track: bool,
@@ -65,21 +77,16 @@ impl Studio {
                 transport::Message::Play => {
                     self.transport.is_playing = true;
                     if let Some(e) = engine {
-                        // Collect all MIDI notes from all tracks into ScheduledNotes
                         let mut notes: Vec<crate::engine::ScheduledNote> = Vec::new();
                         for track in &self.project.tracks {
                             for clip in &track.clips {
-                                if let crate::project::ClipContent::MidiNotes(ref midi) =
-                                    clip.content
-                                {
+                                if let ClipContent::MidiNotes(ref midi) = clip.content {
                                     for note in midi {
-                                        // Offset note by clip start position
-                                        let beats_per_bar = 4.0_f32;
                                         notes.push(crate::engine::ScheduledNote {
                                             track_id: track.id,
                                             pitch: note.pitch,
-                                            start_beat: clip.start_bar * beats_per_bar
-                                                + note.start_beat,
+                                            // 4 beats per bar offset
+                                            start_beat: clip.start_bar * 4.0 + note.start_beat,
                                             length_beats: note.length_beats,
                                         });
                                     }
@@ -92,6 +99,7 @@ impl Studio {
                 transport::Message::Stop => {
                     self.transport.is_playing = false;
                     self.playhead_bar = 0.0;
+                    self.transport.elapsed_str = "00:00".to_string();
                     if let Some(e) = engine {
                         e.stop_playback();
                         e.set_mute(true);
@@ -262,7 +270,6 @@ impl Studio {
                     }
                 }
                 mixer::Message::ToggleMute(id) => {
-                    // u32::MAX is the master placeholder — ignore
                     if id.0 == u32::MAX {
                         return;
                     }
@@ -279,12 +286,10 @@ impl Studio {
     }
 
     pub fn view(&self) -> Element<'_, Message> {
-        let transport = self.transport.view().map(Message::Transport);
-
+        let transport_bar = self.transport.view().map(Message::Transport);
         let track_list =
             track_list::view(&self.project.tracks, self.selected_track).map(Message::TrackList);
 
-        // Right: editor (open clip) or arrangement
         let main_area: Element<'_, Message> = if let Some(open) = &self.open_clip {
             self.view_editor(open)
         } else {
@@ -292,8 +297,7 @@ impl Studio {
                 .map(Message::Arrangement)
         };
 
-        // Left panel: track list + optional add-track slide-in
-        let left = if self.show_add_track {
+        let left: Element<'_, Message> = if self.show_add_track {
             row![track_list, add_track::view().map(Message::AddTrack)]
                 .height(Length::Fill)
                 .into()
@@ -302,10 +306,9 @@ impl Studio {
         };
 
         let workspace = row![left, main_area].height(Length::Fill);
-
         let mixer_bar = self.mixer.view(&self.project.tracks).map(Message::Mixer);
 
-        container(column![transport, workspace, mixer_bar])
+        container(column![transport_bar, workspace, mixer_bar])
             .width(Length::Fill)
             .height(Length::Fill)
             .style(|_| container::Style {
@@ -332,7 +335,6 @@ impl Studio {
                     tuning: track.tuning,
                     title: clip.name.clone(),
                 };
-                // view(self) consumes roll → Element<'static, Message>
                 let elem: iced::Element<'static, piano_roll::Message> = roll.view();
                 elem.map(Message::PianoRoll)
             }
