@@ -149,6 +149,17 @@ impl<'a> canvas::Program<Message> for ArrangementCanvas<'a> {
             );
         }
 
+        // Empty state hint
+        if self.tracks.is_empty() {
+            frame.fill_text(canvas::Text {
+                content: "Click '+ Add Track' to start building your project".to_string(),
+                position: Point::new(bounds.width / 2.0 - 160.0, bounds.height / 2.0),
+                color: crate::theme::Theme::TEXT_DISABLED,
+                size: iced::Pixels(14.0),
+                ..Default::default()
+            });
+        }
+
         vec![frame.into_geometry()]
     }
 

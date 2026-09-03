@@ -32,19 +32,18 @@ impl Default for Transport {
 
 impl Transport {
     pub fn view(&self) -> Element<'_, Message> {
-        let play_label = if self.is_playing { "■  Stop" } else { "▶  Play" };
-        let play_color = if self.is_playing { Theme::RED } else { Theme::GREEN };
+        let (play_label, play_color) = if self.is_playing {
+            ("■  Stop", Theme::RED)
+        } else {
+            ("▶  Play", Theme::GREEN)
+        };
 
         let btn_play = button(
             text(play_label)
                 .size(14)
                 .style(move |_| text::Style { color: Some(play_color) }),
         )
-        .on_press(if self.is_playing {
-            Message::Stop
-        } else {
-            Message::Play
-        })
+        .on_press(if self.is_playing { Message::Stop } else { Message::Play })
         .padding([8, 18])
         .style(|_, _| button::Style {
             background: Some(iced::Background::Color(Theme::SURFACE)),
@@ -69,18 +68,33 @@ impl Transport {
                 selection: Theme::ACCENT,
             });
 
+        // Playing indicator dot
+        let indicator = if self.is_playing {
+            text("●").size(12).style(|_| text::Style { color: Some(Theme::RED) })
+        } else {
+            text("●").size(12).style(|_| text::Style { color: Some(Theme::TEXT_DISABLED) })
+        };
+
         let time = text(&self.elapsed_str)
             .size(13)
-            .style(|_| text::Style { color: Some(Theme::TEXT_SECONDARY) })
-            .font(iced::Font::MONOSPACE);
+            .font(iced::Font::MONOSPACE)
+            .style(|_| text::Style { color: Some(Theme::TEXT_SECONDARY) });
+
+        let space_hint = text("[ Space ]")
+            .size(10)
+            .style(|_| text::Style { color: Some(Theme::TEXT_DISABLED) });
 
         let bar = row![
             btn_play,
-            iced::widget::Space::with_width(16),
+            iced::widget::Space::with_width(8),
+            space_hint,
+            iced::widget::Space::with_width(24),
             bpm_label,
             iced::widget::Space::with_width(6),
             bpm_input,
             iced::widget::Space::with_width(Length::Fill),
+            indicator,
+            iced::widget::Space::with_width(8),
             time,
             iced::widget::Space::with_width(16),
         ]

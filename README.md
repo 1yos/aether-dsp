@@ -37,7 +37,7 @@ AetherDSP is two things at once: a production-grade audio engine library for Rus
 | [`aetherdsp-manifest`](https://crates.io/crates/aetherdsp-manifest)       | 0.1.6   | Node package manifest format                                                                             |
 | [`aetherdsp-registry`](https://crates.io/crates/aetherdsp-registry)       | 0.1.6   | Runtime node type registry                                                                               |
 | `aether-samples`                                                          | 0.1.6   | On-demand sample pack download and management                                                            |
-| `aether-ui`                                                               | 0.1.6   | Native GPU-accelerated DAW (Iced + wgpu) — not published                                                 |
+| `aether-ui`                                                               | 0.1.6   | Native GPU-accelerated DAW — Aether Studio v1.0 (Iced + wgpu) — not published                            |
 
 ### The Studio (Aether Studio v0.3)
 
@@ -352,13 +352,14 @@ Every push runs on **Windows, macOS, and Linux**:
 
 ## Roadmap
 
-| Version | Milestone                                                                                       |
-| ------- | ----------------------------------------------------------------------------------------------- |
-| v0.1    | RT engine + WebSocket bridge + 9 crates on crates.io ✅                                         |
-| v0.2    | 17 DSP nodes, modulation matrix, sample library, VST3/CLAP export ✅                            |
-| v0.3    | Native GPU DAW (Iced): Song view, Piano roll, Mixer, Transport, Save/Load, Export, Metronome ✅ |
-| v0.4    | SIMD optimization, world music instruments, expanded tuning systems                             |
-| v1.0    | Stable public release                                                                           |
+| Version | Milestone                                                                                             |
+| ------- | ----------------------------------------------------------------------------------------------------- |
+| v0.1    | RT engine + WebSocket bridge + 9 crates on crates.io ✅                                               |
+| v0.2    | 17 DSP nodes, modulation matrix, sample library, VST3/CLAP export ✅                                  |
+| v0.3    | Native GPU DAW (Iced): Song view, Piano roll, Mixer, Transport, Save/Load, Export, Metronome ✅       |
+| v0.4    | Aether Studio v1.0: Track-based DAW, piano roll, step sequencer, playback, world music instruments ✅ |
+| v0.4    | SIMD optimization, world music instruments, expanded tuning systems                                   |
+| v1.0    | Stable public release                                                                                 |
 
 ---
 
@@ -368,7 +369,7 @@ Every push runs on **Windows, macOS, and Linux**:
 
 Based in Addis Ababa, Ethiopia
 
-**Email:** yosephabebem@gmail.com 
+**Email:** yosephabebem@gmail.com
 
 GitHub: [@1yos](https://github.com/1yos)
 
